@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ComplyGuard AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#020617',
+                'foreground': '#f8fafc'
+              },
+              secondary: {
+                DEFAULT: '#f1f5f9',
+                'foreground': '#0f172a'
+              },
+              accent: {
+                DEFAULT: '#2563eb',
+                'foreground': '#ffffff'
+              },
+              destructive: {
+                DEFAULT: '#dc2626',
+                'foreground': '#ffffff'
+              },
+              muted: {
+                  DEFAULT: '#f1f5f9',
+                  foreground: '#64748b'
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <script>
+    // Clerk Publishable Key provided by the user.
+    window.CLERK_PUBLISHABLE_KEY = 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk';
+  </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
+    "@clerk/clerk-react": "https://aistudiocdn.com/@clerk/clerk-react@^5.2.8",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
+  }
+}
+</script>
+</head>
+  <body class="bg-secondary">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

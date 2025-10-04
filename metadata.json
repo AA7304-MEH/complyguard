@@ -1,0 +1,5 @@
+{
+  "name": "ComplyGuard AI",
+  "description": "An AI-powered web application for scanning internal documents against regulatory frameworks to identify compliance gaps and risks.",
+  "requestFramePermissions": []
+}
