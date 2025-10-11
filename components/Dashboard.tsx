@@ -10,6 +10,7 @@ interface DashboardProps {
   scans: AuditScan[];
   onUpdateScans: (newScan: AuditScan) => void;
   onViewReport: (scan: AuditScan) => void;
+  onUpgrade?: () => void;
 }
 
 const getStatusChip = (status: AuditStatus) => {
@@ -23,10 +24,11 @@ const getStatusChip = (status: AuditStatus) => {
     }
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onViewReport }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onViewReport, onUpgrade }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const scansRemaining = user.scan_limit_this_month - user.documents_scanned_this_month;
+  const scansRemaining = user.scan_limit_this_month === -1 ? Infinity : user.scan_limit_this_month - user.documents_scanned_this_month;
+  const usagePercentage = user.scan_limit_this_month > 0 ? (user.documents_scanned_this_month / user.scan_limit_this_month) * 100 : 0;
 
   return (
     <>
@@ -45,16 +47,98 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
           </button>
         </div>
 
-        <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm mb-6">
-            <h3 className="text-lg font-medium text-gray-900">Monthly Usage</h3>
-            <p className="text-sm text-gray-500">Your plan: <span className="font-semibold capitalize">{user.subscription_tier}</span></p>
-            <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                    className="bg-accent h-2.5 rounded-full" 
-                    style={{width: `${(user.documents_scanned_this_month / user.scan_limit_this_month) * 100}%`}}>
-                </div>
+        {/* Usage Warning/Upgrade Prompts */}
+        {user.subscription_tier === 'free' && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-blue-900">Unlock More Scans</h3>
+                <p className="text-blue-700 mt-1">
+                  You're on the Free plan with {user.scan_limit_this_month} scans per month. 
+                  Upgrade to get more scans and advanced features.
+                </p>
+              </div>
+              <button
+                onClick={onUpgrade}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Upgrade Now
+              </button>
             </div>
-            <p className="text-right text-sm text-gray-600 mt-1">{user.documents_scanned_this_month} / {user.scan_limit_this_month} scans used</p>
+          </div>
+        )}
+
+        {scansRemaining <= 0 && user.scan_limit_this_month > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-red-900">Scan Limit Reached</h3>
+                <p className="text-red-700 mt-1">
+                  You've used all {user.scan_limit_this_month} scans for this month. 
+                  Upgrade your plan to continue scanning documents.
+                </p>
+              </div>
+              <button
+                onClick={onUpgrade}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Upgrade Plan
+              </button>
+            </div>
+          </div>
+        )}
+
+        {usagePercentage >= 80 && usagePercentage < 100 && user.scan_limit_this_month > 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-yellow-900">Approaching Scan Limit</h3>
+                <p className="text-yellow-700 mt-1">
+                  You've used {user.documents_scanned_this_month} of {user.scan_limit_this_month} scans ({Math.round(usagePercentage)}%). 
+                  Consider upgrading to avoid interruptions.
+                </p>
+              </div>
+              <button
+                onClick={onUpgrade}
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+              >
+                View Plans
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-medium text-gray-900">Monthly Usage</h3>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                user.subscription_tier === 'free' ? 'bg-gray-100 text-gray-800' :
+                user.subscription_tier === 'basic' ? 'bg-blue-100 text-blue-800' :
+                user.subscription_tier === 'professional' ? 'bg-purple-100 text-purple-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {user.subscription_tier.charAt(0).toUpperCase() + user.subscription_tier.slice(1)} Plan
+              </span>
+            </div>
+            
+            {user.scan_limit_this_month > 0 ? (
+              <>
+                <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                        className={`h-2.5 rounded-full transition-all duration-300 ${
+                          usagePercentage >= 90 ? 'bg-red-500' : 
+                          usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                        }`}
+                        style={{width: `${Math.min(usagePercentage, 100)}%`}}>
+                    </div>
+                </div>
+                <p className="text-right text-sm text-gray-600 mt-1">
+                  {user.documents_scanned_this_month} / {user.scan_limit_this_month} scans used
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-green-600 font-medium">Unlimited scans</p>
+            )}
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">

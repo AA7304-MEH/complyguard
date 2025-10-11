@@ -1,18 +1,27 @@
 import * as React from 'react';
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
-import { User, AuditScan, AuditStatus } from './types';
+import { User, AuditScan, AuditStatus, SubscriptionPlan, BillingCycle } from './types';
 import { getAppUser, getScans } from './services/apiClient';
+import { getPlanByTier } from './config/subscriptionPlans';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import ReportPage from './components/ReportPage';
+import PricingPage from './components/PricingPage';
+import SubscriptionManagement from './components/SubscriptionManagement';
+import PaymentCheckout from './components/PaymentCheckout';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
+import SuccessNotification from './components/common/SuccessNotification';
 
 const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout'>('dashboard');
+  const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
+  const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
+  const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
+  const [successMessage, setSuccessMessage] = React.useState({ title: '', message: '' });
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const { isLoaded: isClerkLoaded, user: clerkUser } = useUser();
 
@@ -79,7 +88,52 @@ const MainApp: React.FC = () => {
   
   const backToDashboard = React.useCallback(() => {
     setSelectedScan(null);
+    setSelectedPlan(null);
     setView('dashboard');
+  }, []);
+
+  const handlePlanSelect = React.useCallback((plan: SubscriptionPlan, billingCycle: BillingCycle) => {
+    setSelectedPlan(plan);
+    setSelectedBillingCycle(billingCycle);
+    setView('checkout');
+  }, []);
+
+  const handlePaymentSuccess = React.useCallback((paymentData: any) => {
+    // Update user subscription status
+    if (appUser && selectedPlan) {
+      const updatedUser = {
+        ...appUser,
+        subscription_tier: selectedPlan.tier,
+        subscription_status: 'active' as any,
+        scan_limit_this_month: selectedPlan.scan_limit,
+        payment_provider: paymentData.provider,
+        subscription_start_date: new Date(),
+        subscription_end_date: new Date(Date.now() + (selectedBillingCycle === BillingCycle.Yearly ? 365 : 30) * 24 * 60 * 60 * 1000),
+      };
+      setAppUser(updatedUser);
+    }
+    
+    setSelectedPlan(null);
+    setView('dashboard');
+    
+    // Show success notification
+    setSuccessMessage({
+      title: 'Payment Successful! 🎉',
+      message: `Your ${selectedPlan?.name} plan is now active. Welcome to ComplyGuard AI!`
+    });
+    setShowSuccessNotification(true);
+  }, [appUser, selectedPlan, selectedBillingCycle]);
+
+  const handleUpgrade = React.useCallback(() => {
+    setView('pricing');
+  }, []);
+
+  const handleManageSubscription = React.useCallback(() => {
+    setView('subscription');
+  }, []);
+
+  const updateUser = React.useCallback((updatedUser: User) => {
+    setAppUser(updatedUser);
   }, []);
 
   if (isLoading || !appUser) {
@@ -95,11 +149,58 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-secondary text-secondary-foreground">
-      <Header user={appUser} />
-      <main className="p-4 sm:p-6 lg:p-8">
-        {view === 'dashboard' && <Dashboard user={appUser} scans={scans} onUpdateScans={updateUserScans} onViewReport={viewReport} />}
-        {view === 'report' && selectedScan && <ReportPage scan={selectedScan} onBack={backToDashboard} />}
+      <Header 
+        user={appUser} 
+        onUpgrade={handleUpgrade}
+        onManageSubscription={handleManageSubscription}
+      />
+      <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
+        {view === 'dashboard' && (
+          <Dashboard 
+            user={appUser} 
+            scans={scans} 
+            onUpdateScans={updateUserScans} 
+            onViewReport={viewReport}
+            onUpgrade={handleUpgrade}
+          />
+        )}
+        {view === 'report' && selectedScan && (
+          <ReportPage scan={selectedScan} onBack={backToDashboard} />
+        )}
+        {view === 'pricing' && (
+          <PricingPage 
+            currentPlan={getPlanByTier(appUser.subscription_tier)}
+            onPlanSelect={handlePlanSelect}
+            userLocation="IN" // You could detect this from IP or user settings
+          />
+        )}
+        {view === 'subscription' && (
+          <SubscriptionManagement 
+            user={appUser}
+            onUpgrade={handleUpgrade}
+            onUpdateUser={updateUser}
+          />
+        )}
       </main>
+      
+      {view === 'checkout' && selectedPlan && (
+        <PaymentCheckout
+          user={appUser}
+          plan={selectedPlan}
+          billingCycle={selectedBillingCycle}
+          onSuccess={handlePaymentSuccess}
+          onCancel={backToDashboard}
+        />
+      )}
+      
+      {/* Success Notification */}
+      {showSuccessNotification && (
+        <SuccessNotification
+          title={successMessage.title}
+          message={successMessage.message}
+          onClose={() => setShowSuccessNotification(false)}
+        />
+      )}
     </div>
   );
 };

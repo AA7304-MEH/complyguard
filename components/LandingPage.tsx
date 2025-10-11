@@ -122,8 +122,68 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
       
-       {/* Testimonials Section */}
+       {/* Pricing Section */}
       <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-slate-900">Simple, Transparent Pricing</h2>
+            <p className="mt-4 text-lg text-slate-600">Choose the plan that fits your compliance needs. Start free, upgrade as you grow.</p>
+          </div>
+          <div className="mt-16 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <PricingCard
+              name="Free"
+              price="$0"
+              period="forever"
+              description="Perfect for trying out ComplyGuard"
+              features={[
+                "5 document scans per month",
+                "Basic compliance frameworks",
+                "Email support",
+                "Standard reporting"
+              ]}
+              buttonText="Get Started Free"
+              isPopular={false}
+            />
+            <PricingCard
+              name="Professional"
+              price="$99"
+              period="per month"
+              description="Perfect for growing businesses"
+              features={[
+                "200 document scans per month",
+                "All compliance frameworks",
+                "Priority support + phone",
+                "Advanced reporting & analytics",
+                "Custom compliance rules",
+                "Team collaboration",
+                "API access"
+              ]}
+              buttonText="Start Free Trial"
+              isPopular={true}
+            />
+            <PricingCard
+              name="Enterprise"
+              price="Custom"
+              period="pricing"
+              description="For large organizations"
+              features={[
+                "Unlimited document scans",
+                "All compliance frameworks",
+                "Dedicated account manager",
+                "Custom integrations",
+                "On-premise deployment",
+                "Advanced security features",
+                "Custom SLA"
+              ]}
+              buttonText="Contact Sales"
+              isPopular={false}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-secondary">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-slate-900">Trusted by Industry Leaders</h2>
@@ -178,8 +238,62 @@ const FeatureCard: React.FC<{icon: React.ReactNode, title: string, description: 
     </div>
 );
 
+const PricingCard: React.FC<{
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  features: string[];
+  buttonText: string;
+  isPopular: boolean;
+}> = ({ name, price, period, description, features, buttonText, isPopular }) => (
+  <div className={`relative bg-white p-8 rounded-2xl border-2 ${
+    isPopular ? 'border-accent shadow-xl scale-105' : 'border-gray-200'
+  }`}>
+    {isPopular && (
+      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+        <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-medium bg-accent text-white">
+          Most Popular
+        </span>
+      </div>
+    )}
+    
+    <div className="text-center">
+      <h3 className="text-2xl font-bold text-slate-900">{name}</h3>
+      <p className="text-slate-600 mt-2">{description}</p>
+      <div className="mt-6">
+        <span className="text-4xl font-bold text-slate-900">{price}</span>
+        <span className="text-slate-600 ml-2">/{period}</span>
+      </div>
+    </div>
+    
+    <ul className="mt-8 space-y-3">
+      {features.map((feature, index) => (
+        <li key={index} className="flex items-start">
+          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          <span className="text-sm text-slate-600">{feature}</span>
+        </li>
+      ))}
+    </ul>
+    
+    <div className="mt-8">
+      <SignInButton mode="modal">
+        <button className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
+          isPopular
+            ? 'bg-accent text-white hover:bg-accent/90'
+            : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+        }`}>
+          {buttonText}
+        </button>
+      </SignInButton>
+    </div>
+  </div>
+);
+
 const TestimonialCard: React.FC<{quote: string, author: string, title: string}> = ({quote, author, title}) => (
-    <div className="bg-secondary p-8 rounded-lg border border-slate-200">
+    <div className="bg-white p-8 rounded-lg border border-slate-200">
         <p className="text-slate-700">"{quote}"</p>
         <div className="mt-6">
             <p className="font-semibold text-slate-900">{author}</p>

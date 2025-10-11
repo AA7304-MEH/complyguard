@@ -1,4 +1,4 @@
-import { User, AuditScan, Framework, FrameworkRule, SubscriptionTier, AuditStatus, FindingSeverity } from '../types';
+import { User, AuditScan, Framework, FrameworkRule, SubscriptionTier, SubscriptionStatus, AuditStatus, FindingSeverity } from '../types';
 
 // This now represents the application-specific user data.
 // User's email and ID will come from Clerk.
@@ -6,9 +6,12 @@ export const mockAppUser: User = {
   id: 'user-123', // This would match the clerk user id in a real DB
   email: 'compliance.officer@acmecorp.com', // This would match the clerk user email
   company_name: 'Acme Corp',
-  subscription_tier: SubscriptionTier.Professional,
-  documents_scanned_this_month: 2,
-  scan_limit_this_month: 10,
+  subscription_tier: SubscriptionTier.Free,
+  subscription_status: SubscriptionStatus.Active,
+  documents_scanned_this_month: 3,
+  scan_limit_this_month: 5,
+  subscription_start_date: new Date('2024-01-01'),
+  subscription_end_date: new Date('2024-12-31'),
 };
 
 export const mockFrameworks: Framework[] = [

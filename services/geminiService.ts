@@ -5,11 +5,11 @@ import { FindingSeverity, AuditFinding, FrameworkRule } from '../types';
 
 // The API key is expected to be set as an environment variable.
 // The app will not function correctly without it.
-if (!process.env.API_KEY) {
-    throw new Error("Gemini API key not found. Please set the API_KEY environment variable.");
+if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API key not found. Please set the GEMINI_API_KEY environment variable.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const model = "gemini-2.5-flash";
 
 const analysisPromptTemplate = (requirement_text: string, document_chunk: string) => `
