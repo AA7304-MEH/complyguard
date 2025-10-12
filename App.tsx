@@ -9,6 +9,10 @@ import ReportPage from './components/ReportPage';
 import PricingPage from './components/PricingPage';
 import SubscriptionManagement from './components/SubscriptionManagement';
 import PaymentCheckout from './components/PaymentCheckout';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import DocumentTemplates from './components/DocumentTemplates';
+import ComplianceCalendar from './components/ComplianceCalendar';
+import APIIntegration from './components/APIIntegration';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
 import SuccessNotification from './components/common/SuccessNotification';
@@ -17,7 +21,7 @@ const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -132,6 +136,22 @@ const MainApp: React.FC = () => {
     setView('subscription');
   }, []);
 
+  const handleViewAnalytics = React.useCallback(() => {
+    setView('analytics');
+  }, []);
+
+  const handleViewTemplates = React.useCallback(() => {
+    setView('templates');
+  }, []);
+
+  const handleViewCalendar = React.useCallback(() => {
+    setView('calendar');
+  }, []);
+
+  const handleViewAPI = React.useCallback(() => {
+    setView('api');
+  }, []);
+
   const updateUser = React.useCallback((updatedUser: User) => {
     setAppUser(updatedUser);
   }, []);
@@ -153,6 +173,10 @@ const MainApp: React.FC = () => {
         user={appUser} 
         onUpgrade={handleUpgrade}
         onManageSubscription={handleManageSubscription}
+        onViewAnalytics={handleViewAnalytics}
+        onViewTemplates={handleViewTemplates}
+        onViewCalendar={handleViewCalendar}
+        onViewAPI={handleViewAPI}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (
@@ -179,6 +203,29 @@ const MainApp: React.FC = () => {
             user={appUser}
             onUpgrade={handleUpgrade}
             onUpdateUser={updateUser}
+          />
+        )}
+        {view === 'analytics' && (
+          <AnalyticsDashboard 
+            user={appUser}
+            scans={scans}
+          />
+        )}
+        {view === 'templates' && (
+          <DocumentTemplates 
+            user={appUser}
+            onUpgrade={handleUpgrade}
+          />
+        )}
+        {view === 'calendar' && (
+          <ComplianceCalendar 
+            user={appUser}
+          />
+        )}
+        {view === 'api' && (
+          <APIIntegration 
+            user={appUser}
+            onUpgrade={handleUpgrade}
           />
         )}
       </main>

@@ -10,7 +10,9 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       '5 document scans per month',
       'Basic compliance frameworks',
       'Email support',
-      'Standard reporting'
+      'Standard reporting',
+      'Basic document templates',
+      'Compliance calendar'
     ],
     scan_limit: 5,
     price_monthly_usd: 0,
@@ -27,9 +29,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       '50 document scans per month',
       'All compliance frameworks',
       'Priority email support',
-      'Advanced reporting',
+      'Advanced reporting & analytics',
+      'All document templates',
+      'Compliance calendar with deadlines',
       'Export to PDF/Excel',
-      'API access'
+      'API access (5,000 requests/month)',
+      'Email notifications'
     ],
     scan_limit: 50,
     price_monthly_usd: 29,
@@ -50,12 +55,16 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       '200 document scans per month',
       'All compliance frameworks',
       'Priority support + phone',
-      'Advanced reporting & analytics',
+      'Advanced analytics dashboard',
+      'Premium document templates',
+      'Team collaboration (up to 10 users)',
+      'Advanced compliance calendar',
       'Custom compliance rules',
-      'Team collaboration',
-      'API access',
+      'API access (25,000 requests/month)',
       'Webhook integrations',
-      'White-label reports'
+      'White-label reports',
+      'Real-time notifications',
+      'Export automation'
     ],
     scan_limit: 200,
     price_monthly_usd: 99,
@@ -77,12 +86,18 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Unlimited document scans',
       'All compliance frameworks',
       'Dedicated account manager',
-      'Custom integrations',
+      'Enterprise analytics & reporting',
+      'Unlimited team members',
+      'Custom document templates',
+      'Advanced compliance automation',
+      'Unlimited API access',
+      'Custom integrations & webhooks',
       'On-premise deployment option',
       'Advanced security features',
-      'Custom SLA',
+      'Custom SLA (99.9% uptime)',
       'Training & onboarding',
-      'Priority feature requests'
+      'Priority feature requests',
+      '24/7 phone support'
     ],
     scan_limit: -1, // Unlimited
     price_monthly_usd: 499,

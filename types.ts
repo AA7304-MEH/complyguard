@@ -146,3 +146,98 @@ export interface Invoice {
   paid_at?: Date;
   provider_invoice_id?: string;
 }
+
+// Enhanced Features Types
+export interface ComplianceTemplate {
+  id: string;
+  name: string;
+  description: string;
+  framework_id: string;
+  category: 'policy' | 'procedure' | 'contract' | 'assessment';
+  content: string;
+  variables: TemplateVariable[];
+  is_premium: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface TemplateVariable {
+  name: string;
+  type: 'text' | 'date' | 'number' | 'select';
+  required: boolean;
+  options?: string[];
+  default_value?: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  owner_id: string;
+  members: TeamMember[];
+  subscription_id: string;
+  created_at: Date;
+}
+
+export interface TeamMember {
+  user_id: string;
+  email: string;
+  role: 'owner' | 'admin' | 'member' | 'viewer';
+  permissions: Permission[];
+  joined_at: Date;
+}
+
+export interface Permission {
+  resource: 'scans' | 'templates' | 'reports' | 'settings' | 'billing';
+  actions: ('create' | 'read' | 'update' | 'delete')[];
+}
+
+export interface ComplianceDeadline {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  framework_id: string;
+  due_date: Date;
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assigned_to?: string;
+  created_at: Date;
+}
+
+export interface AnalyticsData {
+  user_id: string;
+  period: 'week' | 'month' | 'quarter' | 'year';
+  total_scans: number;
+  compliance_score: number;
+  findings_by_severity: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  frameworks_used: string[];
+  improvement_trend: number;
+  generated_at: Date;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'scan_complete' | 'deadline_approaching' | 'payment_due' | 'team_invite' | 'system_update';
+  title: string;
+  message: string;
+  is_read: boolean;
+  action_url?: string;
+  created_at: Date;
+}
+
+export interface APIKey {
+  id: string;
+  user_id: string;
+  name: string;
+  key: string;
+  permissions: string[];
+  last_used?: Date;
+  is_active: boolean;
+  created_at: Date;
+  expires_at?: Date;
+}

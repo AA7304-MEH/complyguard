@@ -2,14 +2,27 @@ import * as React from 'react';
 import { UserButton } from '@clerk/clerk-react';
 import { User, SubscriptionTier } from '../types';
 import { getPlanByTier } from '../config/subscriptionPlans';
+import NotificationCenter from './NotificationCenter';
 
 interface HeaderProps {
     user: User;
     onUpgrade?: () => void;
     onManageSubscription?: () => void;
+    onViewAnalytics?: () => void;
+    onViewTemplates?: () => void;
+    onViewCalendar?: () => void;
+    onViewAPI?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onUpgrade, onManageSubscription }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  user, 
+  onUpgrade, 
+  onManageSubscription, 
+  onViewAnalytics, 
+  onViewTemplates, 
+  onViewCalendar,
+  onViewAPI
+}) => {
   const currentPlan = getPlanByTier(user.subscription_tier);
   const usagePercentage = user.scan_limit_this_month > 0 
     ? (user.documents_scanned_this_month / user.scan_limit_this_month) * 100 
@@ -19,8 +32,38 @@ const Header: React.FC<HeaderProps> = ({ user, onUpgrade, onManageSubscription }
     <header className="bg-white shadow-sm border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-8">
             <h1 className="text-xl font-bold text-slate-900">ComplyGuard AI</h1>
+            
+            {/* Navigation Menu */}
+            <nav className="hidden md:flex space-x-6">
+              <button
+                onClick={onViewAnalytics}
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Analytics
+              </button>
+              <button
+                onClick={onViewTemplates}
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Templates
+              </button>
+              <button
+                onClick={onViewCalendar}
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Calendar
+              </button>
+              {user.subscription_tier !== SubscriptionTier.Free && (
+                <button
+                  onClick={onViewAPI}
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+                >
+                  API
+                </button>
+              )}
+            </nav>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -53,6 +96,9 @@ const Header: React.FC<HeaderProps> = ({ user, onUpgrade, onManageSubscription }
                 </div>
               </div>
             </div>
+
+            {/* Notifications */}
+            <NotificationCenter user={user} />
 
             {/* User Info */}
             <div className="text-right mr-4">
