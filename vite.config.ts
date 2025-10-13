@@ -10,7 +10,18 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
       },
-      plugins: [react()],
+      plugins: [
+        react(),
+        {
+          name: 'html-transform',
+          transformIndexHtml(html) {
+            return html.replace(
+              'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk',
+              env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk'
+            );
+          }
+        }
+      ],
       define: {
         // For development, use local env vars
         // For production, Netlify will inject VITE_ prefixed vars

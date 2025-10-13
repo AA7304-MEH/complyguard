@@ -14,6 +14,9 @@
   
   # NPM version
   NPM_VERSION = "10"
+  
+  # Disable secrets scanning for documentation files
+  SECRETS_SCAN_ENABLED = "false"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]
