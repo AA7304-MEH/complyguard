@@ -13,6 +13,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import DocumentTemplates from './components/DocumentTemplates';
 import ComplianceCalendar from './components/ComplianceCalendar';
 import APIIntegration from './components/APIIntegration';
+import PaymentTesting from './components/PaymentTesting';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
 import SuccessNotification from './components/common/SuccessNotification';
@@ -21,7 +22,7 @@ const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -152,6 +153,10 @@ const MainApp: React.FC = () => {
     setView('api');
   }, []);
 
+  const handleViewPaymentTest = React.useCallback(() => {
+    setView('payment-test');
+  }, []);
+
   const updateUser = React.useCallback((updatedUser: User) => {
     setAppUser(updatedUser);
   }, []);
@@ -177,6 +182,7 @@ const MainApp: React.FC = () => {
         onViewTemplates={handleViewTemplates}
         onViewCalendar={handleViewCalendar}
         onViewAPI={handleViewAPI}
+        onViewPaymentTest={handleViewPaymentTest}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (
@@ -226,6 +232,11 @@ const MainApp: React.FC = () => {
           <APIIntegration 
             user={appUser}
             onUpgrade={handleUpgrade}
+          />
+        )}
+        {view === 'payment-test' && (
+          <PaymentTesting 
+            user={appUser}
           />
         )}
       </main>

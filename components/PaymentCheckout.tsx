@@ -212,44 +212,83 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
 
         {/* Payment Provider Selection */}
         <div className="mb-6">
-          <h3 className="font-semibold text-primary mb-3">Payment Method</h3>
+          <h3 className="font-semibold text-primary mb-3">Choose Your Payment Method</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            No account required! Pay directly with your credit/debit card through either provider.
+          </p>
           
           <div className="space-y-3">
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
               <input
                 type="radio"
                 name="payment-provider"
                 value={PaymentProvider.Razorpay}
                 checked={paymentProvider === PaymentProvider.Razorpay}
                 onChange={(e) => setPaymentProvider(e.target.value as PaymentProvider)}
-                className="mr-3"
+                className="mr-3 mt-1"
               />
               <div className="flex-1">
-                <div className="font-medium">Razorpay (India)</div>
-                <div className="text-sm text-muted-foreground">
-                  Credit/Debit Cards, UPI, Net Banking, Wallets
+                <div className="font-medium text-gray-900 mb-1">🇮🇳 Razorpay (Recommended for India)</div>
+                <div className="text-sm text-gray-600 mb-2">
+                  <strong>No Razorpay account needed!</strong> Pay directly with:
+                </div>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <div>• Any Credit/Debit Card (Visa, Mastercard, RuPay, Amex)</div>
+                  <div>• UPI (Google Pay, PhonePe, Paytm, BHIM)</div>
+                  <div>• Net Banking (All major banks)</div>
+                  <div>• Digital Wallets (Paytm, Mobikwik, Amazon Pay)</div>
+                  <div>• EMI options available</div>
                 </div>
               </div>
-              <div className="text-sm font-medium">₹{getPrice(plan, isYearly, 'INR').toLocaleString()}</div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-green-600">₹{getPrice(plan, isYearly, 'INR').toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Best rates for India</div>
+              </div>
             </label>
 
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
               <input
                 type="radio"
                 name="payment-provider"
                 value={PaymentProvider.PayPal}
                 checked={paymentProvider === PaymentProvider.PayPal}
                 onChange={(e) => setPaymentProvider(e.target.value as PaymentProvider)}
-                className="mr-3"
+                className="mr-3 mt-1"
               />
               <div className="flex-1">
-                <div className="font-medium">PayPal (International)</div>
-                <div className="text-sm text-muted-foreground">
-                  Credit/Debit Cards, PayPal Balance
+                <div className="font-medium text-gray-900 mb-1">🌍 PayPal (International)</div>
+                <div className="text-sm text-gray-600 mb-2">
+                  <strong>No PayPal account required!</strong> Pay directly with:
+                </div>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <div>• Any Credit/Debit Card (Visa, Mastercard, Amex, Discover)</div>
+                  <div>• PayPal Balance (if you have an account)</div>
+                  <div>• Bank transfers in supported countries</div>
+                  <div>• Buy now, pay later options</div>
+                  <div>• Secure guest checkout available</div>
                 </div>
               </div>
-              <div className="text-sm font-medium">${getPrice(plan, isYearly, 'USD').toLocaleString()}</div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-blue-600">${getPrice(plan, isYearly, 'USD').toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Global acceptance</div>
+              </div>
             </label>
+          </div>
+          
+          {/* Payment Method Info */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">💳 Guest Checkout Available</p>
+                <p>
+                  You don't need a {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'} account. 
+                  Simply enter your card details during checkout for instant payment.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -284,14 +323,20 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                     Processing Payment...
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center">
-                    <span>Pay {symbol}{price.toLocaleString()} with Razorpay</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-lg">💳 Pay {symbol}{price.toLocaleString()}</span>
+                    <span className="text-sm opacity-90">No Razorpay account needed</span>
                   </div>
                 )}
               </button>
-              <p className="text-xs text-center text-gray-500">
-                Secure payment via Razorpay • UPI, Cards, Net Banking supported
-              </p>
+              <div className="text-center space-y-1">
+                <p className="text-xs text-gray-600 font-medium">
+                  ✅ Guest checkout • ✅ All cards accepted • ✅ UPI & Net Banking
+                </p>
+                <p className="text-xs text-gray-500">
+                  Powered by Razorpay - India's most trusted payment gateway
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -301,25 +346,47 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                   onClick={handlePayPalPayment}
                   className="w-full py-4 px-4 bg-gradient-to-r from-[#0070ba] to-[#005ea6] text-white rounded-lg font-semibold hover:from-[#005ea6] hover:to-[#004c8a] transition-all duration-200 shadow-lg"
                 >
-                  <div className="flex items-center justify-center">
-                    <span>Pay ${price.toLocaleString()} with PayPal</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-lg">💳 Pay ${price.toLocaleString()}</span>
+                    <span className="text-sm opacity-90">No PayPal account needed</span>
                   </div>
                 </button>
               )}
-              <p className="text-xs text-center text-gray-500">
-                Secure international payment via PayPal • Credit cards accepted
-              </p>
+              <div className="text-center space-y-1">
+                <p className="text-xs text-gray-600 font-medium">
+                  ✅ Guest checkout • ✅ All major cards • ✅ Global acceptance
+                </p>
+                <p className="text-xs text-gray-500">
+                  Powered by PayPal - Trusted by millions worldwide
+                </p>
+              </div>
             </div>
           )}
         </div>
 
+        {/* Alternative Payment Methods */}
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 className="font-medium text-gray-900 mb-2">Having trouble with payment?</h4>
+          <div className="text-sm text-gray-600 space-y-2">
+            <p>• Try switching between Razorpay and PayPal above</p>
+            <p>• Both support guest checkout - no account required</p>
+            <p>• Contact our support team for alternative payment options</p>
+            <p>• We accept bank transfers for enterprise customers</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-300">
+            <p className="text-xs text-gray-500">
+              📧 Need help? Email us at <span className="font-medium text-blue-600">support@complyguard.ai</span>
+            </p>
+          </div>
+        </div>
+
         {/* Security Notice */}
-        <div className="mt-6 p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-start">
             <CheckCircleIcon className="w-5 h-5 text-green-600 mr-2 mt-0.5" />
             <div className="text-sm text-green-800">
-              <p className="font-medium mb-1">Secure Payment</p>
-              <p>Your payment information is encrypted and secure. You can cancel anytime.</p>
+              <p className="font-medium mb-1">🔒 Bank-Level Security</p>
+              <p>Your payment is protected by 256-bit SSL encryption. We never store your card details.</p>
             </div>
           </div>
         </div>
