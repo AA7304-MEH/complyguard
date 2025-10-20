@@ -26,6 +26,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
   const [paymentProvider, setPaymentProvider] = React.useState<PaymentProvider>(
     PaymentService.detectPaymentProvider()
   );
+  const [paypalRetryCount, setPaypalRetryCount] = React.useState(0);
 
   const isYearly = billingCycle === BillingCycle.Yearly;
   const currency = paymentProvider === PaymentProvider.Razorpay ? 'INR' : 'USD';
@@ -95,6 +96,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
   const handlePayPalPayment = async () => {
     setIsProcessing(true);
     setError(null);
+    setLoadingMessage('Initializing PayPal payment...');
 
     try {
       // Initialize PayPal checkout
@@ -103,41 +105,78 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
         plan,
         billingCycle,
         user.id,
-        async (details) => {
+        async (paymentDetails) => {
           try {
+            setLoadingMessage('Activating your subscription...');
+            
             // Create subscription
             const subscription = await PaymentService.createSubscription(
               user.id,
               plan.id,
               billingCycle,
               PaymentProvider.PayPal,
-              details.id
+              paymentDetails.paymentID || paymentDetails.orderID
             );
             
-            onSuccess({
-              provider: PaymentProvider.PayPal,
-              paymentId: details.id,
-              subscription,
-            });
+            setLoadingMessage('Success! Redirecting...');
+            
+            setTimeout(() => {
+              onSuccess({
+                provider: PaymentProvider.PayPal,
+                paymentId: paymentDetails.paymentID || paymentDetails.orderID,
+                orderId: paymentDetails.orderID,
+                amount: paymentDetails.amount,
+                currency: paymentDetails.currency,
+                subscription,
+                details: paymentDetails,
+              });
+            }, 1000);
           } catch (error) {
-            setError('Failed to create subscription. Please contact support.');
+            const errorMsg = `Payment successful but subscription activation failed. Please contact support with your PayPal order ID: ${paymentDetails.orderID}`;
+            setError(errorMsg);
             console.error('Subscription creation failed:', error);
           } finally {
             setIsProcessing(false);
+            setLoadingMessage('');
           }
         },
         (error) => {
-          setError('Payment failed. Please try again.');
+          let errorMessage = 'Payment failed. Please try again.';
+          
+          if (error.cancelled) {
+            errorMessage = 'Payment was cancelled. You can try again when ready.';
+          } else if (error.orderID) {
+            errorMessage = `Payment processing failed. Order ID: ${error.orderID}. Please contact support.`;
+          } else if (error.suggestion) {
+            errorMessage = error.reason + ' ' + error.suggestion;
+          } else if (error.reason) {
+            errorMessage = error.reason;
+          }
+          
+          setError(errorMessage);
           console.error('PayPal payment failed:', error);
           setIsProcessing(false);
+          setLoadingMessage('');
         }
       );
     } catch (error) {
-      setError('Failed to initialize payment. Please try again.');
+      setError('Failed to initialize PayPal payment. Please refresh the page and try again.');
       console.error('PayPal initialization failed:', error);
       setIsProcessing(false);
+      setLoadingMessage('');
     }
   };
+
+  // Initialize PayPal when component mounts and PayPal is selected
+  React.useEffect(() => {
+    if (paymentProvider === PaymentProvider.PayPal && !isProcessing) {
+      const timer = setTimeout(() => {
+        handlePayPalPayment();
+      }, 500); // Small delay to ensure DOM is ready
+      
+      return () => clearTimeout(timer);
+    }
+  }, [paymentProvider]);
 
   const getSavings = () => {
     if (!isYearly) return null;
@@ -297,12 +336,41 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <AlertTriangleIcon className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-red-800 mb-1">Payment Error</p>
-                <p className="text-sm text-red-700">{error}</p>
-                <p className="text-xs text-red-600 mt-2">
-                  If this issue persists, please contact our support team.
-                </p>
+                <p className="text-sm text-red-700 mb-3">{error}</p>
+                
+                {/* Error Recovery Options */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-red-800">Try these solutions:</p>
+                  <div className="text-xs text-red-700 space-y-1">
+                    <p>• Switch to {paymentProvider === PaymentProvider.PayPal ? 'Razorpay' : 'PayPal'} payment method above</p>
+                    <p>• Refresh the page and try again</p>
+                    <p>• Try a different credit/debit card</p>
+                    <p>• Contact support: support@complyguard.ai</p>
+                  </div>
+                  
+                  <div className="flex space-x-2 mt-3">
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setPaymentProvider(paymentProvider === PaymentProvider.PayPal ? PaymentProvider.Razorpay : PaymentProvider.PayPal);
+                      }}
+                      className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                    >
+                      Switch Payment Method
+                    </button>
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        window.location.reload();
+                      }}
+                      className="px-3 py-1 text-xs border border-red-600 text-red-600 rounded hover:bg-red-50 transition-colors"
+                    >
+                      Refresh Page
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -340,24 +408,51 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              <div id="paypal-button-container" className="min-h-[45px]"></div>
+              {/* PayPal Buttons Container */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+                <div id="paypal-button-container" className="min-h-[50px]">
+                  {!isProcessing && (
+                    <div className="text-center text-gray-500 text-sm">
+                      Loading PayPal payment options...
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Fallback Manual Button */}
               {!isProcessing && (
-                <button
-                  onClick={handlePayPalPayment}
-                  className="w-full py-4 px-4 bg-gradient-to-r from-[#0070ba] to-[#005ea6] text-white rounded-lg font-semibold hover:from-[#005ea6] hover:to-[#004c8a] transition-all duration-200 shadow-lg"
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="text-lg">💳 Pay ${price.toLocaleString()}</span>
-                    <span className="text-sm opacity-90">No PayPal account needed</span>
-                  </div>
-                </button>
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 mb-2">
+                    PayPal buttons not loading? Click below to retry:
+                  </p>
+                  <button
+                    onClick={handlePayPalPayment}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-[#0070ba] to-[#005ea6] text-white rounded-lg font-semibold hover:from-[#005ea6] hover:to-[#004c8a] transition-all duration-200 shadow-lg"
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-lg">💳 Initialize PayPal Payment</span>
+                      <span className="text-sm opacity-90">Pay ${price.toLocaleString()} - No account needed</span>
+                    </div>
+                  </button>
+                </div>
               )}
+              
               <div className="text-center space-y-1">
                 <p className="text-xs text-gray-600 font-medium">
                   ✅ Guest checkout • ✅ All major cards • ✅ Global acceptance
                 </p>
                 <p className="text-xs text-gray-500">
                   Powered by PayPal - Trusted by millions worldwide
+                </p>
+              </div>
+              
+              {/* PayPal Help */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>💡 PayPal Payment Options:</strong><br/>
+                  • Pay with any credit/debit card (no PayPal account needed)<br/>
+                  • Use your PayPal balance if you have an account<br/>
+                  • Buy now, pay later options available
                 </p>
               </div>
             </div>

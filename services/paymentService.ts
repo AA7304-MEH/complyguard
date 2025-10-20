@@ -350,90 +350,148 @@ export class PaymentService {
     onSuccess: (details: any) => void,
     onError: (error: any) => void
   ) {
+    // Clear any existing PayPal buttons
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    // Check if PayPal SDK is already loaded
+    if ((window as any).paypal) {
+      this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
+      return;
+    }
+
     // Load PayPal SDK dynamically with production environment
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=venmo,paylater`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&disable-funding=credit,card&enable-funding=paylater`;
     
     script.onload = () => {
       try {
-        (window as any).paypal.Buttons({
-          style: {
-            layout: 'vertical',
-            color: 'blue',
-            shape: 'rect',
-            label: 'paypal',
-            height: 45,
-          },
-          createOrder: async (data: any, actions: any) => {
-            try {
-              const isYearly = billingCycle === BillingCycle.Yearly;
-              const amount = getPrice(plan, isYearly, 'USD');
-              
-              return actions.order.create({
-                purchase_units: [{
-                  amount: {
-                    currency_code: 'USD',
-                    value: amount.toString(),
-                  },
-                  description: `ComplyGuard AI - ${plan.name} Plan (${billingCycle})`,
-                  custom_id: `${userId}_${plan.id}_${billingCycle}`,
-                }],
-                application_context: {
-                  brand_name: 'ComplyGuard AI',
-                  landing_page: 'BILLING',
-                  user_action: 'PAY_NOW',
-                  shipping_preference: 'NO_SHIPPING',
-                },
-              });
-            } catch (error) {
-              console.error('Error creating PayPal order:', error);
-              onError({ reason: 'Failed to create payment order' });
-            }
-          },
-          onApprove: async (data: any, actions: any) => {
-            try {
-              console.log('PayPal payment approved:', data);
-              
-              // Capture the payment
-              const details = await actions.order.capture();
-              console.log('Payment captured:', details);
-              
-              // Show success message
-              onSuccess({
-                orderID: data.orderID,
-                paymentID: details.id,
-                payerID: data.payerID,
-                details: details,
-              });
-            } catch (error) {
-              console.error('Error capturing PayPal payment:', error);
-              onError({ reason: 'Payment processing failed. Please contact support.' });
-            }
-          },
-          onError: (error: any) => {
-            console.error('PayPal error:', error);
-            onError({ 
-              reason: 'Payment system error', 
-              error: error,
-              description: 'Please try again or contact support if the issue persists.'
-            });
-          },
-          onCancel: (data: any) => {
-            console.log('PayPal payment cancelled:', data);
-            onError({ reason: 'Payment cancelled by user' });
-          },
-        }).render(`#${containerId}`);
+        if (!(window as any).paypal) {
+          throw new Error('PayPal SDK failed to load');
+        }
+        this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
       } catch (error) {
-        console.error('Error initializing PayPal:', error);
+        console.error('Error after PayPal SDK load:', error);
         onError({ reason: 'Failed to initialize PayPal. Please refresh and try again.' });
       }
     };
     
     script.onerror = () => {
-      onError({ reason: 'Failed to load PayPal. Please check your internet connection.' });
+      onError({ reason: 'Failed to load PayPal SDK. Please check your internet connection and try again.' });
     };
     
+    // Remove any existing PayPal scripts
+    const existingScript = document.querySelector('script[src*="paypal.com/sdk"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+    
     document.head.appendChild(script);
+  }
+
+  private static renderPayPalButtons(
+    containerId: string,
+    plan: SubscriptionPlan,
+    billingCycle: BillingCycle,
+    userId: string,
+    onSuccess: (details: any) => void,
+    onError: (error: any) => void
+  ) {
+    try {
+      const isYearly = billingCycle === BillingCycle.Yearly;
+      const amount = getPrice(plan, isYearly, 'USD');
+
+      (window as any).paypal.Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'blue',
+          shape: 'rect',
+          label: 'paypal',
+          height: 50,
+          tagline: false,
+        },
+        createOrder: (data: any, actions: any) => {
+          try {
+            return actions.order.create({
+              purchase_units: [{
+                amount: {
+                  currency_code: 'USD',
+                  value: amount.toFixed(2),
+                },
+                description: `ComplyGuard AI - ${plan.name} Plan (${billingCycle} billing)`,
+                custom_id: `cg_${userId}_${plan.id}_${billingCycle}_${Date.now()}`,
+              }],
+              application_context: {
+                brand_name: 'ComplyGuard AI',
+                locale: 'en-US',
+                landing_page: 'BILLING',
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW',
+              },
+            });
+          } catch (error) {
+            console.error('Error in createOrder:', error);
+            onError({ reason: 'Failed to create payment order. Please try again.' });
+            return Promise.reject(error);
+          }
+        },
+        onApprove: async (data: any, actions: any) => {
+          try {
+            console.log('PayPal payment approved:', data);
+            
+            // Capture the payment
+            const orderDetails = await actions.order.capture();
+            console.log('Payment captured successfully:', orderDetails);
+            
+            // Extract payment information
+            const paymentInfo = {
+              orderID: data.orderID,
+              paymentID: orderDetails.id,
+              payerID: data.payerID,
+              amount: amount,
+              currency: 'USD',
+              status: orderDetails.status,
+              details: orderDetails,
+              provider: 'PayPal',
+            };
+            
+            onSuccess(paymentInfo);
+          } catch (error) {
+            console.error('Error capturing PayPal payment:', error);
+            onError({ 
+              reason: 'Payment capture failed. Please contact support with order ID: ' + data.orderID,
+              orderID: data.orderID 
+            });
+          }
+        },
+        onError: (error: any) => {
+          console.error('PayPal button error:', error);
+          onError({ 
+            reason: 'PayPal payment error. Please try again or use a different payment method.',
+            error: error,
+            suggestion: 'Try switching to Razorpay or contact support for assistance.'
+          });
+        },
+        onCancel: (data: any) => {
+          console.log('PayPal payment cancelled by user:', data);
+          onError({ 
+            reason: 'Payment was cancelled. You can try again or choose a different payment method.',
+            cancelled: true 
+          });
+        },
+      }).render(`#${containerId}`).catch((error: any) => {
+        console.error('Error rendering PayPal buttons:', error);
+        onError({ 
+          reason: 'Failed to load PayPal payment options. Please refresh the page and try again.',
+          error: error 
+        });
+      });
+    } catch (error) {
+      console.error('Error in renderPayPalButtons:', error);
+      onError({ reason: 'Failed to initialize PayPal payment. Please try again.' });
+    }
   }
 
   // Subscription Management
