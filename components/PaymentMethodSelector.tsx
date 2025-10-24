@@ -58,14 +58,14 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900">Choose Your Payment Method</h3>
-        <div className="text-sm text-gray-500">
-          No account required for either option
+        <div className="text-sm text-blue-600 font-medium">
+          Payment buttons appear below ↓
         </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {paymentMethods.map((method) => {
-          const price = getPrice(plan, isYearly, method.currency);
+          const price = getPrice(plan, isYearly, method.currency as 'USD' | 'INR');
           const isSelected = selectedProvider === method.provider;
           
           return (

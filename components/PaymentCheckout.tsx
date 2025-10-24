@@ -43,63 +43,61 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     setLoadingMessage(message);
   };
 
-  const handlePayment = async () => {
+  const handleRazorpayPayment = async () => {
     setIsProcessing(true);
     setShowProgress(true);
     setError(null);
     
-    // Use enhanced payment processing with retry logic
-    await PaymentService.processPaymentWithRetry(
-      paymentProvider,
-      plan,
-      billingCycle,
-      user.id,
-      user.email,
-      (message) => {
-        setLoadingMessage(message);
-        // Update step based on message content
-        if (message.includes('Initializing') || message.includes('Creating')) {
-          setCurrentStep(1);
-        } else if (message.includes('Processing') || message.includes('Opening')) {
-          setCurrentStep(2);
-        } else if (message.includes('Activating')) {
-          setCurrentStep(3);
-        } else if (message.includes('Success')) {
-          setCurrentStep(4);
-        }
-      },
-      async (result) => {
-        updateProgress(4, 'Payment successful! Redirecting...');
-        
-        // Create subscription
-        try {
-          const subscription = await PaymentService.createSubscription(
-            user.id,
-            plan.id,
-            billingCycle,
-            paymentProvider,
-            result.paymentId || result.paymentID
-          );
-          
-          setTimeout(() => {
+    try {
+      updateProgress(1, 'Creating secure payment order...');
+      const order = await PaymentService.createRazorpayOrder(plan, billingCycle, user.id);
+
+      updateProgress(2, 'Opening payment gateway...');
+      PaymentService.initializeRazorpayCheckout(
+        order,
+        plan,
+        user.email,
+        async (response) => {
+          try {
+            updateProgress(3, 'Activating your subscription...');
+            
+            // Create subscription
+            const subscription = await PaymentService.createSubscription(
+              user.id,
+              plan.id,
+              billingCycle,
+              PaymentProvider.Razorpay,
+              response.razorpay_payment_id
+            );
+            
+            updateProgress(4, 'Success! Redirecting...');
+            setTimeout(() => {
+              setShowProgress(false);
+              onSuccess({
+                provider: PaymentProvider.Razorpay,
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                subscription,
+              });
+            }, 1500);
+          } catch (error) {
+            setError('Payment successful but subscription activation failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
+            setIsProcessing(false);
             setShowProgress(false);
-            onSuccess({
-              ...result,
-              subscription,
-            });
-          }, 1500);
-        } catch (error) {
-          setError(`Payment successful but subscription activation failed. Please contact support with your payment ID: ${result.paymentId || result.paymentID}`);
+          }
+        },
+        (error) => {
+          const errorMessage = error.description || error.reason || 'Payment failed. Please try again.';
+          setError(errorMessage);
           setIsProcessing(false);
           setShowProgress(false);
         }
-      },
-      (error) => {
-        setError(error.reason || 'Payment failed. Please try again.');
-        setIsProcessing(false);
-        setShowProgress(false);
-      }
-    );
+      );
+    } catch (error) {
+      setError('Failed to initialize payment. Please try again.');
+      setIsProcessing(false);
+      setShowProgress(false);
+    }
   };
 
   // Handle payment provider change
@@ -115,7 +113,9 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     setError(null);
     setShowProgress(false);
     setCurrentStep(1);
-    handlePayment();
+    if (paymentProvider === PaymentProvider.Razorpay) {
+      handleRazorpayPayment();
+    }
   };
 
   // Handle cancel payment
@@ -125,6 +125,75 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
     setError(null);
     onCancel();
   };
+
+  // Initialize PayPal buttons when PayPal is selected
+  React.useEffect(() => {
+    if (paymentProvider === PaymentProvider.PayPal && !isProcessing) {
+      const timer = setTimeout(() => {
+        PaymentService.initializePayPalCheckout(
+          'paypal-button-container',
+          plan,
+          billingCycle,
+          user.id,
+          async (paymentDetails) => {
+            try {
+              setIsProcessing(true);
+              setShowProgress(true);
+              updateProgress(3, 'Activating your subscription...');
+              
+              // Create subscription
+              const subscription = await PaymentService.createSubscription(
+                user.id,
+                plan.id,
+                billingCycle,
+                PaymentProvider.PayPal,
+                paymentDetails.paymentID || paymentDetails.orderID
+              );
+              
+              updateProgress(4, 'Success! Redirecting...');
+              
+              setTimeout(() => {
+                setShowProgress(false);
+                onSuccess({
+                  provider: PaymentProvider.PayPal,
+                  paymentId: paymentDetails.paymentID || paymentDetails.orderID,
+                  orderId: paymentDetails.orderID,
+                  amount: paymentDetails.amount,
+                  currency: 'USD',
+                  subscription,
+                  details: paymentDetails,
+                });
+              }, 1500);
+            } catch (error) {
+              const errorMsg = `Payment successful but subscription activation failed. Please contact support with your PayPal order ID: ${paymentDetails.orderID}`;
+              setError(errorMsg);
+              setIsProcessing(false);
+              setShowProgress(false);
+            }
+          },
+          (error) => {
+            let errorMessage = 'Payment failed. Please try again.';
+            
+            if (error.cancelled) {
+              errorMessage = 'Payment was cancelled. You can try again when ready.';
+            } else if (error.orderID) {
+              errorMessage = `Payment processing failed. Order ID: ${error.orderID}. Please contact support.`;
+            } else if (error.suggestion) {
+              errorMessage = error.reason + ' ' + error.suggestion;
+            } else if (error.reason) {
+              errorMessage = error.reason;
+            }
+            
+            setError(errorMessage);
+            setIsProcessing(false);
+            setShowProgress(false);
+          }
+        );
+      }, 1000); // Delay to ensure DOM is ready
+      
+      return () => clearTimeout(timer);
+    }
+  }, [paymentProvider, plan, billingCycle, user.id, isProcessing]);
 
   const getSavings = () => {
     if (!isYearly) return null;
@@ -223,47 +292,76 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                 </div>
               )}
 
-              {/* Payment Button */}
+              {/* Payment Buttons */}
               <div className="space-y-4">
-                <button
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Processing Payment...
+                {paymentProvider === PaymentProvider.Razorpay ? (
+                  // Razorpay Payment Button
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleRazorpayPayment}
+                      disabled={isProcessing}
+                      className="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                      {isProcessing ? (
+                        <div className="flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Processing Payment...
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <span className="text-lg">🇮🇳 Pay ₹{price.toLocaleString()} with Razorpay</span>
+                          <span className="text-sm opacity-90">Cards • UPI • Net Banking • Wallets</span>
+                        </div>
+                      )}
+                    </button>
+                    
+                    <div className="text-center space-y-1">
+                      <p className="text-xs text-gray-600 font-medium">
+                        ✅ No Razorpay account needed • ✅ All Indian payment methods • ✅ Instant processing
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Powered by Razorpay - India's most trusted payment gateway
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <span className="text-lg">💳 Pay {symbol}{price.toLocaleString()}</span>
-                      <span className="text-sm opacity-90">
-                        {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'} • No account needed
-                      </span>
-                    </div>
-                  )}
-                </button>
-                
-                {/* PayPal Container for dynamic buttons */}
-                {paymentProvider === PaymentProvider.PayPal && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-                    <div id="paypal-button-container" className="min-h-[50px]">
-                      <div className="text-center text-gray-500 text-sm">
-                        PayPal buttons will appear here after clicking "Pay" above
+                  </div>
+                ) : (
+                  // PayPal Payment Buttons
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                      <div className="text-center mb-3">
+                        <h3 className="font-semibold text-blue-900 mb-1">🌍 PayPal Payment Options</h3>
+                        <p className="text-sm text-blue-700">Choose your preferred payment method below</p>
                       </div>
+                      
+                      {/* PayPal Buttons Container */}
+                      <div id="paypal-button-container" className="min-h-[120px]">
+                        <div className="text-center text-blue-600 py-8">
+                          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <p className="text-sm">Loading PayPal payment options...</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center space-y-1">
+                      <p className="text-xs text-gray-600 font-medium">
+                        ✅ No PayPal account needed • ✅ All major cards • ✅ Global acceptance
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Powered by PayPal - Trusted by millions worldwide
+                      </p>
+                    </div>
+                    
+                    {/* PayPal Help */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs text-blue-800">
+                        <strong>💡 Payment Options Available:</strong><br/>
+                        • Pay with any credit/debit card (no PayPal account needed)<br/>
+                        • Use your PayPal balance if you have an account<br/>
+                        • Buy now, pay later options available
+                      </p>
                     </div>
                   </div>
                 )}
-                
-                <div className="text-center space-y-1">
-                  <p className="text-xs text-gray-600 font-medium">
-                    ✅ Guest checkout • ✅ All cards accepted • ✅ Secure processing
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Powered by {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'} - Bank-level security
-                  </p>
-                </div>
               </div>
 
               {/* Help Section */}
