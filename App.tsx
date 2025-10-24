@@ -14,6 +14,7 @@ import DocumentTemplates from './components/DocumentTemplates';
 import ComplianceCalendar from './components/ComplianceCalendar';
 import APIIntegration from './components/APIIntegration';
 import PaymentTesting from './components/PaymentTesting';
+import PaymentAccessTest from './components/PaymentAccessTest';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
 import SuccessNotification from './components/common/SuccessNotification';
@@ -257,6 +258,14 @@ const MainApp: React.FC = () => {
           title={successMessage.title}
           message={successMessage.message}
           onClose={() => setShowSuccessNotification(false)}
+        />
+      )}
+      
+      {/* Payment Access Test - Shows all available payment buttons */}
+      {process.env.NODE_ENV === 'development' && (
+        <PaymentAccessTest 
+          user={appUser} 
+          onUpgrade={handleUpgrade}
         />
       )}
     </div>
