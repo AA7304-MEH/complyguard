@@ -251,6 +251,88 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                 isProcessing={isProcessing}
               />
 
+              {/* Payment Buttons - Immediately after method selection */}
+              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 border-2 border-dashed border-blue-300 rounded-lg">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    🚀 Ready to Pay with {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'}?
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Click the button below to proceed with your {symbol}{price.toLocaleString()} payment
+                  </p>
+                </div>
+
+                {paymentProvider === PaymentProvider.Razorpay ? (
+                  // Razorpay Payment Button
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleRazorpayPayment}
+                      disabled={isProcessing}
+                      className="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-105"
+                    >
+                      {isProcessing ? (
+                        <div className="flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Processing Payment...
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <span className="text-xl font-bold">🇮🇳 Pay ₹{price.toLocaleString()} with Razorpay</span>
+                          <span className="text-sm opacity-90 mt-1">Cards • UPI • Net Banking • Wallets • EMI</span>
+                        </div>
+                      )}
+                    </button>
+                    
+                    <div className="text-center space-y-1">
+                      <p className="text-xs text-gray-600 font-medium">
+                        ✅ No Razorpay account needed • ✅ All Indian payment methods • ✅ Instant processing
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Powered by Razorpay - India's most trusted payment gateway
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  // PayPal Payment Buttons
+                  <div className="space-y-3">
+                    <div className="bg-white border-2 border-blue-200 rounded-lg p-4">
+                      <div className="text-center mb-3">
+                        <h4 className="font-semibold text-blue-900 mb-1">🌍 PayPal Payment Options</h4>
+                        <p className="text-sm text-blue-700">Choose your preferred payment method below</p>
+                      </div>
+                      
+                      {/* PayPal Buttons Container */}
+                      <div id="paypal-button-container" className="min-h-[120px]">
+                        <div className="text-center text-blue-600 py-8">
+                          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <p className="text-sm font-medium">Loading PayPal payment options...</p>
+                          <p className="text-xs text-gray-500 mt-1">This may take a few seconds</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center space-y-1">
+                      <p className="text-xs text-gray-600 font-medium">
+                        ✅ No PayPal account needed • ✅ All major cards • ✅ Global acceptance
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Powered by PayPal - Trusted by millions worldwide
+                      </p>
+                    </div>
+                    
+                    {/* PayPal Help */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs text-blue-800">
+                        <strong>💡 Payment Options Available:</strong><br/>
+                        • Pay with any credit/debit card (no PayPal account needed)<br/>
+                        • Use your PayPal balance if you have an account<br/>
+                        • Buy now, pay later options available
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -292,77 +374,7 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                 </div>
               )}
 
-              {/* Payment Buttons */}
-              <div className="space-y-4">
-                {paymentProvider === PaymentProvider.Razorpay ? (
-                  // Razorpay Payment Button
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleRazorpayPayment}
-                      disabled={isProcessing}
-                      className="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                    >
-                      {isProcessing ? (
-                        <div className="flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Processing Payment...
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <span className="text-lg">🇮🇳 Pay ₹{price.toLocaleString()} with Razorpay</span>
-                          <span className="text-sm opacity-90">Cards • UPI • Net Banking • Wallets</span>
-                        </div>
-                      )}
-                    </button>
-                    
-                    <div className="text-center space-y-1">
-                      <p className="text-xs text-gray-600 font-medium">
-                        ✅ No Razorpay account needed • ✅ All Indian payment methods • ✅ Instant processing
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Powered by Razorpay - India's most trusted payment gateway
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  // PayPal Payment Buttons
-                  <div className="space-y-3">
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                      <div className="text-center mb-3">
-                        <h3 className="font-semibold text-blue-900 mb-1">🌍 PayPal Payment Options</h3>
-                        <p className="text-sm text-blue-700">Choose your preferred payment method below</p>
-                      </div>
-                      
-                      {/* PayPal Buttons Container */}
-                      <div id="paypal-button-container" className="min-h-[120px]">
-                        <div className="text-center text-blue-600 py-8">
-                          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                          <p className="text-sm">Loading PayPal payment options...</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="text-center space-y-1">
-                      <p className="text-xs text-gray-600 font-medium">
-                        ✅ No PayPal account needed • ✅ All major cards • ✅ Global acceptance
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Powered by PayPal - Trusted by millions worldwide
-                      </p>
-                    </div>
-                    
-                    {/* PayPal Help */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-xs text-blue-800">
-                        <strong>💡 Payment Options Available:</strong><br/>
-                        • Pay with any credit/debit card (no PayPal account needed)<br/>
-                        • Use your PayPal balance if you have an account<br/>
-                        • Buy now, pay later options available
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+
 
               {/* Help Section */}
               <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">

@@ -58,8 +58,8 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900">Choose Your Payment Method</h3>
-        <div className="text-sm text-blue-600 font-medium">
-          Payment buttons appear below ↓
+        <div className="text-sm text-blue-600 font-medium animate-pulse">
+          ⬇️ Payment button appears below after selection
         </div>
       </div>
       
