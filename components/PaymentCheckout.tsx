@@ -210,6 +210,28 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
 
   return (
     <>
+      {/* Custom Scrollbar Styles */}
+      <style>{`
+        .payment-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        .payment-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        .payment-scroll::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
+        }
+        .payment-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        .payment-scroll::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+      
       {/* Payment Progress Modal */}
       <PaymentProgress
         isVisible={showProgress}
@@ -223,14 +245,18 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
       />
       
       {/* Main Payment Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-        <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-          <div className="flex flex-col lg:flex-row">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl">
+          <div className="flex flex-col lg:flex-row h-full max-h-[95vh]">
             
             {/* Left Panel - Payment Form */}
-            <div className="flex-1 p-6 lg:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Complete Your Purchase</h2>
+            <div className="flex-1 overflow-y-auto payment-scroll">
+              <div className="p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-6 sticky top-0 bg-white z-10 pb-4 border-b border-gray-100">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Complete Your Purchase</h2>
+                  <p className="text-sm text-gray-500 mt-1">Scroll down to see all payment options ↓</p>
+                </div>
                 <button
                   onClick={onCancel}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -408,16 +434,19 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                 <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a> and{' '}
                 <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
               </p>
+              </div>
             </div>
             
             {/* Right Panel - Order Summary */}
-            <div className="lg:w-96 bg-gray-50 p-6 lg:p-8 border-l border-gray-200">
-              <PaymentSummary
-                plan={plan}
-                billingCycle={billingCycle}
-                paymentProvider={paymentProvider}
-                userEmail={user.email}
-              />
+            <div className="lg:w-96 bg-gray-50 border-l border-gray-200 overflow-y-auto payment-scroll">
+              <div className="p-6 lg:p-8">
+                <PaymentSummary
+                  plan={plan}
+                  billingCycle={billingCycle}
+                  paymentProvider={paymentProvider}
+                  userEmail={user.email}
+                />
+              </div>
             </div>
           </div>
         </div>
