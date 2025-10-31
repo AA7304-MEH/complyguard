@@ -128,68 +128,87 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
 
   // Initialize PayPal buttons when PayPal is selected
   React.useEffect(() => {
-    if (paymentProvider === PaymentProvider.PayPal && !isProcessing) {
+    if (paymentProvider === PaymentProvider.PayPal && !isProcessing && !error) {
+      // Clear any existing error first
+      setError(null);
+      
       const timer = setTimeout(() => {
-        PaymentService.initializePayPalCheckout(
-          'paypal-button-container',
-          plan,
-          billingCycle,
-          user.id,
-          async (paymentDetails) => {
-            try {
-              setIsProcessing(true);
-              setShowProgress(true);
-              updateProgress(3, 'Activating your subscription...');
-              
-              // Create subscription
-              const subscription = await PaymentService.createSubscription(
-                user.id,
-                plan.id,
-                billingCycle,
-                PaymentProvider.PayPal,
-                paymentDetails.paymentID || paymentDetails.orderID
-              );
-              
-              updateProgress(4, 'Success! Redirecting...');
-              
-              setTimeout(() => {
+        try {
+          console.log('🔄 Initializing PayPal checkout...');
+          PaymentService.initializePayPalCheckout(
+            'paypal-button-container',
+            plan,
+            billingCycle,
+            user.id,
+            async (paymentDetails) => {
+              try {
+                console.log('✅ PayPal payment successful:', paymentDetails);
+                setIsProcessing(true);
+                setShowProgress(true);
+                updateProgress(3, 'Activating your subscription...');
+                
+                // Create subscription
+                const subscription = await PaymentService.createSubscription(
+                  user.id,
+                  plan.id,
+                  billingCycle,
+                  PaymentProvider.PayPal,
+                  paymentDetails.paymentID || paymentDetails.orderID
+                );
+                
+                updateProgress(4, 'Success! Redirecting...');
+                
+                setTimeout(() => {
+                  setShowProgress(false);
+                  onSuccess({
+                    provider: PaymentProvider.PayPal,
+                    paymentId: paymentDetails.paymentID || paymentDetails.orderID,
+                    orderId: paymentDetails.orderID,
+                    amount: paymentDetails.amount,
+                    currency: 'USD',
+                    subscription,
+                    details: paymentDetails,
+                  });
+                }, 1500);
+              } catch (error) {
+                console.error('❌ Subscription creation failed:', error);
+                const errorMsg = `Payment successful but subscription activation failed. Please contact support with your PayPal order ID: ${paymentDetails.orderID}`;
+                setError(errorMsg);
+                setIsProcessing(false);
                 setShowProgress(false);
-                onSuccess({
-                  provider: PaymentProvider.PayPal,
-                  paymentId: paymentDetails.paymentID || paymentDetails.orderID,
-                  orderId: paymentDetails.orderID,
-                  amount: paymentDetails.amount,
-                  currency: 'USD',
-                  subscription,
-                  details: paymentDetails,
-                });
-              }, 1500);
-            } catch (error) {
-              const errorMsg = `Payment successful but subscription activation failed. Please contact support with your PayPal order ID: ${paymentDetails.orderID}`;
-              setError(errorMsg);
+              }
+            },
+            (error) => {
+              console.error('❌ PayPal payment error:', error);
+              let errorMessage = 'PayPal payment error. Please try again or use Razorpay instead.';
+              
+              if (error.cancelled) {
+                errorMessage = 'Payment was cancelled. You can try again when ready.';
+              } else if (error.orderID) {
+                errorMessage = `Payment processing failed. Order ID: ${error.orderID}. Please contact support.`;
+              } else if (error.reason && error.reason.includes('configuration')) {
+                errorMessage = 'PayPal configuration issue. Please try Razorpay payment method instead.';
+              } else if (error.reason && error.reason.includes('network')) {
+                errorMessage = 'Network connection issue. Please check your internet and try again.';
+              } else if (error.suggestion) {
+                errorMessage = error.reason + ' ' + error.suggestion;
+              } else if (error.reason) {
+                errorMessage = error.reason;
+              }
+              
+              // Add helpful suggestion
+              errorMessage += ' Try switching to Razorpay payment method above.';
+              
+              setError(errorMessage);
               setIsProcessing(false);
               setShowProgress(false);
             }
-          },
-          (error) => {
-            let errorMessage = 'Payment failed. Please try again.';
-            
-            if (error.cancelled) {
-              errorMessage = 'Payment was cancelled. You can try again when ready.';
-            } else if (error.orderID) {
-              errorMessage = `Payment processing failed. Order ID: ${error.orderID}. Please contact support.`;
-            } else if (error.suggestion) {
-              errorMessage = error.reason + ' ' + error.suggestion;
-            } else if (error.reason) {
-              errorMessage = error.reason;
-            }
-            
-            setError(errorMessage);
-            setIsProcessing(false);
-            setShowProgress(false);
-          }
-        );
-      }, 1000); // Delay to ensure DOM is ready
+          );
+        } catch (initError) {
+          console.error('❌ PayPal initialization failed:', initError);
+          setError('Failed to load PayPal payment system. Please try Razorpay payment method instead.');
+        }
+      }, 1500); // Increased delay to ensure DOM and scripts are ready
       
       return () => clearTimeout(timer);
     }
@@ -334,6 +353,73 @@ const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({
                           <p className="text-sm font-medium">Loading PayPal payment options...</p>
                           <p className="text-xs text-gray-500 mt-1">This may take a few seconds</p>
                         </div>
+                      </div>
+                      
+                      {/* Manual PayPal Retry Button */}
+                      <div className="mt-4 text-center">
+                        <button
+                          onClick={() => {
+                            setError(null);
+                            // Clear the container and reinitialize
+                            const container = document.getElementById('paypal-button-container');
+                            if (container) {
+                              container.innerHTML = '<div class="text-center text-blue-600 py-8"><div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div><p class="text-sm font-medium">Reloading PayPal...</p></div>';
+                            }
+                            // Force reinitialize PayPal
+                            setTimeout(() => {
+                              PaymentService.initializePayPalCheckout(
+                                'paypal-button-container',
+                                plan,
+                                billingCycle,
+                                user.id,
+                                async (paymentDetails) => {
+                                  // Same success handler as above
+                                  try {
+                                    setIsProcessing(true);
+                                    setShowProgress(true);
+                                    updateProgress(3, 'Activating your subscription...');
+                                    
+                                    const subscription = await PaymentService.createSubscription(
+                                      user.id,
+                                      plan.id,
+                                      billingCycle,
+                                      PaymentProvider.PayPal,
+                                      paymentDetails.paymentID || paymentDetails.orderID
+                                    );
+                                    
+                                    updateProgress(4, 'Success! Redirecting...');
+                                    
+                                    setTimeout(() => {
+                                      setShowProgress(false);
+                                      onSuccess({
+                                        provider: PaymentProvider.PayPal,
+                                        paymentId: paymentDetails.paymentID || paymentDetails.orderID,
+                                        orderId: paymentDetails.orderID,
+                                        amount: paymentDetails.amount,
+                                        currency: 'USD',
+                                        subscription,
+                                        details: paymentDetails,
+                                      });
+                                    }, 1500);
+                                  } catch (error) {
+                                    setError(`Payment successful but subscription activation failed. Please contact support with your PayPal order ID: ${paymentDetails.orderID}`);
+                                    setIsProcessing(false);
+                                    setShowProgress(false);
+                                  }
+                                },
+                                (error) => {
+                                  setError('PayPal payment failed. Please try Razorpay payment method instead.');
+                                }
+                              );
+                            }, 500);
+                          }}
+                          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          🔄 Reload PayPal Buttons
+                        </button>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Click if PayPal buttons don't appear above
+                        </p>
                       </div>
                     </div>
                     

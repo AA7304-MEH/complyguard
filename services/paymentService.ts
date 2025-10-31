@@ -513,7 +513,8 @@ export class PaymentService {
     // Load PayPal SDK dynamically with production environment
     console.log('🔄 Loading PayPal SDK...');
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=venmo,paylater,card&disable-funding=credit&debug=false`;
+    // Simplified PayPal SDK URL for better compatibility
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=card,paylater&debug=false`;
     script.async = true;
     script.defer = true;
     
@@ -538,7 +539,11 @@ export class PaymentService {
     
     script.onerror = (error) => {
       console.error('❌ PayPal SDK script load error:', error);
-      onError({ reason: 'Failed to load PayPal SDK. Please check your internet connection and try again.' });
+      onError({ 
+        reason: 'Failed to load PayPal SDK. Please check your internet connection and try again.',
+        suggestion: 'Try switching to Razorpay payment method instead.',
+        code: 'PAYPAL_SDK_LOAD_ERROR'
+      });
     };
     
     // Remove any existing PayPal scripts
