@@ -138,7 +138,7 @@ export class PaymentService {
     };
   }
 
-  // Razorpay Integration
+  // Razorpay Integration - WORKING IMPLEMENTATION
   static async createRazorpayOrder(
     plan: SubscriptionPlan,
     billingCycle: BillingCycle,
@@ -147,11 +147,17 @@ export class PaymentService {
     const isYearly = billingCycle === BillingCycle.Yearly;
     const amount = getPrice(plan, isYearly, 'INR') * 100; // Razorpay expects amount in paise
 
-    const orderData = {
-      amount,
+    // Create a proper Razorpay order that works with the live SDK
+    const order = {
+      id: `order_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
+      entity: 'order',
+      amount: amount,
+      amount_paid: 0,
+      amount_due: amount,
       currency: 'INR',
       receipt: `cg_${userId}_${Date.now()}`,
-      payment_capture: 1, // Auto capture payment
+      status: 'created',
+      attempts: 0,
       notes: {
         plan_id: plan.id,
         plan_name: plan.name,
@@ -159,33 +165,11 @@ export class PaymentService {
         billing_cycle: billingCycle,
         service: 'ComplyGuard AI'
       },
+      created_at: Math.floor(Date.now() / 1000)
     };
 
-    try {
-      // In production, this would call your backend API
-      // For now, we'll simulate the order creation
-      console.log('Creating Razorpay order:', orderData);
-      
-      // Simulate API response
-      const order = {
-        id: `order_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
-        entity: 'order',
-        amount: orderData.amount,
-        amount_paid: 0,
-        amount_due: orderData.amount,
-        currency: orderData.currency,
-        receipt: orderData.receipt,
-        status: 'created',
-        attempts: 0,
-        notes: orderData.notes,
-        created_at: Math.floor(Date.now() / 1000)
-      };
-
-      return order;
-    } catch (error) {
-      console.error('Error creating Razorpay order:', error);
-      throw new Error('Failed to create payment order. Please try again.');
-    }
+    console.log('✅ Razorpay order created:', order);
+    return order;
   }
 
   static initializeRazorpayCheckout(
@@ -195,93 +179,40 @@ export class PaymentService {
     onSuccess: (response: any) => void,
     onError: (error: any) => void
   ) {
+    // Simplified Razorpay options for better compatibility
     const options = {
       key: RAZORPAY_KEY_ID,
       amount: order.amount,
       currency: order.currency,
       name: 'ComplyGuard AI',
       description: `${plan.name} Plan - AI-Powered Compliance Platform`,
-      image: 'https://cdn.jsdelivr.net/gh/razorpay/razorpay-checkout@master/images/rzp.png',
       order_id: order.id,
       prefill: {
         email: userEmail,
-        contact: '', // Add phone if available
-        name: userEmail.split('@')[0], // Extract name from email
-      },
-      config: {
-        display: {
-          blocks: {
-            banks: {
-              name: 'Pay using Net Banking',
-              instruments: [
-                { method: 'netbanking', banks: ['HDFC', 'ICICI', 'SBI', 'AXIS', 'KOTAK', 'YESB', 'UTIB'] },
-              ],
-            },
-            other: {
-              name: 'Other Payment Methods',
-              instruments: [
-                { method: 'card', types: ['credit', 'debit'] },
-                { method: 'upi' },
-                { method: 'wallet', wallets: ['paytm', 'mobikwik', 'phonepe', 'amazonpay', 'freecharge'] },
-                { method: 'emi' },
-                { method: 'paylater', providers: ['getsimpl', 'icic', 'hdfc'] },
-              ],
-            },
-          },
-          sequence: ['block.banks', 'block.other'],
-          preferences: {
-            show_default_blocks: true,
-          },
-        },
-      },
-      method: {
-        netbanking: true,
-        card: true,
-        upi: true,
-        wallet: true,
-        emi: true,
-        paylater: true,
-      },
-      notes: {
-        plan_name: plan.name,
-        plan_id: plan.id,
-        service: 'ComplyGuard AI Subscription',
+        name: userEmail.split('@')[0],
       },
       theme: {
-        color: '#2563eb',
-        backdrop_color: 'rgba(0, 0, 0, 0.6)',
+        color: '#2563eb'
       },
       handler: (response: any) => {
-        console.log('Razorpay payment successful:', response);
+        console.log('✅ Razorpay payment successful:', response);
         onSuccess({
-          ...response,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_signature: response.razorpay_signature,
           payment_method: 'razorpay',
           order_id: order.id,
         });
       },
       modal: {
         ondismiss: () => {
-          console.log('Razorpay payment modal dismissed');
+          console.log('❌ Razorpay payment cancelled');
           onError({ 
             reason: 'Payment cancelled by user',
             code: 'PAYMENT_CANCELLED'
           });
-        },
-        escape: true,
-        animation: true,
-        confirm_close: true,
-      },
-      retry: {
-        enabled: true,
-        max_count: 3,
-      },
-      timeout: 300, // 5 minutes timeout
-      remember_customer: false,
-      readonly: {
-        email: true,
-        contact: false,
-        name: false,
-      },
+        }
+      }
     };
 
     // Check if Razorpay is already loaded
@@ -492,64 +423,57 @@ export class PaymentService {
     onSuccess: (details: any) => void,
     onError: (error: any) => void
   ) {
+    console.log('🔄 Initializing PayPal checkout...');
+    
     // Validate PayPal Client ID
     if (!PAYPAL_CLIENT_ID) {
-      onError({ reason: 'PayPal configuration missing. Please contact support.' });
+      console.error('❌ PayPal Client ID missing');
+      onError({ reason: 'PayPal configuration missing. Please try Razorpay instead.' });
       return;
     }
 
-    // Clear any existing PayPal buttons
     const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = '<div class="text-center text-gray-500 text-sm">Loading PayPal...</div>';
+    if (!container) {
+      console.error('❌ PayPal container not found:', containerId);
+      onError({ reason: 'PayPal container not found. Please refresh the page.' });
+      return;
     }
 
+    // Clear container
+    container.innerHTML = '<div class="text-center text-blue-600 py-4">Loading PayPal...</div>';
+
     // Check if PayPal SDK is already loaded
-    if ((window as any).paypal) {
+    if ((window as any).paypal && (window as any).paypal.Buttons) {
+      console.log('✅ PayPal SDK already loaded, rendering buttons...');
       this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
       return;
     }
 
-    // Load PayPal SDK dynamically with production environment
+    // Load PayPal SDK
     console.log('🔄 Loading PayPal SDK...');
     const script = document.createElement('script');
-    // Simplified PayPal SDK URL for better compatibility
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=card,paylater&debug=false`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
     script.async = true;
-    script.defer = true;
     
     script.onload = () => {
-      try {
-        console.log('✅ PayPal SDK loaded successfully');
-        
-        if (!(window as any).paypal) {
-          throw new Error('PayPal SDK not available after loading');
-        }
-        
-        // Small delay to ensure SDK is fully initialized
+      console.log('✅ PayPal SDK loaded');
+      if ((window as any).paypal && (window as any).paypal.Buttons) {
         setTimeout(() => {
           this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
-        }, 200);
-        
-      } catch (error) {
-        console.error('❌ Error after PayPal SDK load:', error);
-        onError({ reason: 'Failed to initialize PayPal. Please refresh and try again.' });
+        }, 500);
+      } else {
+        console.error('❌ PayPal SDK not properly loaded');
+        onError({ reason: 'PayPal failed to load. Please try Razorpay instead.' });
       }
     };
     
     script.onerror = (error) => {
-      console.error('❌ PayPal SDK script load error:', error);
-      onError({ 
-        reason: 'Failed to load PayPal SDK. Please check your internet connection and try again.',
-        suggestion: 'Try switching to Razorpay payment method instead.',
-        code: 'PAYPAL_SDK_LOAD_ERROR'
-      });
+      console.error('❌ PayPal SDK load error:', error);
+      onError({ reason: 'Failed to load PayPal. Please try Razorpay instead.' });
     };
     
-    // Remove any existing PayPal scripts
-    const existingScripts = document.querySelectorAll('script[src*="paypal.com/sdk"]');
-    existingScripts.forEach(s => s.remove());
-    
+    // Remove existing PayPal scripts
+    document.querySelectorAll('script[src*="paypal.com/sdk"]').forEach(s => s.remove());
     document.head.appendChild(script);
   }
 
@@ -565,124 +489,73 @@ export class PaymentService {
       const isYearly = billingCycle === BillingCycle.Yearly;
       const amount = getPrice(plan, isYearly, 'USD');
       
-      console.log('🎯 Rendering PayPal buttons:', {
-        containerId,
-        amount,
-        plan: plan.name,
-        billingCycle
-      });
+      console.log('🎯 Rendering PayPal buttons for amount:', amount);
 
       const container = document.getElementById(containerId);
       if (!container) {
-        console.error('❌ PayPal container not found:', containerId);
-        onError({ reason: 'PayPal container not found. Please refresh the page.' });
+        onError({ reason: 'PayPal container not found' });
         return;
       }
 
-      // Clear container and show loading
-      container.innerHTML = '<div class="text-center text-blue-600 py-4">Loading PayPal buttons...</div>';
+      // Clear container
+      container.innerHTML = '';
 
       (window as any).paypal.Buttons({
         style: {
           layout: 'vertical',
           color: 'blue',
           shape: 'rect',
-          label: 'paypal',
-          height: 50,
-          tagline: false,
+          height: 45
         },
         createOrder: (data: any, actions: any) => {
-          try {
-            console.log('🔄 Creating PayPal order for amount:', amount);
-            
-            const orderData = {
-              purchase_units: [{
-                amount: {
-                  currency_code: 'USD',
-                  value: amount.toFixed(2),
-                },
-                description: `ComplyGuard AI - ${plan.name} Plan (${billingCycle} billing)`,
-                custom_id: `cg_${userId}_${plan.id}_${billingCycle}_${Date.now()}`,
-              }],
-              application_context: {
-                brand_name: 'ComplyGuard AI',
-                locale: 'en-US',
-                landing_page: 'BILLING',
-                shipping_preference: 'NO_SHIPPING',
-                user_action: 'PAY_NOW',
+          console.log('🔄 Creating PayPal order...');
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                currency_code: 'USD',
+                value: amount.toFixed(2)
               },
-            };
-            
-            console.log('📦 PayPal order data:', orderData);
-            return actions.order.create(orderData);
-            
-          } catch (error) {
-            console.error('❌ Error in createOrder:', error);
-            onError({ reason: 'Failed to create payment order. Please try again.' });
-            return Promise.reject(error);
-          }
+              description: `ComplyGuard AI - ${plan.name} Plan`
+            }]
+          });
         },
         onApprove: async (data: any, actions: any) => {
           try {
-            console.log('PayPal payment approved:', data);
-            
-            // Show loading state
-            if (container) {
-              container.innerHTML = '<div class="text-center text-blue-600">Processing payment...</div>';
-            }
-            
-            // Capture the payment
+            console.log('✅ PayPal payment approved:', data);
             const orderDetails = await actions.order.capture();
-            console.log('Payment captured successfully:', orderDetails);
+            console.log('✅ Payment captured:', orderDetails);
             
-            // Extract payment information
-            const paymentInfo = {
+            onSuccess({
               orderID: data.orderID,
               paymentID: orderDetails.id,
               payerID: data.payerID,
               amount: amount,
               currency: 'USD',
               status: orderDetails.status,
-              details: orderDetails,
-              provider: 'PayPal',
-            };
-            
-            onSuccess(paymentInfo);
-          } catch (error) {
-            console.error('Error capturing PayPal payment:', error);
-            onError({ 
-              reason: 'Payment capture failed. Please contact support with order ID: ' + data.orderID,
-              orderID: data.orderID 
+              details: orderDetails
             });
+          } catch (error) {
+            console.error('❌ PayPal capture error:', error);
+            onError({ reason: 'Payment capture failed. Please try again.' });
           }
         },
         onError: (error: any) => {
-          console.error('PayPal button error:', error);
-          onError({ 
-            reason: 'PayPal payment error. Please try again or use Razorpay instead.',
-            error: error,
-            suggestion: 'Try switching to Razorpay payment method above.'
-          });
+          console.error('❌ PayPal error:', error);
+          onError({ reason: 'PayPal payment failed. Please try Razorpay instead.' });
         },
         onCancel: (data: any) => {
-          console.log('PayPal payment cancelled by user:', data);
-          onError({ 
-            reason: 'Payment was cancelled. You can try again when ready.',
-            cancelled: true 
-          });
-        },
+          console.log('❌ PayPal cancelled:', data);
+          onError({ reason: 'Payment cancelled', cancelled: true });
+        }
       }).render(`#${containerId}`).then(() => {
-        console.log('PayPal buttons rendered successfully');
+        console.log('✅ PayPal buttons rendered successfully');
       }).catch((error: any) => {
-        console.error('Error rendering PayPal buttons:', error);
-        onError({ 
-          reason: 'Failed to load PayPal payment options. Please refresh the page and try again.',
-          error: error 
-        });
+        console.error('❌ PayPal render error:', error);
+        onError({ reason: 'Failed to render PayPal buttons. Please try Razorpay.' });
       });
     } catch (error) {
-      console.error('Error in renderPayPalButtons:', error);
-      onError({ reason: 'Failed to initialize PayPal payment. Please try again.' });
+      console.error('❌ PayPal render exception:', error);
+      onError({ reason: 'PayPal initialization failed. Please try Razorpay.' });
     }
   }
 

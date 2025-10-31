@@ -13,6 +13,7 @@ interface HeaderProps {
     onViewCalendar?: () => void;
     onViewAPI?: () => void;
     onViewPaymentTest?: () => void;
+    onViewPaymentSimple?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -23,7 +24,8 @@ const Header: React.FC<HeaderProps> = ({
   onViewTemplates, 
   onViewCalendar,
   onViewAPI,
-  onViewPaymentTest
+  onViewPaymentTest,
+  onViewPaymentSimple
 }) => {
   const currentPlan = getPlanByTier(user.subscription_tier);
   const usagePercentage = user.scan_limit_this_month > 0 
@@ -65,15 +67,13 @@ const Header: React.FC<HeaderProps> = ({
                   API
                 </button>
               )}
-              {/* Payment Test - Only show in development */}
-              {process.env.NODE_ENV === 'development' && (
-                <button
-                  onClick={onViewPaymentTest}
-                  className="text-orange-600 hover:text-orange-800 px-3 py-2 text-sm font-medium transition-colors"
-                >
-                  💳 Test
-                </button>
-              )}
+              {/* Payment Test - Always show for testing */}
+              <button
+                onClick={onViewPaymentSimple}
+                className="text-green-600 hover:text-green-800 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                🧪 Payment Test
+              </button>
             </nav>
           </div>
           

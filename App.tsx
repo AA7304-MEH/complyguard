@@ -14,6 +14,7 @@ import DocumentTemplates from './components/DocumentTemplates';
 import ComplianceCalendar from './components/ComplianceCalendar';
 import APIIntegration from './components/APIIntegration';
 import PaymentTesting from './components/PaymentTesting';
+import PaymentTestSimple from './components/PaymentTestSimple';
 import PaymentAccessTest from './components/PaymentAccessTest';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
@@ -23,7 +24,7 @@ const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test' | 'payment-simple'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -158,6 +159,10 @@ const MainApp: React.FC = () => {
     setView('payment-test');
   }, []);
 
+  const handleViewPaymentSimple = React.useCallback(() => {
+    setView('payment-simple');
+  }, []);
+
   const updateUser = React.useCallback((updatedUser: User) => {
     setAppUser(updatedUser);
   }, []);
@@ -184,6 +189,7 @@ const MainApp: React.FC = () => {
         onViewCalendar={handleViewCalendar}
         onViewAPI={handleViewAPI}
         onViewPaymentTest={handleViewPaymentTest}
+        onViewPaymentSimple={handleViewPaymentSimple}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (
@@ -239,6 +245,9 @@ const MainApp: React.FC = () => {
           <PaymentTesting 
             user={appUser}
           />
+        )}
+        {view === 'payment-simple' && (
+          <PaymentTestSimple />
         )}
       </main>
       
