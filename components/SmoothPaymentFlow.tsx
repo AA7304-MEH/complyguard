@@ -32,29 +32,16 @@ const SmoothPaymentFlow: React.FC<SmoothPaymentFlowProps> = ({
   // Auto-detect optimal payment provider
   React.useEffect(() => {
     const detectProvider = async () => {
-      const optimalProvider = await SmoothPaymentService.detectOptimalProvider();
-      setPaymentProvider(optimalProvider);
+      try {
+        const location = await SmoothPaymentService.getUserLocation();
+        const optimalProvider = location === 'IN' ? PaymentProvider.Razorpay : PaymentProvider.PayPal;
+        setPaymentProvider(optimalProvider);
+      } catch (error) {
+        setPaymentProvider(SmoothPaymentService.detectOptimalProvider());
+      }
     };
     detectProvider();
   }, []);
-
-  // Auto-initialize PayPal when selected
-  React.useEffect(() => {
-    if (paymentProvider === PaymentProvider.PayPal && !isProcessing) {
-      const container = document.getElementById('smooth-paypal-container');
-      if (container) {
-        container.innerHTML = `
-          <div class="text-center py-4">
-            <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p class="text-sm text-blue-600">Loading PayPal...</p>
-          </div>
-        `;
-        
-        // Auto-initialize PayPal buttons
-        handlePayPalPayment();
-      }
-    }
-  }, [paymentProvider]);
 
   const updateProgress = (step: number, message: string) => {
     setCurrentStep(step);
@@ -66,92 +53,51 @@ const SmoothPaymentFlow: React.FC<SmoothPaymentFlowProps> = ({
     setError(null);
     
     try {
-      if (paymentProvider === PaymentProvider.Razorpay) {
-        await handleRazorpayPayment();
-      } else {
-        await handlePayPalPayment();
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      setError('Payment initialization failed. Please try again.');
-      setIsProcessing(false);
-    }
-  };
-
-  const handleRazorpayPayment = async () => {
-    try {
-      const result = await SmoothPaymentService.processRazorpayPayment(
+      await SmoothPaymentService.processInstantPayment(
+        paymentProvider,
         plan,
         billingCycle,
         user.id,
         user.email,
-        updateProgress
+        (message) => setLoadingMessage(message),
+        async (paymentResult) => {
+          setLoadingMessage('Activating subscription...');
+          
+          try {
+            const subscription = await SmoothPaymentService.createSubscription(
+              user.id,
+              plan.id,
+              billingCycle,
+              paymentProvider,
+              paymentResult.razorpay_payment_id || paymentResult.paymentID || paymentResult.orderID
+            );
+            
+            setLoadingMessage('Success! Redirecting...');
+            
+            setTimeout(() => {
+              onSuccess({
+                provider: paymentProvider,
+                paymentId: paymentResult.razorpay_payment_id || paymentResult.paymentID || paymentResult.orderID,
+                orderId: paymentResult.razorpay_order_id || paymentResult.orderID,
+                subscription,
+                ...paymentResult
+              });
+            }, 1000);
+          } catch (error) {
+            setError('Payment successful but subscription activation failed. Please contact support.');
+            setIsProcessing(false);
+          }
+        },
+        (error) => {
+          if (!error.cancelled) {
+            setError(error.reason || 'Payment failed. Please try again.');
+          }
+          setIsProcessing(false);
+        }
       );
-      
-      if (result.success) {
-        updateProgress('Activating subscription...');
-        
-        const subscription = await SmoothPaymentService.createSubscription(
-          user.id,
-          plan.id,
-          billingCycle,
-          PaymentProvider.Razorpay,
-          result.paymentId
-        );
-        
-        updateProgress('Success! Redirecting...');
-        
-        setTimeout(() => {
-          onSuccess({
-            provider: PaymentProvider.Razorpay,
-            paymentId: result.paymentId,
-            orderId: result.orderId,
-            subscription,
-          });
-        }, 1000);
-      }
-    } catch (error: any) {
-      setError(error.error || 'Payment failed. Please try again.');
-      setIsProcessing(false);
-    }
-  };
-
-  const handlePayPalPayment = async () => {
-    try {
-      const result = await SmoothPaymentService.processPayPalPayment(
-        plan,
-        billingCycle,
-        user.id,
-        'smooth-paypal-container',
-        updateProgress
-      );
-      
-      if (result.success) {
-        updateProgress('Activating subscription...');
-        
-        const subscription = await SmoothPaymentService.createSubscription(
-          user.id,
-          plan.id,
-          billingCycle,
-          PaymentProvider.PayPal,
-          result.paymentId
-        );
-        
-        updateProgress('Success! Redirecting...');
-        
-        setTimeout(() => {
-          onSuccess({
-            provider: PaymentProvider.PayPal,
-            paymentId: result.paymentId,
-            orderId: result.orderId,
-            subscription,
-          });
-        }, 1000);
-      }
-    } catch (error: any) {
-      if (!error.error?.includes('cancelled')) {
-        setError(error.error || 'PayPal payment failed. Please try Razorpay instead.');
-      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      setError('Payment initialization failed. Please try again.');
       setIsProcessing(false);
     }
   };
@@ -305,38 +251,34 @@ const SmoothPaymentFlow: React.FC<SmoothPaymentFlowProps> = ({
           )}
 
           {/* Payment Button */}
-          {paymentProvider === PaymentProvider.Razorpay ? (
-            <button
-              onClick={handlePayment}
-              disabled={isProcessing}
-              className="w-full py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-            >
-              {isProcessing ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Processing...
-                </div>
-              ) : (
-                <div>
-                  <div className="text-lg">Pay ₹{price.toLocaleString()} with Razorpay</div>
-                  <div className="text-sm opacity-90">Cards • UPI • Net Banking • Wallets</div>
-                </div>
-              )}
-            </button>
-          ) : (
-            <div>
-              <div className="text-center mb-3">
-                <p className="text-sm font-medium text-gray-700">Pay ${price.toLocaleString()} with PayPal</p>
-                <p className="text-xs text-gray-500">Credit cards, PayPal balance, or buy now pay later</p>
+          <button
+            onClick={handlePayment}
+            disabled={isProcessing}
+            className={`w-full py-4 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+              paymentProvider === PaymentProvider.Razorpay
+                ? 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'
+                : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+            }`}
+          >
+            {isProcessing ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Processing...
               </div>
-              <div id="smooth-paypal-container" className="min-h-[60px]">
-                <div className="text-center py-4">
-                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-sm text-blue-600">Loading PayPal...</p>
+            ) : (
+              <div>
+                <div className="text-lg">
+                  Pay {symbol}{price.toLocaleString()} with {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'}
+                </div>
+                <div className="text-sm opacity-90">
+                  {paymentProvider === PaymentProvider.Razorpay 
+                    ? 'Cards • UPI • Net Banking • Wallets'
+                    : 'Credit cards, PayPal balance, or buy now pay later'
+                  }
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </button>
 
           {/* Security Notice */}
           <div className="mt-4 text-center">

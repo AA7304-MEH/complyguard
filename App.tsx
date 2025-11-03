@@ -8,9 +8,7 @@ import Dashboard from './components/Dashboard';
 import ReportPage from './components/ReportPage';
 import PricingPage from './components/PricingPage';
 import SubscriptionManagement from './components/SubscriptionManagement';
-import PaymentCheckout from './components/PaymentCheckout';
 import SmoothPaymentFlow from './components/SmoothPaymentFlow';
-import OneClickPayment from './components/OneClickPayment';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import DocumentTemplates from './components/DocumentTemplates';
 import ComplianceCalendar from './components/ComplianceCalendar';
@@ -263,7 +261,7 @@ const MainApp: React.FC = () => {
       </main>
       
       {view === 'checkout' && selectedPlan && (
-        <OneClickPayment
+        <SmoothPaymentFlow
           user={appUser}
           plan={selectedPlan}
           billingCycle={selectedBillingCycle}
