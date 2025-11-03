@@ -5,10 +5,10 @@ import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_R7dfHLEHcCCibm';
 const RAZORPAY_KEY_SECRET = import.meta.env.VITE_RAZORPAY_KEY_SECRET || '';
 
-// PayPal configuration - LIVE KEYS  
+// PayPal configuration - SANDBOX KEYS FOR TESTING (Switch to production when ready)
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AYTvYjBG2seZa0FGQlKVLUDH4Mp1ml2BmqEDxgb8ysdoLnVEoa0q7Ceu0ycycxpBu8Nx2iPlW1SpOz5K';
 const PAYPAL_CLIENT_SECRET = import.meta.env.VITE_PAYPAL_CLIENT_SECRET || 'EOhOu8iPdURh0vHiRZ6KQ3j_9guZFpTFoDzknADKzN5DAwnKnpAeXMnCXESSHZsiBsM59fzzND-c27n9';
-const PAYPAL_ENVIRONMENT = import.meta.env.VITE_PAYPAL_ENVIRONMENT || 'production';
+const PAYPAL_ENVIRONMENT = import.meta.env.VITE_PAYPAL_ENVIRONMENT || 'sandbox';
 
 // Debug logging for payment keys
 console.log('Payment Configuration:', {
@@ -426,54 +426,113 @@ export class PaymentService {
     console.log('🔄 Initializing PayPal checkout...');
     
     // Validate PayPal Client ID
-    if (!PAYPAL_CLIENT_ID) {
-      console.error('❌ PayPal Client ID missing');
-      onError({ reason: 'PayPal configuration missing. Please try Razorpay instead.' });
+    if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID.length < 10) {
+      console.error('❌ PayPal Client ID missing or invalid');
+      onError({ 
+        reason: 'PayPal configuration issue. Please try Razorpay payment method instead.',
+        suggestion: 'Switch to Razorpay above for instant payment processing.'
+      });
       return;
     }
 
     const container = document.getElementById(containerId);
     if (!container) {
       console.error('❌ PayPal container not found:', containerId);
-      onError({ reason: 'PayPal container not found. Please refresh the page.' });
+      onError({ 
+        reason: 'PayPal container not found. Please refresh the page and try again.',
+        suggestion: 'Try refreshing the page or use Razorpay payment method.'
+      });
       return;
     }
 
-    // Clear container
-    container.innerHTML = '<div class="text-center text-blue-600 py-4">Loading PayPal...</div>';
+    // Clear container with better loading state
+    container.innerHTML = `
+      <div class="text-center py-6">
+        <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-blue-600 font-medium">Loading PayPal...</p>
+        <p class="text-xs text-gray-500 mt-1">This may take a few seconds</p>
+      </div>
+    `;
 
     // Check if PayPal SDK is already loaded
     if ((window as any).paypal && (window as any).paypal.Buttons) {
       console.log('✅ PayPal SDK already loaded, rendering buttons...');
-      this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
+      setTimeout(() => {
+        this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
+      }, 100);
       return;
     }
 
-    // Load PayPal SDK
+    // Load PayPal SDK with better error handling
     console.log('🔄 Loading PayPal SDK...');
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+    
+    // Use sandbox for testing, production for live
+    const environment = PAYPAL_ENVIRONMENT === 'production' ? 'production' : 'sandbox';
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=venmo,paylater&disable-funding=card`;
     script.async = true;
+    script.defer = true;
+    
+    let loadTimeout: NodeJS.Timeout;
     
     script.onload = () => {
-      console.log('✅ PayPal SDK loaded');
+      clearTimeout(loadTimeout);
+      console.log('✅ PayPal SDK loaded successfully');
+      
+      // Verify PayPal object is available
       if ((window as any).paypal && (window as any).paypal.Buttons) {
         setTimeout(() => {
           this.renderPayPalButtons(containerId, plan, billingCycle, userId, onSuccess, onError);
-        }, 500);
+        }, 200);
       } else {
-        console.error('❌ PayPal SDK not properly loaded');
-        onError({ reason: 'PayPal failed to load. Please try Razorpay instead.' });
+        console.error('❌ PayPal SDK loaded but Buttons not available');
+        container.innerHTML = `
+          <div class="text-center py-4 text-red-600">
+            <p class="font-medium">PayPal failed to initialize</p>
+            <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+          </div>
+        `;
+        onError({ 
+          reason: 'PayPal initialization failed. Please try Razorpay payment method instead.',
+          suggestion: 'Razorpay supports all Indian payment methods and works instantly.'
+        });
       }
     };
     
     script.onerror = (error) => {
+      clearTimeout(loadTimeout);
       console.error('❌ PayPal SDK load error:', error);
-      onError({ reason: 'Failed to load PayPal. Please try Razorpay instead.' });
+      container.innerHTML = `
+        <div class="text-center py-4 text-red-600">
+          <p class="font-medium">Failed to load PayPal</p>
+          <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+        </div>
+      `;
+      onError({ 
+        reason: 'Failed to load PayPal payment system. Please try Razorpay instead.',
+        suggestion: 'Razorpay offers instant payment processing with all Indian payment methods.'
+      });
     };
     
-    // Remove existing PayPal scripts
+    // Set timeout for loading
+    loadTimeout = setTimeout(() => {
+      console.error('❌ PayPal SDK load timeout');
+      container.innerHTML = `
+        <div class="text-center py-4 text-orange-600">
+          <p class="font-medium">PayPal loading timeout</p>
+          <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+        </div>
+      `;
+      onError({ 
+        reason: 'PayPal loading timeout. Please try Razorpay payment method instead.',
+        suggestion: 'Razorpay loads instantly and supports all payment methods.'
+      });
+    }, 15000); // 15 second timeout
+    
+    // Remove existing PayPal scripts to avoid conflicts
     document.querySelectorAll('script[src*="paypal.com/sdk"]').forEach(s => s.remove());
+    
+    // Add script to head
     document.head.appendChild(script);
   }
 
@@ -493,37 +552,98 @@ export class PaymentService {
 
       const container = document.getElementById(containerId);
       if (!container) {
-        onError({ reason: 'PayPal container not found' });
+        onError({ 
+          reason: 'PayPal container not found',
+          suggestion: 'Please refresh the page and try again.'
+        });
         return;
       }
 
-      // Clear container
-      container.innerHTML = '';
+      // Clear container and show loading
+      container.innerHTML = `
+        <div class="text-center py-4">
+          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p class="text-sm text-blue-600">Preparing PayPal buttons...</p>
+        </div>
+      `;
 
-      (window as any).paypal.Buttons({
+      // Validate amount
+      if (!amount || amount <= 0) {
+        console.error('❌ Invalid amount for PayPal:', amount);
+        container.innerHTML = `
+          <div class="text-center py-4 text-red-600">
+            <p class="font-medium">Invalid payment amount</p>
+            <p class="text-sm mt-1">Please try Razorpay payment method</p>
+          </div>
+        `;
+        onError({ 
+          reason: 'Invalid payment amount. Please try Razorpay payment method instead.',
+          suggestion: 'Razorpay supports all currencies and payment methods.'
+        });
+        return;
+      }
+
+      // Create PayPal buttons with enhanced error handling
+      const paypalButtons = (window as any).paypal.Buttons({
         style: {
           layout: 'vertical',
           color: 'blue',
           shape: 'rect',
-          height: 45
+          height: 50,
+          label: 'paypal',
+          tagline: false
         },
+        
         createOrder: (data: any, actions: any) => {
-          console.log('🔄 Creating PayPal order...');
-          return actions.order.create({
-            purchase_units: [{
-              amount: {
-                currency_code: 'USD',
-                value: amount.toFixed(2)
-              },
-              description: `ComplyGuard AI - ${plan.name} Plan`
-            }]
-          });
+          console.log('🔄 Creating PayPal order for amount:', amount);
+          
+          try {
+            return actions.order.create({
+              purchase_units: [{
+                reference_id: `CG_${userId}_${Date.now()}`,
+                amount: {
+                  currency_code: 'USD',
+                  value: amount.toFixed(2)
+                },
+                description: `ComplyGuard AI - ${plan.name} Plan (${billingCycle})`,
+                custom_id: `cg_${userId}_${plan.id}_${Date.now()}`,
+                soft_descriptor: 'COMPLYGUARD'
+              }],
+              intent: 'CAPTURE',
+              application_context: {
+                brand_name: 'ComplyGuard AI',
+                locale: 'en-US',
+                landing_page: 'BILLING',
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW'
+              }
+            });
+          } catch (error) {
+            console.error('❌ Error creating PayPal order:', error);
+            throw error;
+          }
         },
+        
         onApprove: async (data: any, actions: any) => {
           try {
             console.log('✅ PayPal payment approved:', data);
+            
+            // Show processing state
+            container.innerHTML = `
+              <div class="text-center py-6">
+                <div class="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p class="text-green-600 font-medium">Processing payment...</p>
+                <p class="text-xs text-gray-500 mt-1">Please wait while we capture your payment</p>
+              </div>
+            `;
+            
             const orderDetails = await actions.order.capture();
-            console.log('✅ Payment captured:', orderDetails);
+            console.log('✅ Payment captured successfully:', orderDetails);
+            
+            // Validate capture
+            if (orderDetails.status !== 'COMPLETED') {
+              throw new Error(`Payment not completed. Status: ${orderDetails.status}`);
+            }
             
             onSuccess({
               orderID: data.orderID,
@@ -532,30 +652,119 @@ export class PaymentService {
               amount: amount,
               currency: 'USD',
               status: orderDetails.status,
-              details: orderDetails
+              details: orderDetails,
+              captureId: orderDetails.purchase_units[0]?.payments?.captures[0]?.id
             });
+            
           } catch (error) {
             console.error('❌ PayPal capture error:', error);
-            onError({ reason: 'Payment capture failed. Please try again.' });
+            container.innerHTML = `
+              <div class="text-center py-4 text-red-600">
+                <p class="font-medium">Payment processing failed</p>
+                <p class="text-sm mt-1">Please try Razorpay payment method</p>
+              </div>
+            `;
+            onError({ 
+              reason: 'Payment processing failed. Please try Razorpay payment method instead.',
+              error: error,
+              suggestion: 'Razorpay offers more reliable payment processing for your region.'
+            });
           }
         },
+        
         onError: (error: any) => {
-          console.error('❌ PayPal error:', error);
-          onError({ reason: 'PayPal payment failed. Please try Razorpay instead.' });
+          console.error('❌ PayPal payment error:', error);
+          container.innerHTML = `
+            <div class="text-center py-4 text-red-600">
+              <p class="font-medium">PayPal payment error</p>
+              <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+            </div>
+          `;
+          
+          let errorMessage = 'PayPal payment failed. Please try Razorpay payment method instead.';
+          
+          // Provide specific error messages
+          if (error.name === 'VALIDATION_ERROR') {
+            errorMessage = 'Payment validation failed. Please try Razorpay payment method instead.';
+          } else if (error.name === 'INSTRUMENT_DECLINED') {
+            errorMessage = 'Payment method declined. Please try a different card or use Razorpay.';
+          } else if (error.name === 'PAYER_ACTION_REQUIRED') {
+            errorMessage = 'Additional verification required. Please try Razorpay for instant processing.';
+          }
+          
+          onError({ 
+            reason: errorMessage,
+            error: error,
+            suggestion: 'Switch to Razorpay above for instant payment processing with all Indian payment methods.'
+          });
         },
+        
         onCancel: (data: any) => {
-          console.log('❌ PayPal cancelled:', data);
-          onError({ reason: 'Payment cancelled', cancelled: true });
+          console.log('❌ PayPal payment cancelled:', data);
+          container.innerHTML = `
+            <div class="text-center py-4 text-gray-600">
+              <p class="font-medium">Payment cancelled</p>
+              <p class="text-sm mt-1">You can try again when ready</p>
+            </div>
+          `;
+          onError({ 
+            reason: 'Payment was cancelled. You can try again when ready.',
+            cancelled: true,
+            suggestion: 'Try Razorpay above for faster checkout experience.'
+          });
         }
-      }).render(`#${containerId}`).then(() => {
+      });
+
+      // Render buttons with timeout
+      const renderTimeout = setTimeout(() => {
+        console.error('❌ PayPal button render timeout');
+        container.innerHTML = `
+          <div class="text-center py-4 text-orange-600">
+            <p class="font-medium">PayPal render timeout</p>
+            <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+          </div>
+        `;
+        onError({ 
+          reason: 'PayPal buttons failed to load. Please try Razorpay payment method instead.',
+          suggestion: 'Razorpay loads instantly and supports all payment methods.'
+        });
+      }, 10000); // 10 second timeout
+
+      paypalButtons.render(`#${containerId}`).then(() => {
+        clearTimeout(renderTimeout);
         console.log('✅ PayPal buttons rendered successfully');
       }).catch((error: any) => {
+        clearTimeout(renderTimeout);
         console.error('❌ PayPal render error:', error);
-        onError({ reason: 'Failed to render PayPal buttons. Please try Razorpay.' });
+        container.innerHTML = `
+          <div class="text-center py-4 text-red-600">
+            <p class="font-medium">Failed to load PayPal buttons</p>
+            <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+          </div>
+        `;
+        onError({ 
+          reason: 'Failed to render PayPal buttons. Please try Razorpay payment method instead.',
+          error: error,
+          suggestion: 'Razorpay offers better compatibility and instant processing.'
+        });
       });
+      
     } catch (error) {
       console.error('❌ PayPal render exception:', error);
-      onError({ reason: 'PayPal initialization failed. Please try Razorpay.' });
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.innerHTML = `
+          <div class="text-center py-4 text-red-600">
+            <p class="font-medium">PayPal initialization failed</p>
+            <p class="text-sm mt-1">Please try Razorpay payment method above</p>
+          </div>
+        `;
+      }
+      onError({ 
+        reason: 'PayPal initialization failed. Please try Razorpay payment method instead.',
+        error: error,
+        suggestion: 'Razorpay is more reliable and supports all Indian payment methods.'
+      });
     }
   }
 

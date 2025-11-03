@@ -14,6 +14,7 @@ interface HeaderProps {
     onViewAPI?: () => void;
     onViewPaymentTest?: () => void;
     onViewPaymentSimple?: () => void;
+    onViewPaymentFixed?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -25,7 +26,8 @@ const Header: React.FC<HeaderProps> = ({
   onViewCalendar,
   onViewAPI,
   onViewPaymentTest,
-  onViewPaymentSimple
+  onViewPaymentSimple,
+  onViewPaymentFixed
 }) => {
   const currentPlan = getPlanByTier(user.subscription_tier);
   const usagePercentage = user.scan_limit_this_month > 0 
@@ -72,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onViewPaymentSimple}
                 className="text-green-600 hover:text-green-800 px-3 py-2 text-sm font-medium transition-colors"
               >
-                🧪 Payment Test
+                🧪 Payment Test Fixed
               </button>
             </nav>
           </div>
