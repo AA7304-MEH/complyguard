@@ -66,6 +66,7 @@ export class SmoothPaymentService {
         await this.processPayPalInstant(plan, billingCycle, userId, onProgress, onSuccess, onError);
       }
     } catch (error) {
+      console.error('Payment processing error:', error);
       onError({
         reason: 'Payment initialization failed',
         error,

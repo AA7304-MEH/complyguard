@@ -8,7 +8,7 @@ import Dashboard from './components/Dashboard';
 import ReportPage from './components/ReportPage';
 import PricingPage from './components/PricingPage';
 import SubscriptionManagement from './components/SubscriptionManagement';
-import SmoothPaymentFlow from './components/SmoothPaymentFlow';
+import WorkingPaymentFlow from './components/WorkingPaymentFlow';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import DocumentTemplates from './components/DocumentTemplates';
 import ComplianceCalendar from './components/ComplianceCalendar';
@@ -17,6 +17,7 @@ import PaymentTesting from './components/PaymentTesting';
 import PaymentTestSimple from './components/PaymentTestSimple';
 import PaymentAccessTest from './components/PaymentAccessTest';
 import PaymentTestFixed from './components/PaymentTestFixed';
+import SimplePaymentTest from './components/SimplePaymentTest';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
 import SuccessNotification from './components/common/SuccessNotification';
@@ -25,7 +26,7 @@ const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test' | 'payment-simple' | 'payment-fixed'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test' | 'payment-simple' | 'payment-fixed' | 'simple-test'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -168,6 +169,10 @@ const MainApp: React.FC = () => {
     setView('payment-fixed');
   }, []);
 
+  const handleViewSimpleTest = React.useCallback(() => {
+    setView('simple-test');
+  }, []);
+
   const updateUser = React.useCallback((updatedUser: User) => {
     setAppUser(updatedUser);
   }, []);
@@ -196,6 +201,7 @@ const MainApp: React.FC = () => {
         onViewPaymentTest={handleViewPaymentTest}
         onViewPaymentSimple={handleViewPaymentSimple}
         onViewPaymentFixed={handleViewPaymentFixed}
+        onViewSimpleTest={handleViewSimpleTest}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (
@@ -258,10 +264,13 @@ const MainApp: React.FC = () => {
         {view === 'payment-fixed' && (
           <PaymentTestFixed />
         )}
+        {view === 'simple-test' && (
+          <SimplePaymentTest />
+        )}
       </main>
       
       {view === 'checkout' && selectedPlan && (
-        <SmoothPaymentFlow
+        <WorkingPaymentFlow
           user={appUser}
           plan={selectedPlan}
           billingCycle={selectedBillingCycle}
