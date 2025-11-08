@@ -3,7 +3,8 @@ import { getPrice } from '../config/subscriptionPlans';
 
 // Payment configuration with fallbacks
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_R7dfHLEHcCCibm';
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AYTvYjBG2seZa0FGQlKVLUDH4Mp1ml2BmqEDxgb8ysdoLnVEoa0q7Ceu0ycycxpBu8Nx2iPlW1SpOz5K';
+// Using PayPal sandbox test client ID - Replace with your production client ID when ready
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R';
 
 export interface PaymentResult {
   success: boolean;
@@ -87,8 +88,10 @@ export class FunctionalPaymentService {
       console.log('🔄 Loading PayPal SDK...');
       
       const script = document.createElement('script');
-      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+      // Using sandbox for testing - change to production when ready
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&disable-funding=credit,card`;
       script.async = true;
+      script.setAttribute('data-sdk-integration-source', 'button-factory');
       
       const timeoutId = setTimeout(() => {
         console.error('❌ PayPal SDK load timeout');
