@@ -249,28 +249,52 @@ export class FunctionalPaymentService {
         
         onProgress('Rendering PayPal payment options...');
         
-        (window as any).paypal.Buttons({
+        const paypalButtons = (window as any).paypal.Buttons({
           style: {
             layout: 'vertical',
             color: 'blue',
             shape: 'rect',
-            height: 50
+            label: 'paypal',
+            height: 50,
+            tagline: false
           },
           createOrder: (data: any, actions: any) => {
+            console.log('🔄 Creating PayPal order for amount:', amount);
             return actions.order.create({
+              intent: 'CAPTURE',
               purchase_units: [{
+                reference_id: `CG_${Date.now()}`,
                 amount: {
                   currency_code: 'USD',
                   value: amount.toFixed(2)
                 },
-                description: `ComplyGuard AI - ${plan.name} Plan`
-              }]
+                description: `ComplyGuard AI - ${plan.name} Plan (${billingCycle})`,
+                custom_id: `cg_${Date.now()}`,
+                soft_descriptor: 'COMPLYGUARD'
+              }],
+              application_context: {
+                brand_name: 'ComplyGuard AI',
+                locale: 'en-US',
+                landing_page: 'BILLING',
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW'
+              }
             });
           },
           onApprove: async (data: any, actions: any) => {
             try {
+              console.log('✅ PayPal payment approved, capturing...', data);
+              
+              // Show capturing state
+              container.innerHTML = '<div class="text-center py-4 text-green-600">Processing payment...</div>';
+              
               const orderDetails = await actions.order.capture();
-              console.log('✅ PayPal payment successful:', orderDetails);
+              console.log('✅ PayPal payment captured successfully:', orderDetails);
+              
+              // Validate capture
+              if (orderDetails.status !== 'COMPLETED') {
+                throw new Error(`Payment not completed. Status: ${orderDetails.status}`);
+              }
               
               resolve({
                 success: true,
@@ -282,9 +306,10 @@ export class FunctionalPaymentService {
               });
             } catch (error) {
               console.error('❌ PayPal capture error:', error);
+              container.innerHTML = '<div class="text-center py-4 text-red-600">Payment processing failed</div>';
               reject({
                 success: false,
-                error: 'Payment capture failed. Please try again.',
+                error: 'Payment capture failed. Please try again or use Razorpay.',
                 paymentId: '',
                 amount: amount,
                 currency: 'USD',
@@ -294,9 +319,10 @@ export class FunctionalPaymentService {
           },
           onError: (error: any) => {
             console.error('❌ PayPal payment error:', error);
+            container.innerHTML = '<div class="text-center py-4 text-red-600">PayPal error occurred</div>';
             reject({
               success: false,
-              error: 'PayPal payment failed. Please try again.',
+              error: 'PayPal payment failed. Please try Razorpay instead.',
               paymentId: '',
               amount: amount,
               currency: 'USD',
@@ -305,6 +331,7 @@ export class FunctionalPaymentService {
           },
           onCancel: () => {
             console.log('❌ PayPal payment cancelled');
+            container.innerHTML = '<div class="text-center py-4 text-gray-600">Payment cancelled</div>';
             reject({
               success: false,
               error: 'Payment cancelled by user',
@@ -314,7 +341,24 @@ export class FunctionalPaymentService {
               provider: PaymentProvider.PayPal
             });
           }
-        }).render(`#${containerId}`);
+        });
+        
+        // Render buttons with error handling
+        paypalButtons.render(`#${containerId}`).then(() => {
+          console.log('✅ PayPal buttons rendered successfully');
+          container.innerHTML = ''; // Clear loading message
+        }).catch((renderError: any) => {
+          console.error('❌ PayPal button render error:', renderError);
+          container.innerHTML = '<div class="text-center py-4 text-red-600">Failed to load PayPal buttons. Please try Razorpay.</div>';
+          reject({
+            success: false,
+            error: 'Failed to render PayPal buttons. Please try Razorpay instead.',
+            paymentId: '',
+            amount: amount,
+            currency: 'USD',
+            provider: PaymentProvider.PayPal
+          });
+        });
         
       } catch (error) {
         console.error('❌ PayPal initialization error:', error);
@@ -390,18 +434,47 @@ export class FunctionalPaymentService {
     return PaymentProvider.Razorpay; // Default to Razorpay as it supports international cards too
   }
   
-  // Get user location for payment optimization
+  // Get user location for payment optimization with multiple fallbacks
   static async getUserLocation(): Promise<string> {
     try {
+      // Try primary geolocation service
       const response = await fetch('https://ipapi.co/json/', { 
         signal: AbortSignal.timeout(3000) 
       });
-      const data = await response.json();
-      return data.country_code || 'IN';
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.country_code) {
+          console.log(`✅ Location detected: ${data.country_code} (${data.country_name})`);
+          return data.country_code;
+        }
+      }
     } catch (error) {
-      console.log('Could not fetch location, defaulting to IN');
-      return 'IN';
+      console.log('Primary location service failed, trying fallback...');
     }
+    
+    try {
+      // Fallback to alternative service
+      const response = await fetch('https://api.country.is/', {
+        signal: AbortSignal.timeout(3000)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.country) {
+          console.log(`✅ Location detected (fallback): ${data.country}`);
+          return data.country;
+        }
+      }
+    } catch (error) {
+      console.log('Fallback location service failed');
+    }
+    
+    // Use browser-based detection as last resort
+    const browserDetection = this.detectOptimalProvider();
+    const countryCode = browserDetection === PaymentProvider.Razorpay ? 'IN' : 'US';
+    console.log(`✅ Using browser-based detection: ${countryCode}`);
+    return countryCode;
   }
   
   // Validate payment configuration

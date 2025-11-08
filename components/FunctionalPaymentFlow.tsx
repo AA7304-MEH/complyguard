@@ -29,18 +29,34 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const price = getPrice(plan, isYearly, currency);
   const symbol = currency === 'USD' ? '$' : '₹';
 
+  const [detectedLocation, setDetectedLocation] = React.useState<string>('');
+  const [isDetecting, setIsDetecting] = React.useState(true);
+
   // Auto-detect optimal payment provider on mount
   React.useEffect(() => {
     const detectProvider = async () => {
+      setIsDetecting(true);
       try {
         const location = await FunctionalPaymentService.getUserLocation();
-        const optimalProvider = location === 'IN' ? PaymentProvider.Razorpay : PaymentProvider.PayPal;
+        setDetectedLocation(location);
+        
+        // Smart provider selection based on location
+        let optimalProvider: PaymentProvider;
+        if (location === 'IN') {
+          optimalProvider = PaymentProvider.Razorpay;
+        } else {
+          optimalProvider = PaymentProvider.PayPal;
+        }
+        
         setPaymentProvider(optimalProvider);
-        console.log(`🎯 Detected location: ${location}, selected provider: ${optimalProvider}`);
+        console.log(`🎯 Location: ${location}, Provider: ${optimalProvider}`);
       } catch (error) {
         const fallbackProvider = FunctionalPaymentService.detectOptimalProvider();
         setPaymentProvider(fallbackProvider);
+        setDetectedLocation('Unknown');
         console.log(`🎯 Using fallback provider: ${fallbackProvider}`);
+      } finally {
+        setIsDetecting(false);
       }
     };
     
@@ -258,6 +274,23 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Auto-Detection Indicator */}
+          {detectedLocation && !isDetecting && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center text-sm text-blue-800">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>
+                  <strong>Auto-detected location:</strong> {detectedLocation === 'IN' ? '🇮🇳 India' : detectedLocation === 'US' ? '🇺🇸 United States' : `🌍 ${detectedLocation}`}
+                  {' • '}
+                  <strong>Recommended:</strong> {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Payment Method Selection */}
           <div className="mb-6">
