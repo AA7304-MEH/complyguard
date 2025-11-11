@@ -6,42 +6,94 @@ import { ZapIcon } from './icons/ZapIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import { FileTextIcon } from './icons/FileTextIcon';
 import { UploadCloudIcon } from './icons/UploadCloudIcon';
+import ScrollToTop from './ScrollToTop';
 
 
 const LandingPage: React.FC = () => {
   
   return (
-    <div className="bg-white text-slate-800">
+    <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white w-full relative overflow-hidden">
+      <ScrollToTop />
+      
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-slate-900">ComplyGuard AI</h1>
-          <SignInButton mode="modal">
-            <button className="px-4 py-2 bg-accent text-white font-semibold rounded-lg shadow-sm hover:bg-accent/90 transition-colors">
-              Sign In
-            </button>
-          </SignInButton>
+      <header className="absolute top-0 left-0 right-0 z-50 backdrop-blur-sm bg-slate-900/50 border-b border-white/10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <ShieldCheckIcon className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                ComplyGuard AI
+              </h1>
+            </div>
+            <SignInButton mode="modal">
+              <button className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                Sign In →
+              </button>
+            </SignInButton>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-28">
-        <div className="absolute inset-0 bottom-1/2 bg-secondary"></div>
-        <div className="container mx-auto px-4 relative">
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col items-center text-center">
-            <span className="inline-block px-4 py-2 bg-blue-100 text-accent font-semibold rounded-full text-sm">Automated Compliance Analysis</span>
-            <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 mt-4 leading-tight max-w-4xl">
-              Turn Compliance from a Burden into a Competitive Edge.
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-400/30 rounded-full text-sm font-medium text-blue-300 mb-6 animate-fade-in">
+              <ZapIcon className="w-4 h-4 mr-2" />
+              AI-Powered Compliance Analysis
+            </div>
+            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight max-w-5xl mb-6 animate-fade-in-up">
+              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Transform Compliance
+              </span>
+              <br />
+              <span className="text-white">
+                Into Your Competitive Edge
+              </span>
             </h1>
-            <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
-              Stop spending weeks on manual audits. ComplyGuard AI scans your policies against regulatory frameworks like GDPR, HIPAA, and SOC 2 to instantly identify risks and provide actionable remediation advice.
+            <p className="mt-6 text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-200">
+              Stop spending weeks on manual audits. Our AI instantly scans your policies against 
+              <span className="text-blue-400 font-semibold"> GDPR, HIPAA, SOC 2</span> and more—identifying risks and providing actionable remediation in minutes.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
-               <SignInButton mode="modal">
-                <button className="px-8 py-4 bg-accent text-white font-semibold rounded-lg shadow-md hover:bg-accent/90 transition-colors text-lg">
-                  Get Started for Free
+            <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300">
+              <SignInButton mode="modal">
+                <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 text-lg">
+                  <span className="flex items-center">
+                    Start Free Trial
+                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </span>
                 </button>
               </SignInButton>
+              <button className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 text-lg">
+                Watch Demo
+              </button>
+            </div>
+            
+            {/* Stats */}
+            <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto animate-fade-in-up delay-400">
+              <div className="text-center">
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">100+</div>
+                <div className="text-sm text-slate-400 mt-1">Compliance Rules</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">95%</div>
+                <div className="text-sm text-slate-400 mt-1">Time Saved</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent">24/7</div>
+                <div className="text-sm text-slate-400 mt-1">AI Monitoring</div>
+              </div>
             </div>
           </div>
         </div>

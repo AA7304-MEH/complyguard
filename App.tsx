@@ -15,10 +15,11 @@ import ComplianceCalendar from './components/ComplianceCalendar';
 import APIIntegration from './components/APIIntegration';
 import PaymentTesting from './components/PaymentTesting';
 import PaymentTestSimple from './components/PaymentTestSimple';
-import PaymentAccessTest from './components/PaymentAccessTest';
 import PaymentTestFixed from './components/PaymentTestFixed';
 import SimplePaymentTest from './components/SimplePaymentTest';
 import PaymentSystemTest from './components/PaymentSystemTest';
+import PayPalDiagnostics from './components/PayPalDiagnostics';
+import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
 import Spinner from './components/common/Spinner';
 import SuccessNotification from './components/common/SuccessNotification';
@@ -27,7 +28,7 @@ const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test' | 'payment-simple' | 'payment-fixed' | 'simple-test' | 'system-test'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test' | 'payment-simple' | 'payment-fixed' | 'simple-test' | 'system-test' | 'paypal-diagnostics'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -178,6 +179,10 @@ const MainApp: React.FC = () => {
     setView('system-test');
   }, []);
 
+  const handleViewPayPalDiagnostics = React.useCallback(() => {
+    setView('paypal-diagnostics');
+  }, []);
+
   const updateUser = React.useCallback((updatedUser: User) => {
     setAppUser(updatedUser);
   }, []);
@@ -194,9 +199,11 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-secondary text-secondary-foreground">
+    <div className="min-h-screen bg-secondary text-secondary-foreground relative">
+      <ScrollToTop />
       <Header 
-        user={appUser} 
+        user={appUser}
+        onHome={backToDashboard}
         onUpgrade={handleUpgrade}
         onManageSubscription={handleManageSubscription}
         onViewAnalytics={handleViewAnalytics}
@@ -208,6 +215,7 @@ const MainApp: React.FC = () => {
         onViewPaymentFixed={handleViewPaymentFixed}
         onViewSimpleTest={handleViewSimpleTest}
         onViewSystemTest={handleViewSystemTest}
+        onViewPayPalDiagnostics={handleViewPayPalDiagnostics}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (
@@ -276,6 +284,9 @@ const MainApp: React.FC = () => {
         {view === 'system-test' && (
           <PaymentSystemTest />
         )}
+        {view === 'paypal-diagnostics' && (
+          <PayPalDiagnostics />
+        )}
       </main>
       
       {view === 'checkout' && selectedPlan && (
@@ -294,14 +305,6 @@ const MainApp: React.FC = () => {
           title={successMessage.title}
           message={successMessage.message}
           onClose={() => setShowSuccessNotification(false)}
-        />
-      )}
-      
-      {/* Payment Access Test - Shows all available payment buttons */}
-      {process.env.NODE_ENV === 'development' && (
-        <PaymentAccessTest 
-          user={appUser} 
-          onUpgrade={handleUpgrade}
         />
       )}
     </div>

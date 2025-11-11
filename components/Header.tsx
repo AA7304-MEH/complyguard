@@ -6,6 +6,7 @@ import NotificationCenter from './NotificationCenter';
 
 interface HeaderProps {
     user: User;
+    onHome?: () => void;
     onUpgrade?: () => void;
     onManageSubscription?: () => void;
     onViewAnalytics?: () => void;
@@ -17,10 +18,12 @@ interface HeaderProps {
     onViewPaymentFixed?: () => void;
     onViewSimpleTest?: () => void;
     onViewSystemTest?: () => void;
+    onViewPayPalDiagnostics?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  user, 
+  user,
+  onHome, 
   onUpgrade, 
   onManageSubscription, 
   onViewAnalytics, 
@@ -31,7 +34,8 @@ const Header: React.FC<HeaderProps> = ({
   onViewPaymentSimple,
   onViewPaymentFixed,
   onViewSimpleTest,
-  onViewSystemTest
+  onViewSystemTest,
+  onViewPayPalDiagnostics
 }) => {
   const currentPlan = getPlanByTier(user.subscription_tier);
   const usagePercentage = user.scan_limit_this_month > 0 
@@ -47,6 +51,15 @@ const Header: React.FC<HeaderProps> = ({
             
             {/* Navigation Menu */}
             <nav className="hidden md:flex space-x-6">
+              <button
+                onClick={onHome}
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Home
+              </button>
               <button
                 onClick={onViewAnalytics}
                 className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
@@ -73,13 +86,6 @@ const Header: React.FC<HeaderProps> = ({
                   API
                 </button>
               )}
-              {/* Payment Test - Always show for testing */}
-              <button
-                onClick={onViewSystemTest}
-                className="text-green-600 hover:text-green-800 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                🧪 Payment System Test
-              </button>
             </nav>
           </div>
           

@@ -75,53 +75,38 @@ export class FunctionalPaymentService {
     });
   }
   
-  // Load PayPal SDK with timeout and retry
-  static loadPayPalSDK(timeout: number = 10000): Promise<void> {
+  // Load PayPal SDK with timeout and retry (SDK is preloaded in index.html for faster loading)
+  // SDK supports: Cards (no PayPal account needed), PayPal Balance, Venmo, etc.
+  static loadPayPalSDK(timeout: number = 15000): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Check if already loaded
+      // Check if already loaded (preloaded in index.html)
       if (this.isPayPalAvailable()) {
-        console.log('✅ PayPal SDK already available');
+        console.log('✅ PayPal SDK already available (preloaded)');
+        console.log('💳 Payment options: Cards (no account needed), PayPal, Venmo');
         resolve();
         return;
       }
       
-      console.log('🔄 Loading PayPal SDK...');
+      console.log('⏳ Waiting for PayPal SDK to load...');
       
-      const script = document.createElement('script');
-      // Using sandbox for testing - change to production when ready
-      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&disable-funding=credit,card`;
-      script.async = true;
-      script.setAttribute('data-sdk-integration-source', 'button-factory');
+      // SDK is preloaded in index.html, so just wait for it
+      let attempts = 0;
+      const maxAttempts = timeout / 100; // Check every 100ms
       
-      const timeoutId = setTimeout(() => {
-        console.error('❌ PayPal SDK load timeout');
-        reject(new Error('PayPal SDK load timeout'));
-      }, timeout);
-      
-      script.onload = () => {
-        clearTimeout(timeoutId);
+      const checkInterval = setInterval(() => {
+        attempts++;
+        
         if (this.isPayPalAvailable()) {
+          clearInterval(checkInterval);
           console.log('✅ PayPal SDK loaded successfully');
+          console.log('💳 Payment options: Cards (no account needed), PayPal, Venmo');
           resolve();
-        } else {
-          console.error('❌ PayPal SDK loaded but not available');
-          reject(new Error('PayPal SDK not available after load'));
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
+          console.error('❌ PayPal SDK load timeout after waiting');
+          reject(new Error('PayPal SDK not available - please refresh the page'));
         }
-      };
-      
-      script.onerror = (error) => {
-        clearTimeout(timeoutId);
-        console.error('❌ PayPal SDK load error:', error);
-        reject(new Error('Failed to load PayPal SDK'));
-      };
-      
-      // Remove any existing PayPal scripts
-      const existingScript = document.querySelector('script[src*="paypal.com/sdk"]');
-      if (existingScript) {
-        existingScript.remove();
-      }
-      
-      document.head.appendChild(script);
+      }, 100);
     });
   }
   

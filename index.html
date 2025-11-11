@@ -5,6 +5,59 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ComplyGuard AI</title>
+    <!-- CRITICAL: Preconnect to PayPal for fastest loading -->
+    <link rel="preconnect" href="https://www.paypal.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.paypal.com">
+    <link rel="preconnect" href="https://www.paypalobjects.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.paypalobjects.com">
+    <style>
+      /* Enable scrolling - CRITICAL FIX */
+      * {
+        box-sizing: border-box;
+      }
+      
+      html {
+        overflow-y: scroll !important;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        /* DO NOT set height: 100% - it prevents scrolling! */
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        /* Allow body to grow beyond viewport */
+        min-height: 100vh;
+        height: auto !important;
+      }
+      
+      #root {
+        /* Allow root to grow with content */
+        min-height: 100vh;
+        height: auto !important;
+        width: 100%;
+      }
+      
+      /* Visible scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 14px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #e5e7eb;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #6b7280;
+        border-radius: 7px;
+        border: 2px solid #e5e7eb;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #4b5563;
+      }
+    </style>
+    <!-- Preload PayPal SDK for faster loading -->
+    <link rel="preconnect" href="https://www.paypal.com">
+    <link rel="dns-prefetch" href="https://www.paypal.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -68,7 +121,16 @@
 </script>
 </head>
   <body class="bg-secondary">
-    <div id="root"></div>
+    <div id="root" class="min-h-screen"></div>
+    <!-- Load PayPal SDK in HEAD for maximum speed -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R&currency=USD&intent=capture&components=buttons&disable-funding=credit" data-sdk-integration-source="button-factory"></script>
+    <script>
+      // Mark PayPal as loaded
+      if (typeof paypal !== 'undefined') {
+        window.paypalSDKLoaded = true;
+        console.log('✅ PayPal SDK loaded in head');
+      }
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
