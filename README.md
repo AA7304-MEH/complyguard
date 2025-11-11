@@ -147,18 +147,38 @@ complyguard/
 
 ## 🚀 Deployment
 
-### Build for Production
+### Automatic Deployment to Netlify
+
+This project is configured for automatic deployment via GitHub Actions:
+
+1. **Push to GitHub** → Triggers automatic build and deployment
+2. **GitHub Actions** → Builds the production bundle
+3. **Netlify** → Deploys to global CDN
+
+**Quick Setup:**
+- See [DEPLOY_QUICK_START.md](DEPLOY_QUICK_START.md) for 3-minute setup
+- See [GITHUB_DEPLOYMENT_GUIDE.md](GITHUB_DEPLOYMENT_GUIDE.md) for detailed instructions
+
+### Manual Build for Production
 ```bash
 npm run build
 ```
 
 ### Environment Variables for Production
-Ensure all environment variables are set in your production environment:
-- `GEMINI_API_KEY`
-- `CLERK_PUBLISHABLE_KEY`
-- `RAZORPAY_KEY_ID`
-- `PAYPAL_CLIENT_ID`
-- `PAYPAL_ENVIRONMENT=production`
+Set these in your Netlify dashboard (Site settings → Environment variables):
+- `VITE_GEMINI_API_KEY` - Your Gemini API key
+- `VITE_CLERK_PUBLISHABLE_KEY` - Your Clerk publishable key
+- `VITE_RAZORPAY_KEY_ID` - Your Razorpay key ID
+- `VITE_PAYPAL_CLIENT_ID` - Your PayPal client ID
+- `VITE_PAYPAL_ENVIRONMENT=production` - Set to production for live payments
+
+### Deployment Features
+- ✅ Automatic deployment on push to main
+- ✅ Preview deployments for pull requests
+- ✅ Global CDN distribution
+- ✅ Automatic HTTPS/SSL
+- ✅ Asset optimization and caching
+- ✅ Security headers configured
 
 ## 🧪 Testing Payments
 
