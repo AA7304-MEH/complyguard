@@ -13,22 +13,15 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import DocumentTemplates from './components/DocumentTemplates';
 import ComplianceCalendar from './components/ComplianceCalendar';
 import APIIntegration from './components/APIIntegration';
-import PaymentTesting from './components/PaymentTesting';
-import PaymentTestSimple from './components/PaymentTestSimple';
-import PaymentTestFixed from './components/PaymentTestFixed';
-import SimplePaymentTest from './components/SimplePaymentTest';
-import PaymentSystemTest from './components/PaymentSystemTest';
-import PayPalDiagnostics from './components/PayPalDiagnostics';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
-import Spinner from './components/common/Spinner';
 import SuccessNotification from './components/common/SuccessNotification';
 
 const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'payment-test' | 'payment-simple' | 'payment-fixed' | 'simple-test' | 'system-test' | 'paypal-diagnostics'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -42,7 +35,7 @@ const MainApp: React.FC = () => {
         setIsLoading(true);
         try {
           if (clerkUser) {
-             // In a real app, you would pass clerkUser.id to get their specific data
+            // In a real app, you would pass clerkUser.id to get their specific data
             const [userData, scansData] = await Promise.all([
               getAppUser(clerkUser.id),
               getScans()
@@ -63,7 +56,7 @@ const MainApp: React.FC = () => {
   // Poll for scan updates if there are any scans in processing state
   React.useEffect(() => {
     const hasProcessingScans = scans.some(s => s.status === AuditStatus.Processing);
-    
+
     if (!hasProcessingScans) {
       return;
     }
@@ -96,7 +89,7 @@ const MainApp: React.FC = () => {
     setSelectedScan(scan);
     setView('report');
   }, []);
-  
+
   const backToDashboard = React.useCallback(() => {
     setSelectedScan(null);
     setSelectedPlan(null);
@@ -123,10 +116,10 @@ const MainApp: React.FC = () => {
       };
       setAppUser(updatedUser);
     }
-    
+
     setSelectedPlan(null);
     setView('dashboard');
-    
+
     // Show success notification
     setSuccessMessage({
       title: 'Payment Successful! 🎉',
@@ -159,30 +152,6 @@ const MainApp: React.FC = () => {
     setView('api');
   }, []);
 
-  const handleViewPaymentTest = React.useCallback(() => {
-    setView('payment-test');
-  }, []);
-
-  const handleViewPaymentSimple = React.useCallback(() => {
-    setView('payment-simple');
-  }, []);
-
-  const handleViewPaymentFixed = React.useCallback(() => {
-    setView('payment-fixed');
-  }, []);
-
-  const handleViewSimpleTest = React.useCallback(() => {
-    setView('simple-test');
-  }, []);
-
-  const handleViewSystemTest = React.useCallback(() => {
-    setView('system-test');
-  }, []);
-
-  const handleViewPayPalDiagnostics = React.useCallback(() => {
-    setView('paypal-diagnostics');
-  }, []);
-
   const updateUser = React.useCallback((updatedUser: User) => {
     setAppUser(updatedUser);
   }, []);
@@ -201,7 +170,7 @@ const MainApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-secondary text-secondary-foreground relative">
       <ScrollToTop />
-      <Header 
+      <Header
         user={appUser}
         onHome={backToDashboard}
         onUpgrade={handleUpgrade}
@@ -210,19 +179,13 @@ const MainApp: React.FC = () => {
         onViewTemplates={handleViewTemplates}
         onViewCalendar={handleViewCalendar}
         onViewAPI={handleViewAPI}
-        onViewPaymentTest={handleViewPaymentTest}
-        onViewPaymentSimple={handleViewPaymentSimple}
-        onViewPaymentFixed={handleViewPaymentFixed}
-        onViewSimpleTest={handleViewSimpleTest}
-        onViewSystemTest={handleViewSystemTest}
-        onViewPayPalDiagnostics={handleViewPayPalDiagnostics}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (
-          <Dashboard 
-            user={appUser} 
-            scans={scans} 
-            onUpdateScans={updateUserScans} 
+          <Dashboard
+            user={appUser}
+            scans={scans}
+            onUpdateScans={updateUserScans}
             onViewReport={viewReport}
             onUpgrade={handleUpgrade}
           />
@@ -231,64 +194,44 @@ const MainApp: React.FC = () => {
           <ReportPage scan={selectedScan} onBack={backToDashboard} />
         )}
         {view === 'pricing' && (
-          <PricingPage 
+          <PricingPage
             currentPlan={getPlanByTier(appUser.subscription_tier)}
             onPlanSelect={handlePlanSelect}
             userLocation="IN" // You could detect this from IP or user settings
           />
         )}
         {view === 'subscription' && (
-          <SubscriptionManagement 
+          <SubscriptionManagement
             user={appUser}
             onUpgrade={handleUpgrade}
             onUpdateUser={updateUser}
           />
         )}
         {view === 'analytics' && (
-          <AnalyticsDashboard 
+          <AnalyticsDashboard
             user={appUser}
             scans={scans}
           />
         )}
         {view === 'templates' && (
-          <DocumentTemplates 
+          <DocumentTemplates
             user={appUser}
             onUpgrade={handleUpgrade}
           />
         )}
         {view === 'calendar' && (
-          <ComplianceCalendar 
+          <ComplianceCalendar
             user={appUser}
           />
         )}
         {view === 'api' && (
-          <APIIntegration 
+          <APIIntegration
             user={appUser}
             onUpgrade={handleUpgrade}
           />
         )}
-        {view === 'payment-test' && (
-          <PaymentTesting 
-            user={appUser}
-          />
-        )}
-        {view === 'payment-simple' && (
-          <PaymentTestSimple />
-        )}
-        {view === 'payment-fixed' && (
-          <PaymentTestFixed />
-        )}
-        {view === 'simple-test' && (
-          <SimplePaymentTest />
-        )}
-        {view === 'system-test' && (
-          <PaymentSystemTest />
-        )}
-        {view === 'paypal-diagnostics' && (
-          <PayPalDiagnostics />
-        )}
       </main>
-      
+
       {view === 'checkout' && selectedPlan && (
         <FunctionalPaymentFlow
           user={appUser}
@@ -298,7 +241,7 @@ const MainApp: React.FC = () => {
           onCancel={backToDashboard}
         />
       )}
-      
+
       {/* Success Notification */}
       {showSuccessNotification && (
         <SuccessNotification

@@ -10,27 +10,50 @@ import { analyzeCompliance } from './geminiService';
 // The server would be responsible for connecting to your Neon database using the
 // connection string you provided. You should NEVER expose your database connection
 // string in the frontend code.
-//
-// EXAMPLE (on your Node.js backend):
-//
-// import { Pool } from 'pg';
-//
-// // Store your Neon connection string in environment variables on the server
-// const pool = new Pool({
-//   connectionString: process.env.NEON_DATABASE_URL, 
-// });
-//
-// // Your API endpoint to get scans would look something like this:
-// app.get('/api/scans', async (req, res) => {
-//   const { rows } = await pool.query('SELECT * FROM audit_scans WHERE user_id = $1', [req.user.id]);
-//   res.json(rows);
-// });
 // ===================================================================================
 
 const MOCK_API_LATENCY = 500; // ms
 
-// In-memory store to simulate database changes
-let dbScans: AuditScan[] = [...mockScans];
+// Keys for LocalStorage
+const STORAGE_KEY_SCANS = 'complyguard_scans';
+const STORAGE_KEY_USER = 'complyguard_user';
+
+// Helper to get data from LocalStorage
+const getStoredScans = (): AuditScan[] => {
+    const stored = localStorage.getItem(STORAGE_KEY_SCANS);
+    if (stored) {
+        // We need to revive dates because JSON.stringify converts them to strings
+        return JSON.parse(stored, (key, value) => {
+            if (key === 'created_at' || key === 'subscription_start_date' || key === 'subscription_end_date') {
+                return new Date(value);
+            }
+            return value;
+        });
+    }
+    return [];
+};
+
+const saveStoredScans = (scans: AuditScan[]) => {
+    localStorage.setItem(STORAGE_KEY_SCANS, JSON.stringify(scans));
+};
+
+const getStoredUser = (): User | null => {
+    const stored = localStorage.getItem(STORAGE_KEY_USER);
+    if (stored) {
+        return JSON.parse(stored, (key, value) => {
+            if (key === 'subscription_start_date' || key === 'subscription_end_date') {
+                return new Date(value);
+            }
+            return value;
+        });
+    }
+    return null;
+};
+
+const saveStoredUser = (user: User) => {
+    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+};
+
 
 const readFileAsText = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -45,9 +68,17 @@ const readFileAsText = (file: File): Promise<string> => {
  * Simulates fetching application-specific user data from your database.
  */
 export const getAppUser = async (clerkUserId: string): Promise<User> => {
-  console.log("Fetching app user data for Clerk user:", clerkUserId);
-  await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));
-  return Promise.resolve(mockAppUser);
+    console.log("Fetching app user data for Clerk user:", clerkUserId);
+    await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));
+
+    let user = getStoredUser();
+    if (!user) {
+        console.log("No user found in storage, initializing with default mock data");
+        user = { ...mockAppUser, id: clerkUserId }; // Use the real Clerk ID
+        saveStoredUser(user);
+    }
+
+    return Promise.resolve(user);
 };
 
 /**
@@ -56,7 +87,15 @@ export const getAppUser = async (clerkUserId: string): Promise<User> => {
 export const getScans = async (): Promise<AuditScan[]> => {
     console.log('API Client: Fetching scans...');
     await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));
-    const sortedScans = [...dbScans].sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+
+    let scans = getStoredScans();
+    if (scans.length === 0) {
+        // Optional: Load some initial sample data if empty
+        // scans = [...mockScans];
+        // saveStoredScans(scans);
+    }
+
+    const sortedScans = [...scans].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return Promise.resolve(sortedScans);
 };
 
@@ -75,11 +114,11 @@ export const getFrameworks = async (): Promise<Framework[]> => {
  */
 export const createScan = async (file: File, frameworkId: string): Promise<AuditScan> => {
     console.log(`API Client: Creating scan for ${file.name} with framework ${frameworkId}`);
-    
+
     const selectedFramework = mockFrameworks.find(f => f.id === frameworkId);
     const newScan: AuditScan = {
         id: `scan-${crypto.randomUUID()}`,
-        user_id: 'user-123',
+        user_id: 'user-123', // In a real app, this would be the actual user ID
         framework_id: frameworkId,
         framework_name: selectedFramework?.name || 'Unknown',
         document_name: file.name,
@@ -88,8 +127,11 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
         findings: [],
         created_at: new Date(),
     };
-    
-    dbScans = [newScan, ...dbScans];
+
+    // Save initial state
+    let currentScans = getStoredScans();
+    currentScans = [newScan, ...currentScans];
+    saveStoredScans(currentScans);
 
     // --- Start Real Analysis (async, non-blocking) ---
     const runAnalysis = async () => {
@@ -104,14 +146,14 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
             for (let i = 0; i < paragraphs.length; i++) {
                 const paragraph = paragraphs[i];
                 console.log(`Analyzing paragraph ${i + 1} of ${paragraphs.length}`);
-                
-                const analysisPromises = rules.map(rule => 
+
+                const analysisPromises = rules.map(rule =>
                     analyzeCompliance(rule, paragraph, i + 1, newScan.id)
                 );
 
                 const results = await Promise.all(analysisPromises);
                 const findingsForParagraph = results.filter((finding): finding is AuditFinding => finding !== null);
-                
+
                 if (findingsForParagraph.length > 0) {
                     allFindings.push(...findingsForParagraph);
                 }
@@ -125,24 +167,35 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
                 findings_count: allFindings.length,
             };
 
-            const index = dbScans.findIndex(s => s.id === newScan.id);
+            // Update in storage
+            currentScans = getStoredScans();
+            const index = currentScans.findIndex(s => s.id === newScan.id);
             if (index !== -1) {
-                dbScans[index] = completedScan;
+                currentScans[index] = completedScan;
+                saveStoredScans(currentScans);
                 console.log(`API Client: Scan ${newScan.id} processing finished. Found ${allFindings.length} findings.`);
             }
         } catch (error) {
             console.error("Error during scan analysis:", error);
             // Update scan to 'Failed' status if an error occurs
-            const index = dbScans.findIndex(s => s.id === newScan.id);
+            currentScans = getStoredScans();
+            const index = currentScans.findIndex(s => s.id === newScan.id);
             if (index !== -1) {
-                dbScans[index].status = AuditStatus.Failed;
+                currentScans[index].status = AuditStatus.Failed;
+                saveStoredScans(currentScans);
             }
         }
     };
-    
+
     runAnalysis(); // Fire and forget
     // --- End Real Analysis ---
 
     await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));
     return Promise.resolve(newScan); // Return the 'processing' scan immediately
+}
+
+export const updateUser = async (user: User): Promise<User> => {
+    await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));
+    saveStoredUser(user);
+    return Promise.resolve(user);
 }

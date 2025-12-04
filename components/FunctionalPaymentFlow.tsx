@@ -54,9 +54,16 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
         setIsDetecting(false);
       }
     };
-    
+
     detectProvider();
   }, []);
+
+  // Reset buttons rendered state when provider changes
+  React.useEffect(() => {
+    if (paymentProvider !== PaymentProvider.PayPal) {
+      setPaypalButtonsRendered(false);
+    }
+  }, [paymentProvider]);
 
   // Render PayPal buttons IMMEDIATELY when PayPal is selected
   React.useEffect(() => {
@@ -69,7 +76,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const renderPayPalButtons = async () => {
     try {
       console.log('🎨 Starting PayPal button render...');
-      
+
       const container = document.getElementById('paypal-button-container');
       if (!container) {
         console.error('❌ PayPal container not found');
@@ -94,14 +101,14 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           </div>
         </div>
       `;
-      
+
       // Check if PayPal SDK is available (loaded in head)
       if (typeof (window as any).paypal !== 'undefined') {
         console.log('✅ PayPal SDK available, rendering immediately');
         renderButtons(container);
         return;
       }
-      
+
       // Quick check with very short intervals
       let attempts = 0;
       const checkInterval = setInterval(() => {
@@ -134,7 +141,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           `;
         }
       }, 100);
-      
+
     } catch (error) {
       console.error('❌ PayPal initialization error:', error);
     }
@@ -186,16 +193,16 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           try {
             setIsProcessing(true);
             updateProgress(2, 'Processing payment...');
-            
+
             const orderDetails = await actions.order.capture();
             console.log('✅ PayPal payment captured:', orderDetails);
-            
+
             if (orderDetails.status !== 'COMPLETED') {
               throw new Error(`Payment not completed. Status: ${orderDetails.status}`);
             }
 
             updateProgress(3, 'Creating subscription...');
-            
+
             const subscription = await FunctionalPaymentService.createSubscription(
               user.id,
               plan.id,
@@ -355,8 +362,8 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const switchProvider = () => {
     if (!isProcessing) {
       setPaymentProvider(
-        paymentProvider === PaymentProvider.Razorpay 
-          ? PaymentProvider.PayPal 
+        paymentProvider === PaymentProvider.Razorpay
+          ? PaymentProvider.PayPal
           : PaymentProvider.Razorpay
       );
       setError(null);
@@ -377,7 +384,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl my-8 max-h-[90vh] flex flex-col">
-        
+
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex items-center justify-between">
@@ -405,11 +412,10 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
                 {[1, 2, 3, 4].map((step) => (
                   <div
                     key={step}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      step <= currentStep 
-                        ? 'bg-blue-600 scale-110' 
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${step <= currentStep
+                        ? 'bg-blue-600 scale-110'
                         : 'bg-gray-300'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -421,7 +427,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           </div>
         )}
 
-        <div className="p-6 overflow-y-auto flex-1" style={{maxHeight: 'calc(90vh - 200px)'}}>
+        <div className="p-6 overflow-y-auto flex-1" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {/* Plan Summary */}
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-5 mb-6 border border-gray-200">
             <div className="flex items-center justify-between mb-3">
@@ -438,13 +444,13 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {savings && savings > 0 && (
               <div className="bg-green-100 text-green-800 px-3 py-2 rounded-lg text-sm font-medium inline-block mb-3">
                 💰 Save {symbol}{savings.toLocaleString()} per year!
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
               <div className="flex items-center">
                 <span className="text-green-600 mr-2">✅</span>
@@ -485,16 +491,15 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           {/* Payment Method Selection - Razorpay Prominent */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Payment Method</h3>
-            
+
             {/* Razorpay - Primary Option (Instant) */}
             <button
               onClick={() => setPaymentProvider(PaymentProvider.Razorpay)}
               disabled={isProcessing}
-              className={`w-full p-5 rounded-xl border-3 transition-all duration-200 mb-4 relative ${
-                paymentProvider === PaymentProvider.Razorpay
+              className={`w-full p-5 rounded-xl border-3 transition-all duration-200 mb-4 relative ${paymentProvider === PaymentProvider.Razorpay
                   ? 'border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg scale-105'
                   : 'border-green-300 bg-green-50 hover:shadow-md hover:scale-102'
-              } disabled:opacity-50`}
+                } disabled:opacity-50`}
             >
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <span className="bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
@@ -537,11 +542,10 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
               <button
                 onClick={() => setPaymentProvider(PaymentProvider.PayPal)}
                 disabled={isProcessing}
-                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
-                  paymentProvider === PaymentProvider.PayPal
+                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${paymentProvider === PaymentProvider.PayPal
                     ? 'border-blue-500 bg-blue-50 shadow-md'
                     : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50'
-                } disabled:opacity-50`}
+                  } disabled:opacity-50`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -603,7 +607,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
                   </p>
                 </div>
               </div>
-              
+
               {/* PayPal Buttons Container */}
               <div id="paypal-button-container" className="min-h-[120px] border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center bg-white">
                 <div className="text-center text-blue-600 p-4">
@@ -625,7 +629,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-red-800 mb-1">Payment Error</h4>
                   <p className="text-sm text-red-700 mb-3">{error}</p>
-                  
+
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={switchProvider}
@@ -668,20 +672,6 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
             </button>
           )}
 
-          {paymentProvider === PaymentProvider.PayPal && !isProcessing && (
-            <button
-              onClick={handlePayment}
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              <div>
-                <div className="text-xl">Pay ${price.toLocaleString()} with PayPal</div>
-                <div className="text-sm opacity-90 mt-1">
-                  Secure global payment • No account required
-                </div>
-              </div>
-            </button>
-          )}
-
           {/* Security & Trust Indicators */}
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-center text-sm text-gray-600">
@@ -690,12 +680,12 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
               </svg>
               Secured by 256-bit SSL encryption
             </div>
-            
+
             <div className="text-center text-xs text-gray-500">
               <p>Your payment information is processed securely.</p>
               <p>We do not store credit card details.</p>
             </div>
-            
+
             <div className="text-center text-xs text-gray-500">
               Need help? Contact us at{' '}
               <a href="mailto:support@complyguard.ai" className="text-blue-600 hover:underline">
