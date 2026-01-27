@@ -47,31 +47,29 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
       // Step 1: Initialize
       setProgress(25);
       setMessage('Initializing secure payment...');
-      
+
       let result;
-      if (paymentProvider === PaymentProvider.Razorpay) {
-        result = await SmoothPaymentService.processRazorpayPayment(
+      await new Promise<void>((resolve, reject) => {
+        SmoothPaymentService.processInstantPayment(
+          paymentProvider,
           plan,
           billingCycle,
           user.id,
           user.email,
-          (msg) => setMessage(msg)
+          (msg) => setMessage(msg),
+          (successResult) => {
+            result = successResult;
+            resolve();
+          },
+          (err) => reject(err)
         );
-      } else {
-        result = await SmoothPaymentService.processPayPalPayment(
-          plan,
-          billingCycle,
-          user.id,
-          'one-click-paypal-container',
-          (msg) => setMessage(msg)
-        );
-      }
+      });
 
       if (result.success) {
         // Step 2: Create subscription
         setProgress(75);
         setMessage('Activating your subscription...');
-        
+
         const subscription = await SmoothPaymentService.createSubscription(
           user.id,
           plan.id,
@@ -83,7 +81,7 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
         // Step 3: Complete
         setProgress(100);
         setMessage('Success! Welcome to ComplyGuard AI!');
-        
+
         setTimeout(() => {
           onSuccess({
             provider: paymentProvider,
@@ -103,8 +101,8 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
   const switchProvider = () => {
     if (!isProcessing) {
       setPaymentProvider(
-        paymentProvider === PaymentProvider.Razorpay 
-          ? PaymentProvider.PayPal 
+        paymentProvider === PaymentProvider.Razorpay
+          ? PaymentProvider.PayPal
           : PaymentProvider.Razorpay
       );
       setError(null);
@@ -114,7 +112,7 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden transform transition-all">
-        
+
         {/* Header */}
         <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white p-8 text-center">
           <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -134,7 +132,7 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
               {symbol}{price.toLocaleString()}
               <span className="text-lg text-gray-500">/{isYearly ? 'year' : 'month'}</span>
             </div>
-            
+
             {isYearly && (
               <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
                 🎉 Save {symbol}{(getPrice(plan, false, currency) * 12 - price).toLocaleString()} per year!
@@ -150,7 +148,7 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
                 <span className="text-sm text-gray-500">{progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 ></div>
@@ -185,11 +183,10 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
               <button
                 onClick={() => setPaymentProvider(PaymentProvider.Razorpay)}
                 disabled={isProcessing}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  paymentProvider === PaymentProvider.Razorpay
+                className={`p-4 rounded-xl border-2 transition-all ${paymentProvider === PaymentProvider.Razorpay
                     ? 'border-green-500 bg-green-50 shadow-md'
                     : 'border-gray-200 hover:border-green-300'
-                } disabled:opacity-50`}
+                  } disabled:opacity-50`}
               >
                 <div className="text-center">
                   <div className="text-2xl mb-2">🇮🇳</div>
@@ -197,15 +194,14 @@ const OneClickPayment: React.FC<OneClickPaymentProps> = ({
                   <div className="text-xs text-gray-600">Cards, UPI, Wallets</div>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setPaymentProvider(PaymentProvider.PayPal)}
                 disabled={isProcessing}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  paymentProvider === PaymentProvider.PayPal
+                className={`p-4 rounded-xl border-2 transition-all ${paymentProvider === PaymentProvider.PayPal
                     ? 'border-blue-500 bg-blue-50 shadow-md'
                     : 'border-gray-200 hover:border-blue-300'
-                } disabled:opacity-50`}
+                  } disabled:opacity-50`}
               >
                 <div className="text-center">
                   <div className="text-2xl mb-2">🌍</div>

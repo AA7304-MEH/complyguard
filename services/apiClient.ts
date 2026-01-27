@@ -128,6 +128,21 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
         created_at: new Date(),
     };
 
+    // Get current user to check limits
+    const user = getStoredUser();
+    if (user) {
+        // -1 means unlimited
+        if (user.scan_limit_this_month !== -1 && user.documents_scanned_this_month >= user.scan_limit_this_month) {
+            throw new Error("SCAN_LIMIT_REACHED");
+        }
+
+        // Increment usage count immediately and persist it
+        // This simulates the backend updating the record transactionally
+        user.documents_scanned_this_month += 1;
+        saveStoredUser(user);
+        console.log(`API Client: Scan limit updated. ${user.documents_scanned_this_month}/${user.scan_limit_this_month}`);
+    }
+
     // Save initial state
     let currentScans = getStoredScans();
     currentScans = [newScan, ...currentScans];

@@ -7,9 +7,10 @@ import { FileIcon } from './icons/FileIcon';
 interface NewScanModalProps {
   onClose: () => void;
   onScanStart: (newScan: AuditScan) => void;
+  onUpgrade?: () => void;
 }
 
-const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => {
+const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpgrade }) => {
   const [file, setFile] = React.useState<File | null>(null);
   const [frameworks, setFrameworks] = React.useState<Framework[]>([]);
   const [frameworkId, setFrameworkId] = React.useState<string>('');
@@ -18,11 +19,11 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
 
   React.useEffect(() => {
     const fetchFrameworks = async () => {
-        const fwData = await getFrameworks();
-        setFrameworks(fwData);
-        if (fwData.length > 0) {
-            setFrameworkId(fwData[0].id);
-        }
+      const fwData = await getFrameworks();
+      setFrameworks(fwData);
+      if (fwData.length > 0) {
+        setFrameworkId(fwData[0].id);
+      }
     }
     fetchFrameworks();
   }, []);
@@ -33,7 +34,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
       setFile(e.target.files[0]);
     }
   };
-  
+
   const handleStartScan = async () => {
     if (!file || !frameworkId) {
       setError("Please select a file and a framework.");
@@ -44,20 +45,24 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
     setError(null);
 
     try {
-        // This will now perform the full analysis in the background
-        const processingScan = await createScan(file, frameworkId);
-        
-        // Add the new "processing" scan to the dashboard immediately.
-        onScanStart(processingScan);
+      // This will now perform the full analysis in the background
+      const processingScan = await createScan(file, frameworkId);
 
-        // Close the modal. The dashboard will show the scan in progress.
-        // The analysis now happens on the simulated backend.
-        onClose();
+      // Add the new "processing" scan to the dashboard immediately.
+      onScanStart(processingScan);
 
-    } catch (err) {
-        console.error("Failed to start scan:", err);
+      // Close the modal. The dashboard will show the scan in progress.
+      // The analysis now happens on the simulated backend.
+      onClose();
+
+    } catch (err: any) {
+      console.error("Failed to start scan:", err);
+      if (err.message === "SCAN_LIMIT_REACHED") {
+        setError("You have reached your monthly scan limit. Please upgrade your plan to continue.");
+      } else {
         setError("Could not start the scan. Please try again.");
-        setIsProcessing(false);
+      }
+      setIsProcessing(false);
     }
   };
 
@@ -65,7 +70,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg m-4">
         <h2 className="text-2xl font-bold mb-4 text-slate-900">Start New Compliance Scan</h2>
-        
+
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Regulatory Framework</label>
@@ -92,7 +97,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
                 <div className="flex text-sm text-gray-600">
                   <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-accent hover:text-accent-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-accent">
                     <span>Upload a file</span>
-                    <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md"/>
+                    <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md" />
                   </label>
                   <p className="pl-1">or drag and drop</p>
                 </div>
@@ -102,8 +107,20 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
           </div>
         </div>
 
-        {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
-        
+        {error && (
+          <div className={`mt-4 text-sm ${error.includes("limit") ? "bg-red-50 p-3 rounded border border-red-200" : ""}`}>
+            <p className="text-red-600">{error}</p>
+            {error.includes("limit") && onUpgrade && (
+              <button
+                onClick={onUpgrade}
+                className="mt-2 text-accent font-medium hover:underline flex items-center"
+              >
+                View Upgrade Options &rarr;
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="mt-8 flex justify-end gap-4">
           <button
             onClick={onClose}
@@ -119,12 +136,12 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart }) => 
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center min-w-[120px] justify-center"
           >
             {isProcessing ? (
-                <>
-                    <Spinner />
-                    <span>Starting...</span>
-                </>
+              <>
+                <Spinner />
+                <span>Starting...</span>
+              </>
             ) : (
-                'Start Scan'
+              'Start Scan'
             )}
           </button>
         </div>

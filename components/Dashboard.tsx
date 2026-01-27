@@ -14,14 +14,14 @@ interface DashboardProps {
 }
 
 const getStatusChip = (status: AuditStatus) => {
-    switch (status) {
-        case AuditStatus.Completed:
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircleIcon className="w-4 h-4 mr-1.5" />Completed</span>;
-        case AuditStatus.Processing:
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 animate-pulse"><ClockIcon className="w-4 h-4 mr-1.5" />Processing</span>;
-        case AuditStatus.Failed:
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircleIcon className="w-4 h-4 mr-1.5" />Failed</span>;
-    }
+  switch (status) {
+    case AuditStatus.Completed:
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircleIcon className="w-4 h-4 mr-1.5" />Completed</span>;
+    case AuditStatus.Processing:
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 animate-pulse"><ClockIcon className="w-4 h-4 mr-1.5" />Processing</span>;
+    case AuditStatus.Failed:
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircleIcon className="w-4 h-4 mr-1.5" />Failed</span>;
+  }
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onViewReport, onUpgrade }) => {
@@ -67,7 +67,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
                   <h3 className="text-xl font-bold text-blue-900">Unlock Premium Features</h3>
                 </div>
                 <p className="text-blue-700 mb-3">
-                  You're on the Free plan with only {user.scan_limit_this_month} scans per month. 
+                  You're on the Free plan with only {user.scan_limit_this_month} scans per month.
                   Upgrade to get more scans, advanced analytics, and premium features.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-blue-600">
@@ -108,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
               <div>
                 <h3 className="text-lg font-medium text-red-900">Scan Limit Reached</h3>
                 <p className="text-red-700 mt-1">
-                  You've used all {user.scan_limit_this_month} scans for this month. 
+                  You've used all {user.scan_limit_this_month} scans for this month.
                   Upgrade your plan to continue scanning documents.
                 </p>
               </div>
@@ -128,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
               <div>
                 <h3 className="text-lg font-medium text-yellow-900">Approaching Scan Limit</h3>
                 <p className="text-yellow-700 mt-1">
-                  You've used {user.documents_scanned_this_month} of {user.scan_limit_this_month} scans ({Math.round(usagePercentage)}%). 
+                  You've used {user.documents_scanned_this_month} of {user.scan_limit_this_month} scans ({Math.round(usagePercentage)}%).
                   Consider upgrading to avoid interruptions.
                 </p>
               </div>
@@ -143,36 +143,34 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
         )}
 
         <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900">Monthly Usage</h3>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                user.subscription_tier === 'free' ? 'bg-gray-100 text-gray-800' :
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-medium text-gray-900">Monthly Usage</h3>
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.subscription_tier === 'free' ? 'bg-gray-100 text-gray-800' :
                 user.subscription_tier === 'basic' ? 'bg-blue-100 text-blue-800' :
-                user.subscription_tier === 'professional' ? 'bg-purple-100 text-purple-800' :
-                'bg-yellow-100 text-yellow-800'
+                  user.subscription_tier === 'professional' ? 'bg-purple-100 text-purple-800' :
+                    'bg-yellow-100 text-yellow-800'
               }`}>
-                {user.subscription_tier.charAt(0).toUpperCase() + user.subscription_tier.slice(1)} Plan
-              </span>
-            </div>
-            
-            {user.scan_limit_this_month > 0 ? (
-              <>
-                <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
-                    <div 
-                        className={`h-2.5 rounded-full transition-all duration-300 ${
-                          usagePercentage >= 90 ? 'bg-red-500' : 
-                          usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
-                        style={{width: `${Math.min(usagePercentage, 100)}%`}}>
-                    </div>
+              {user.subscription_tier.charAt(0).toUpperCase() + user.subscription_tier.slice(1)} Plan
+            </span>
+          </div>
+
+          {user.scan_limit_this_month > 0 ? (
+            <>
+              <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-300 ${usagePercentage >= 90 ? 'bg-red-500' :
+                      usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
+                  style={{ width: `${Math.min(usagePercentage, 100)}%` }}>
                 </div>
-                <p className="text-right text-sm text-gray-600 mt-1">
-                  {user.documents_scanned_this_month} / {user.scan_limit_this_month} scans used
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-green-600 font-medium">Unlimited scans</p>
-            )}
+              </div>
+              <p className="text-right text-sm text-gray-600 mt-1">
+                {user.documents_scanned_this_month} / {user.scan_limit_this_month} scans used
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-green-600 font-medium">Unlimited scans</p>
+          )}
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
@@ -211,7 +209,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
           </div>
         </div>
       </div>
-      {isModalOpen && <NewScanModal onClose={() => setIsModalOpen(false)} onScanStart={onUpdateScans} />}
+      {isModalOpen && <NewScanModal onClose={() => setIsModalOpen(false)} onScanStart={onUpdateScans} onUpgrade={() => { setIsModalOpen(false); onUpgrade?.(); }} />}
     </>
   );
 };

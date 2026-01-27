@@ -1,2 +1,2 @@
-import * as React from 'react';
-import { SubscriptionPlan, BillingCycle, PaymentProvider, User } from '../types
+// Placeholder component - Functional payment flow is handled by FunctionalPaymentFlow.tsx
+export { };
