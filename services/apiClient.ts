@@ -1,7 +1,7 @@
 import * as mammoth from 'mammoth';
 import { AuditFinding, AuditScan, AuditStatus, Framework, User } from '../types';
 import { mockScans, mockFrameworks, mockAppUser, mockFrameworkRules } from './mockData';
-import { analyzeCompliance, MultimodalContent } from './geminiService';
+import { analyzeFullDocument, MultimodalContent } from './geminiService';
 
 // ===================================================================================
 // NOTE TO DEVELOPER:
@@ -199,37 +199,14 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
             }
 
             const rules = mockFrameworkRules.filter(r => r.framework_id === frameworkId);
-            const allFindings: AuditFinding[] = [];
-
-            if (typeof content !== 'string') {
-                // PDF Mode: Process whole document against each rule
-                for (const rule of rules) {
-                    const finding = await analyzeCompliance(rule, content, 1, newScan.id);
-                    if (finding) allFindings.push(finding);
-                }
-            } else {
-                // Text Mode: Process in paragraphs
-                let paragraphs = documentTextForExcerpt.split(/\n\s*\n/).filter(p => p.trim().length > 5);
-                if (paragraphs.length === 0) {
-                    paragraphs = documentTextForExcerpt.split('\n').filter(p => p.trim().length > 5);
-                }
-                if (paragraphs.length === 0 && documentTextForExcerpt.trim().length > 0) {
-                    paragraphs = [documentTextForExcerpt.trim()];
-                }
-                
-                // Process paragraphs (limited to first 10 for performance in this demo)
-                const processedParagraphs = paragraphs.slice(0, 10);
-                for (let i = 0; i < processedParagraphs.length; i++) {
-                    const paragraph = processedParagraphs[i];
-                    const analysisPromises = rules.map(rule =>
-                        analyzeCompliance(rule, paragraph, i + 1, newScan.id)
-                    );
-
-                    const results = await Promise.all(analysisPromises);
-                    const findingsForParagraph = results.filter((finding): finding is AuditFinding => finding !== null);
-                    allFindings.push(...findingsForParagraph);
-                }
-            }
+            const frameworkName = selectedFramework?.name || "GDPR";
+            
+            const allFindings = await analyzeFullDocument(frameworkName, content, newScan.id, rules);
+            
+            // Calculate compliance score base on findings
+            // Deduction per finding weighted by framework size
+            const deductionPerFinding = rules.length > 0 ? (100 / rules.length) : 10;
+            const calculatedScore = Math.max(0, 100 - (allFindings.length * deductionPerFinding));
             
             // Once all analysis is complete, update the scan record
             const completedScan: AuditScan = {
@@ -237,7 +214,7 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
                 status: AuditStatus.Completed,
                 findings: allFindings,
                 findings_count: allFindings.length,
-                score: Math.max(0, 100 - (allFindings.length * 5))
+                score: Math.round(calculatedScore)
             };
 
             // Update in storage
