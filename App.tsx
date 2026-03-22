@@ -156,6 +156,22 @@ const MainApp: React.FC = () => {
     setAppUser(updatedUser);
   }, []);
 
+  const [userLocation, setUserLocation] = React.useState<string>('US'); // Default to US
+
+  React.useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const { FunctionalPaymentService } = await import('./services/functionalPaymentService');
+        const location = await FunctionalPaymentService.getUserLocation();
+        setUserLocation(location);
+        console.log("📍 User location detected for pricing:", location);
+      } catch (error) {
+        console.error("Failed to detect location for pricing:", error);
+      }
+    };
+    detectLocation();
+  }, []);
+
   if (isLoading || !appUser) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-secondary">
@@ -197,7 +213,7 @@ const MainApp: React.FC = () => {
           <PricingPage
             currentPlan={getPlanByTier(appUser.subscription_tier)}
             onPlanSelect={handlePlanSelect}
-            userLocation="IN" // You could detect this from IP or user settings
+            userLocation={userLocation}
           />
         )}
         {view === 'subscription' && (

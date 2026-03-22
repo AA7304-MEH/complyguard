@@ -11,11 +11,52 @@ interface NewScanModalProps {
 }
 
 const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpgrade }) => {
-  const [file, setFile] = React.useState<File | null>(null);
+  const [files, setFiles] = React.useState<File[]>([]);
   const [frameworks, setFrameworks] = React.useState<Framework[]>([]);
   const [frameworkId, setFrameworkId] = React.useState<string>('');
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const folderInputRef = React.useRef<HTMLInputElement>(null);
+  const [selectedFolderName, setSelectedFolderName] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      const validFiles = droppedFiles.filter(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        return ext === 'txt' || ext === 'md';
+      });
+
+      if (validFiles.length > 0) {
+        setFiles(validFiles);
+        if (validFiles.length === 1) {
+          setSelectedFolderName(null);
+        } else {
+          setSelectedFolderName(`${validFiles.length} files selected`);
+        }
+        setError(null);
+      } else {
+        setError("Please upload .txt or .md files.");
+      }
+    }
+  };
 
   React.useEffect(() => {
     const fetchFrameworks = async () => {
@@ -30,14 +71,34 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      // Basic validation for file type and size can be added here
-      setFile(e.target.files[0]);
+      const newFiles = Array.from(e.target.files);
+      setFiles(newFiles);
+      setSelectedFolderName(null);
+      setError(null);
+    }
+  };
+
+  const handleFolderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const fdFiles = Array.from(e.target.files);
+      const validFiles = fdFiles.filter(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        return ext === 'txt' || ext === 'md';
+      });
+
+      if (validFiles.length > 0) {
+        setFiles(validFiles);
+        setSelectedFolderName(`${validFiles.length} files in folder`);
+        setError(null);
+      } else {
+        setError("No .txt or .md files found in the selected folder.");
+      }
     }
   };
 
   const handleStartScan = async () => {
-    if (!file || !frameworkId) {
-      setError("Please select a file and a framework.");
+    if (files.length === 0 || !frameworkId) {
+      setError("Please select one or more files and a framework.");
       return;
     }
 
@@ -45,8 +106,25 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
     setError(null);
 
     try {
-      // This will now perform the full analysis in the background
-      const processingScan = await createScan(file, frameworkId);
+      let finalFile: File;
+      
+      if (files.length === 1) {
+        finalFile = files[0];
+      } else {
+        // combine multiple files into one "virtual" document for analysis
+        const combinedContent = await Promise.all(files.map(async (f) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(`--- DOCUMENT: ${f.name} ---\n${reader.result as string}\n\n`);
+            reader.readAsText(f);
+          });
+        }));
+        
+        const blob = new Blob(combinedContent, { type: 'text/plain' });
+        finalFile = new File([blob], selectedFolderName || "Combined_Documents.txt", { type: 'text/plain' });
+      }
+
+      const processingScan = await createScan(finalFile, frameworkId);
 
       // Add the new "processing" scan to the dashboard immediately.
       onScanStart(processingScan);
@@ -91,17 +169,39 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Upload Document</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <div 
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
+                isDragging ? "border-accent bg-accent/5" : "border-gray-300"
+              }`}
+            >
               <div className="space-y-1 text-center">
-                <FileIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <FileIcon className={`mx-auto h-12 w-12 ${isDragging ? "text-accent" : "text-gray-400"}`} />
                 <div className="flex text-sm text-gray-600">
                   <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-accent hover:text-accent-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-accent">
                     <span>Upload a file</span>
                     <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md" />
                   </label>
-                  <p className="pl-1">or drag and drop</p>
+                  <span className="mx-1">or</span>
+                  <button 
+                    type="button"
+                    onClick={() => folderInputRef.current?.click()}
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-accent hover:text-accent-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-accent"
+                  >
+                    Upload a folder
+                  </button>
+                  <input 
+                    ref={folderInputRef}
+                    type="file" 
+                    className="hidden" 
+                    onChange={handleFolderChange} 
+                    {...({ webkitdirectory: "", directory: "" } as any)} 
+                  />
+                  <p className="pl-1 text-gray-500">or drag and drop</p>
                 </div>
-                <p className="text-xs text-gray-500">{file ? file.name : "TXT, MD"}</p>
+                <p className="text-xs text-gray-500">{selectedFolderName ? selectedFolderName : (files.length > 0 ? files[0].name : "TXT, MD")}</p>
               </div>
             </div>
           </div>
@@ -129,10 +229,10 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
           >
             Cancel
           </button>
-          <button
+            <button
             onClick={handleStartScan}
             type="button"
-            disabled={!file || !frameworkId || isProcessing}
+            disabled={files.length === 0 || !frameworkId || isProcessing}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center min-w-[120px] justify-center"
           >
             {isProcessing ? (

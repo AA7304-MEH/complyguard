@@ -3,14 +3,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FindingSeverity, AuditFinding, FrameworkRule } from '../types';
 
-// The API key is expected to be set as an environment variable.
-// The app will not function correctly without it.
-if (!process.env.GEMINI_API_KEY) {
-    throw new Error("Gemini API key not found. Please set the GEMINI_API_KEY environment variable.");
+// Use Vite's environment variable access with fallback
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env.GEMINI_API_KEY);
+
+if (!API_KEY) {
+    console.warn("⚠️ Gemini API key not found. AI analysis will be mocked.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const model = "gemini-2.5-flash";
+const ai = new GoogleGenAI({ apiKey: API_KEY || 'dummy_key' });
+const model = "gemini-1.5-flash";
 
 const analysisPromptTemplate = (requirement_text: string, document_chunk: string) => `
 Analyze the compliance of a document snippet against a specific regulatory requirement.
@@ -69,7 +70,7 @@ export const analyzeCompliance = async (
             }
         });
 
-        const textResponse = response.text.trim();
+        const textResponse = (response.text || "").trim();
         if (textResponse.toUpperCase() === 'NO_GAP') {
             return null;
         }

@@ -13,12 +13,6 @@ interface HeaderProps {
     onViewTemplates?: () => void;
     onViewCalendar?: () => void;
     onViewAPI?: () => void;
-    onViewPaymentTest?: () => void;
-    onViewPaymentSimple?: () => void;
-    onViewPaymentFixed?: () => void;
-    onViewSimpleTest?: () => void;
-    onViewSystemTest?: () => void;
-    onViewPayPalDiagnostics?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -29,13 +23,7 @@ const Header: React.FC<HeaderProps> = ({
   onViewAnalytics, 
   onViewTemplates, 
   onViewCalendar,
-  onViewAPI,
-  onViewPaymentTest,
-  onViewPaymentSimple,
-  onViewPaymentFixed,
-  onViewSimpleTest,
-  onViewSystemTest,
-  onViewPayPalDiagnostics
+  onViewAPI
 }) => {
   const currentPlan = getPlanByTier(user.subscription_tier);
   const usagePercentage = user.scan_limit_this_month > 0 

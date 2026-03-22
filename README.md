@@ -147,7 +147,21 @@ complyguard/
 
 ## 🚀 Deployment
 
-### Automatic Deployment to Netlify
+The application is optimized for both **Netlify** and **Vercel**.
+
+### Vercel Deployment (Recommended)
+1. Push your code to GitHub.
+2. Import the project in Vercel.
+3. Add the environment variables from `.env.production`.
+4. The `vercel.json` file handles all SPA routing automatically.
+
+For detailed steps, refer to [VERCEL_DEPLOYMENT_GUIDE](file:///C:/Users/user/.gemini/antigravity/brain/1d5170c2-7b3a-49e4-a54c-1d5658a62842/vercel_deployment_guide.md).
+
+### Netlify Deployment
+1. Connect your GitHub repo to Netlify.
+2. Build command: `npm run build`.
+3. Publish directory: `dist`.
+4. Add environment variables.
 
 This project is configured for automatic deployment via GitHub Actions:
 

@@ -153,7 +153,16 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
         try {
             console.log(`Starting analysis for scan: ${newScan.id}`);
             const documentText = await readFileAsText(file);
-            const paragraphs = documentText.split('\n').filter(p => p.trim().length > 10); // Split by lines and filter out empty ones
+            // Split by double newlines for paragraphs, or single if no doubles found
+            let paragraphs = documentText.split(/\n\s*\n/).filter(p => p.trim().length > 5);
+            if (paragraphs.length === 0) {
+                paragraphs = documentText.split('\n').filter(p => p.trim().length > 5);
+            }
+            // If still empty, use the whole text as one paragraph if not empty
+            if (paragraphs.length === 0 && documentText.trim().length > 0) {
+                paragraphs = [documentText.trim()];
+            }
+            
             const rules = mockFrameworkRules.filter(r => r.framework_id === frameworkId);
             const allFindings: AuditFinding[] = [];
 
