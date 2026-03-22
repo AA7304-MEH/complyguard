@@ -1,6 +1,7 @@
+import * as mammoth from 'mammoth';
 import { AuditFinding, AuditScan, AuditStatus, Framework, User } from '../types';
 import { mockScans, mockFrameworks, mockAppUser, mockFrameworkRules } from './mockData';
-import { analyzeCompliance } from './geminiService';
+import { analyzeCompliance, MultimodalContent } from './geminiService';
 
 // ===================================================================================
 // NOTE TO DEVELOPER:
@@ -54,6 +55,33 @@ const saveStoredUser = (user: User) => {
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
 };
 
+
+const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            } else {
+                reject(new Error("Failed to read file as base64 string"));
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
+const readDocxAsText = async (file: File): Promise<string> => {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result.value || "";
+    } catch (error) {
+        console.error("Error extracting text from DOCX:", error);
+        return "";
+    }
+};
 
 const readFileAsText = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -125,6 +153,7 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
         status: AuditStatus.Processing,
         findings_count: 0,
         findings: [],
+        score: 0,
         created_at: new Date(),
     };
 
@@ -149,46 +178,66 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
     saveStoredScans(currentScans);
 
     // --- Start Real Analysis (async, non-blocking) ---
-    const runAnalysis = async () => {
+    const runAnalysisTask = async () => {
         try {
             console.log(`Starting analysis for scan: ${newScan.id}`);
-            const documentText = await readFileAsText(file);
-            // Split by double newlines for paragraphs, or single if no doubles found
-            let paragraphs = documentText.split(/\n\s*\n/).filter(p => p.trim().length > 5);
-            if (paragraphs.length === 0) {
-                paragraphs = documentText.split('\n').filter(p => p.trim().length > 5);
-            }
-            // If still empty, use the whole text as one paragraph if not empty
-            if (paragraphs.length === 0 && documentText.trim().length > 0) {
-                paragraphs = [documentText.trim()];
-            }
             
+            let content: MultimodalContent;
+            let documentTextForExcerpt = "";
+            const ext = file.name.split('.').pop()?.toLowerCase();
+
+            if (ext === 'pdf') {
+                const base64 = await readFileAsBase64(file);
+                content = { data: base64, mimeType: 'application/pdf' };
+                documentTextForExcerpt = "[PDF Document]";
+            } else if (ext === 'docx' || ext === 'doc') {
+                documentTextForExcerpt = await readDocxAsText(file);
+                content = documentTextForExcerpt;
+            } else {
+                documentTextForExcerpt = await readFileAsText(file);
+                content = documentTextForExcerpt;
+            }
+
             const rules = mockFrameworkRules.filter(r => r.framework_id === frameworkId);
             const allFindings: AuditFinding[] = [];
 
-            // Process paragraphs in chunks to avoid overwhelming the browser or API rate limits
-            for (let i = 0; i < paragraphs.length; i++) {
-                const paragraph = paragraphs[i];
-                console.log(`Analyzing paragraph ${i + 1} of ${paragraphs.length}`);
+            if (typeof content !== 'string') {
+                // PDF Mode: Process whole document against each rule
+                for (const rule of rules) {
+                    const finding = await analyzeCompliance(rule, content, 1, newScan.id);
+                    if (finding) allFindings.push(finding);
+                }
+            } else {
+                // Text Mode: Process in paragraphs
+                let paragraphs = documentTextForExcerpt.split(/\n\s*\n/).filter(p => p.trim().length > 5);
+                if (paragraphs.length === 0) {
+                    paragraphs = documentTextForExcerpt.split('\n').filter(p => p.trim().length > 5);
+                }
+                if (paragraphs.length === 0 && documentTextForExcerpt.trim().length > 0) {
+                    paragraphs = [documentTextForExcerpt.trim()];
+                }
+                
+                // Process paragraphs (limited to first 10 for performance in this demo)
+                const processedParagraphs = paragraphs.slice(0, 10);
+                for (let i = 0; i < processedParagraphs.length; i++) {
+                    const paragraph = processedParagraphs[i];
+                    const analysisPromises = rules.map(rule =>
+                        analyzeCompliance(rule, paragraph, i + 1, newScan.id)
+                    );
 
-                const analysisPromises = rules.map(rule =>
-                    analyzeCompliance(rule, paragraph, i + 1, newScan.id)
-                );
-
-                const results = await Promise.all(analysisPromises);
-                const findingsForParagraph = results.filter((finding): finding is AuditFinding => finding !== null);
-
-                if (findingsForParagraph.length > 0) {
+                    const results = await Promise.all(analysisPromises);
+                    const findingsForParagraph = results.filter((finding): finding is AuditFinding => finding !== null);
                     allFindings.push(...findingsForParagraph);
                 }
             }
-
+            
             // Once all analysis is complete, update the scan record
             const completedScan: AuditScan = {
                 ...newScan,
                 status: AuditStatus.Completed,
                 findings: allFindings,
                 findings_count: allFindings.length,
+                score: Math.max(0, 100 - (allFindings.length * 5))
             };
 
             // Update in storage
@@ -211,7 +260,7 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
         }
     };
 
-    runAnalysis(); // Fire and forget
+    runAnalysisTask(); // Fire and forget
     // --- End Real Analysis ---
 
     await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));

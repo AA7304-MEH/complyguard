@@ -85,6 +85,7 @@ export interface AuditScan {
   status: AuditStatus;
   findings_count: number;
   findings: AuditFinding[];
+  score: number;
   created_at: Date;
 }
 export interface SubscriptionPlan {

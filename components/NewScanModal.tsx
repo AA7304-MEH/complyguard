@@ -41,7 +41,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
       const droppedFiles = Array.from(e.dataTransfer.files);
       const validFiles = droppedFiles.filter(f => {
         const ext = f.name.split('.').pop()?.toLowerCase();
-        return ext === 'txt' || ext === 'md';
+        return ['txt', 'md', 'pdf', 'doc', 'docx'].includes(ext || '');
       });
 
       if (validFiles.length > 0) {
@@ -53,7 +53,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
         }
         setError(null);
       } else {
-        setError("Please upload .txt or .md files.");
+        setError("Please upload .txt, .md, .pdf, or Word files.");
       }
     }
   };
@@ -83,7 +83,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
       const fdFiles = Array.from(e.target.files);
       const validFiles = fdFiles.filter(f => {
         const ext = f.name.split('.').pop()?.toLowerCase();
-        return ext === 'txt' || ext === 'md';
+        return ['txt', 'md', 'pdf', 'doc', 'docx'].includes(ext || '');
       });
 
       if (validFiles.length > 0) {
@@ -91,7 +91,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
         setSelectedFolderName(`${validFiles.length} files in folder`);
         setError(null);
       } else {
-        setError("No .txt or .md files found in the selected folder.");
+        setError("No compatible compliance documents found in the selected folder.");
       }
     }
   };
@@ -186,7 +186,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                   <div className="flex items-center">
                     <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-semibold text-accent hover:text-accent-dark focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
                       <span>Upload a file</span>
-                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md" />
+                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md,.pdf,.doc,.docx" />
                     </label>
                     <span className="mx-2 text-gray-400">or</span>
                     <button 
@@ -207,7 +207,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                     />
                   </div>
                 </div>
-                <p className="text-xs text-gray-400">Supports .txt and .md files</p>
+                <p className="text-xs text-gray-400">Supports .txt, .md, .pdf, .doc, .docx</p>
               </div>
 
               {files.length > 0 && (
