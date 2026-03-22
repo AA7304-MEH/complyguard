@@ -9,21 +9,23 @@ if (!API_KEY) {
 }
 
 const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
-const MODEL_NAME = "gemini-1.5-flash";
+// Upgraded to Pro for better reasoning as requested
+const MODEL_NAME = "gemini-1.5-pro";
 
-const SYSTEM_PROMPT = `
+const SYSTEM_INSTRUCTION = `
 You are a senior compliance auditor specializing in GDPR, HIPAA, SOC 2, and ISO 27001. 
-Your task is to analyze a company policy document and identify gaps against the selected framework.
+Your task is to analyze a company policy document and identify gaps against the selected framework checklist.
 
 Rules:
-- Be critical and thorough. If a requirement is missing, unclear, or partially addressed, flag it.
-- For each gap, provide:
-  1. The specific requirement (e.g., GDPR Article 5, SOC 2 CC6.1)
+- Be critical, thorough, and pedantic. If a requirement is missing, unclear, or partially addressed, you MUST flag it.
+- Do not assume context that is not explicitly in the document.
+- For each gap identified, provide:
+  1. The specific Article or Requirement (e.g., GDPR Art. 5(1)(e), SOC 2 CC6.1)
   2. A clear description of what is missing or insufficient
-  3. Severity: Critical (major risk of non-compliance), Major (important but not critical), Minor (improvement)
-  4. Actionable remediation advice (what to add or change)
-- If the document meets all requirements, output a JSON object with "findings": [] 
-- Output only a valid JSON object. Do not include any other text, markdown, or explanation.
+  3. Severity: Critical (high risk/legal violation), Major (important gap), Minor (best practice improvement)
+  4. Actionable remediation advice (what specific text to add or change)
+- If the document meets all checklist items, output a JSON object with "findings": []
+- Output only a valid JSON object. No other text.
 
 JSON structure:
 {
@@ -39,6 +41,44 @@ JSON structure:
   ]
 }
 `;
+
+const FRAMEWORK_CHECKLISTS: Record<string, string> = {
+    "GDPR": `
+- Lawful basis for processing (Art. 6)
+- Data subject rights (access, rectification, erasure) (Art. 15-17)
+- Data Protection Officer contact (if applicable) (Art. 37)
+- Retention period defined (Art. 5(1)(e)) - MUST NOT be "indefinite"
+- International transfer safeguards (Art. 44-49)
+- Breach notification to supervisory authority within 72h (Art. 33)
+- Data processing agreements with third parties (Art. 28)
+- Technical and organizational security measures (Art. 32)
+`,
+    "HIPAA": `
+- Notice of Privacy Practices (NPP) contents
+- Individual rights to access/amend PHI
+- Administrative Safeguards (Risk Analysis, Workforce training)
+- Physical Safeguards (Facility access, Workstation security)
+- Technical Safeguards (Access control, Encryption, Audit controls)
+- Business Associate Agreements (BAAs)
+- Breach Notification Rule compliance
+`,
+    "SOC 2": `
+- Common Criteria (Security, Availability, Processing Integrity, Confidentiality, Privacy)
+- Logical and physical access controls (CC6.x)
+- System operations and monitoring (CC7.x)
+- Change management (CC8.x)
+- Risk mitigation (CC9.x)
+`,
+    "ISO 27001": `
+- Information security policy (A.5)
+- Organization of information security (A.6)
+- Human resource security (A.7)
+- Asset management (A.8)
+- Access control (A.9)
+- Cryptography (A.10)
+- Physical and environmental security (A.11)
+`
+};
 
 export type MultimodalContent = string | { data: string; mimeType: string };
 
@@ -66,9 +106,24 @@ export const analyzeFullDocument = async (
     }
 
     try {
-        const userPrompt = `Framework: ${frameworkName}\n\nDocument:\n${typeof content === 'string' ? content : "[Multimodal Document Content]"}\n\nAnalyze the document for compliance gaps against the framework. Return a JSON object following the specified format.`;
+        const checklist = FRAMEWORK_CHECKLISTS[frameworkName] || "Evaluate against standard compliance best practices.";
+        const documentText = typeof content === 'string' ? content : "[Multimodal Content]";
         
-        const contentParts: any[] = [{ text: SYSTEM_PROMPT + "\n\n" + userPrompt }];
+        console.debug(`AI Auditor: Analyzing document against ${frameworkName}. Content length: ${documentText.length}`);
+
+        const userPrompt = `
+Framework: ${frameworkName}
+
+Check the document for compliance against the following specific requirements:
+${checklist}
+
+Document:
+${documentText}
+
+Analyze the document for gaps. Return the JSON report.
+`;
+        
+        const contentParts: any[] = [{ text: userPrompt }];
         
         if (typeof content !== 'string') {
             contentParts.push({
@@ -83,23 +138,26 @@ export const analyzeFullDocument = async (
             model: MODEL_NAME,
             contents: [{ parts: contentParts }],
             config: {
+                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
                 responseMimeType: "application/json",
                 temperature: 0.0,
             }
         });
 
         const textResponse = (result.text || "").trim();
-        if (!textResponse) return [];
+        if (!textResponse) {
+            console.warn("AI Auditor: Received empty response from Gemini.");
+            return [];
+        }
 
         const aiResponse = JSON.parse(textResponse) as AIResponse;
+        console.debug(`AI Auditor: Found ${aiResponse.total_findings} gaps.`);
         
         return aiResponse.findings.map((finding, index) => {
-            // Map AI severity to internal FindingSeverity
             let severity = FindingSeverity.Low;
             if (finding.severity === "Critical") severity = FindingSeverity.High;
             else if (finding.severity === "Major") severity = FindingSeverity.Medium;
 
-            // Attempt to find a matching rule, or create a virtual one
             const matchingRule = frameworkRules.find(r => 
                 finding.requirement.toLowerCase().includes(r.article.toLowerCase()) ||
                 r.requirement_text.toLowerCase().includes(finding.requirement.toLowerCase())
@@ -118,7 +176,7 @@ export const analyzeFullDocument = async (
                 audit_scan_id: scanId,
                 framework_rule: rule,
                 severity,
-                excerpt_from_document: "[Scan excerpt]", // AI description serves as context
+                excerpt_from_document: "[Compliance Gap Detected]",
                 remediation_advice: finding.remediation,
                 paragraph_number: index + 1,
             };
@@ -129,15 +187,11 @@ export const analyzeFullDocument = async (
     }
 };
 
-/**
- * @deprecated Use analyzeFullDocument for better accuracy and performance.
- */
 export const analyzeCompliance = async (
     rule: FrameworkRule,
     content: MultimodalContent,
     paragraphNumber: number,
     scanId: string,
 ): Promise<AuditFinding | null> => {
-    // Left for backward compatibility if needed, but redirects to an empty result as it's no longer the main path
     return null;
 };
