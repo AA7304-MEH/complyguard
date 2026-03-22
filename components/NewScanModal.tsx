@@ -168,41 +168,69 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Upload Document</label>
             <div 
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
-                isDragging ? "border-accent bg-accent/5" : "border-gray-300"
+              className={`mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-all duration-300 ${
+                isDragging 
+                  ? "border-accent bg-accent/10 scale-[1.02] shadow-lg shadow-accent/20" 
+                  : "border-gray-300 hover:border-accent/50 hover:bg-gray-50"
               }`}
             >
-              <div className="space-y-1 text-center">
-                <FileIcon className={`mx-auto h-12 w-12 ${isDragging ? "text-accent" : "text-gray-400"}`} />
-                <div className="flex text-sm text-gray-600">
-                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-accent hover:text-accent-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-accent">
-                    <span>Upload a file</span>
-                    <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md" />
-                  </label>
-                  <span className="mx-1">or</span>
-                  <button 
-                    type="button"
-                    onClick={() => folderInputRef.current?.click()}
-                    className="relative cursor-pointer bg-white rounded-md font-medium text-accent hover:text-accent-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-accent"
-                  >
-                    Upload a folder
-                  </button>
-                  <input 
-                    ref={folderInputRef}
-                    type="file" 
-                    className="hidden" 
-                    onChange={handleFolderChange} 
-                    {...({ webkitdirectory: "", directory: "" } as any)} 
-                  />
-                  <p className="pl-1 text-gray-500">or drag and drop</p>
+              <div className="space-y-2 text-center">
+                <div className={`mx-auto h-16 w-16 mb-2 rounded-full flex items-center justify-center transition-colors ${isDragging ? "bg-accent text-white" : "bg-gray-100 text-gray-400"}`}>
+                  <FileIcon className="h-8 w-8" />
                 </div>
-                <p className="text-xs text-gray-500">{selectedFolderName ? selectedFolderName : (files.length > 0 ? files[0].name : "TXT, MD")}</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600 gap-1">
+                  <div className="flex items-center">
+                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-semibold text-accent hover:text-accent-dark focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
+                      <span>Upload a file</span>
+                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md" />
+                    </label>
+                    <span className="mx-2 text-gray-400">or</span>
+                    <button 
+                      type="button"
+                      onClick={() => folderInputRef.current?.click()}
+                      className="font-semibold text-accent hover:text-accent-dark transition-colors"
+                    >
+                      Upload a folder
+                    </button>
+                    <input 
+                      ref={folderInputRef}
+                      type="file" 
+                      className="hidden" 
+                      onChange={handleFolderChange} 
+                      webkitdirectory=""
+                      directory=""
+                      {...({ webkitdirectory: "", directory: "" } as any)} 
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">Supports .txt and .md files</p>
               </div>
+
+              {files.length > 0 && (
+                <div className="mt-6 w-full bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-40 overflow-y-auto custom-scrollbar">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      {selectedFolderName ? selectedFolderName : "Selected Files"}
+                    </span>
+                    <span className="text-xs text-accent font-medium">{files.length} items detected</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {files.slice(0, 5).map((f, i) => (
+                      <li key={i} className="text-xs text-gray-600 flex items-center gap-2 truncate">
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
+                        {f.name}
+                      </li>
+                    ))}
+                    {files.length > 5 && (
+                      <li className="text-xs text-gray-400 italic pl-3">...and {files.length - 5} more files</li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
