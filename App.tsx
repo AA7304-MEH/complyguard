@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
 import { User, AuditScan, AuditStatus, SubscriptionPlan, BillingCycle } from './types';
-import { getAppUser, getScans } from './services/apiClient';
+import { getAppUser, getScans, enableAdminMode } from './services/apiClient';
 import { getPlanByTier } from './config/subscriptionPlans';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
@@ -156,6 +156,22 @@ const MainApp: React.FC = () => {
     setAppUser(updatedUser);
   }, []);
 
+  const handleEnableAdmin = React.useCallback(async () => {
+    if (!appUser) return;
+    try {
+      const updatedUser = await enableAdminMode(appUser.id);
+      setAppUser(updatedUser);
+      setSuccessMessage({
+        title: 'Admin Mode Activated! ⚡',
+        message: 'You now have Enterprise access with unlimited scans. Enjoy testing every premium feature!'
+      });
+      setShowSuccessNotification(true);
+      setView('dashboard');
+    } catch (error) {
+      console.error("Failed to enable admin mode:", error);
+    }
+  }, [appUser]);
+
   const [userLocation, setUserLocation] = React.useState<string>('US'); // Default to US
 
   React.useEffect(() => {
@@ -195,6 +211,7 @@ const MainApp: React.FC = () => {
         onViewTemplates={handleViewTemplates}
         onViewCalendar={handleViewCalendar}
         onViewAPI={handleViewAPI}
+        onEnableAdmin={handleEnableAdmin}
       />
       <main className={view === 'pricing' ? '' : 'p-4 sm:p-6 lg:p-8'}>
         {view === 'dashboard' && (

@@ -1,5 +1,5 @@
 import * as mammoth from 'mammoth';
-import { AuditFinding, AuditScan, AuditStatus, Framework, User } from '../types';
+import { AuditFinding, AuditScan, AuditStatus, Framework, User, SubscriptionTier, SubscriptionStatus } from '../types';
 import { mockScans, mockFrameworks, mockAppUser, mockFrameworkRules } from './mockData';
 import { analyzeFullDocument, MultimodalContent } from './geminiService';
 
@@ -164,7 +164,7 @@ export const createScan = async (file: File | File[], frameworkId: string): Prom
     // Get current user to check limits
     const user = getStoredUser();
     if (user) {
-        if (user.scan_limit_this_month !== -1 && user.documents_scanned_this_month >= user.scan_limit_this_month) {
+        if (user.subscription_tier !== SubscriptionTier.Enterprise && user.scan_limit_this_month !== -1 && user.documents_scanned_this_month >= user.scan_limit_this_month) {
             throw new Error("SCAN_LIMIT_REACHED");
         }
         user.documents_scanned_this_month += 1;
@@ -248,3 +248,23 @@ export const updateUser = async (user: User): Promise<User> => {
     saveStoredUser(user);
     return Promise.resolve(user);
 }
+
+/**
+ * Activates Admin Mode for the given user, granting Enterprise-level access.
+ */
+export const enableAdminMode = async (clerkUserId: string): Promise<User> => {
+    await new Promise(resolve => setTimeout(resolve, MOCK_API_LATENCY));
+    let user = getStoredUser();
+    if (!user) {
+        user = { ...mockAppUser, id: clerkUserId };
+    }
+    
+    // Force Enterprise upgrade
+    user.subscription_tier = SubscriptionTier.Enterprise;
+    user.subscription_status = SubscriptionStatus.Active;
+    user.scan_limit_this_month = -1; // Unlimited
+    
+    saveStoredUser(user);
+    console.log(`API Client: Admin Mode activated for user: ${clerkUserId}`);
+    return Promise.resolve(user);
+};

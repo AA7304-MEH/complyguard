@@ -13,6 +13,7 @@ interface HeaderProps {
     onViewTemplates?: () => void;
     onViewCalendar?: () => void;
     onViewAPI?: () => void;
+    onEnableAdmin?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -23,7 +24,8 @@ const Header: React.FC<HeaderProps> = ({
   onViewAnalytics, 
   onViewTemplates, 
   onViewCalendar,
-  onViewAPI
+  onViewAPI,
+  onEnableAdmin
 }) => {
   const currentPlan = getPlanByTier(user.subscription_tier);
   const usagePercentage = user.scan_limit_this_month > 0 
@@ -146,6 +148,17 @@ const Header: React.FC<HeaderProps> = ({
                         </svg>
                       }
                       onClick={onUpgrade}
+                    />
+                  )}
+                  {user.subscription_tier !== SubscriptionTier.Enterprise && (
+                    <UserButton.Action
+                      label="Enable Admin Mode (Unlock Everything)"
+                      labelIcon={
+                        <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                      }
+                      onClick={onEnableAdmin}
                     />
                   )}
                 </UserButton.MenuItems>
