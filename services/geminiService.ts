@@ -45,38 +45,64 @@ JSON structure:
 const FRAMEWORK_CHECKLISTS: Record<string, string> = {
     "GDPR": `
 - Lawful basis for processing (Art. 6)
-- Data subject rights (access, rectification, erasure) (Art. 15-17)
+- Data subject rights (Art. 12-22: access, rectification, erasure, portability, etc.)
 - Data Protection Officer contact (if applicable) (Art. 37)
-- Retention period defined (Art. 5(1)(e)) - MUST NOT be "indefinite"
-- International transfer safeguards (Art. 44-49)
-- Breach notification to supervisory authority within 72h (Art. 33)
-- Data processing agreements with third parties (Art. 28)
-- Technical and organizational security measures (Art. 32)
+- Data retention period (Art. 5(1)(e)) - MUST NOT be "indefinite"
+- International transfers (Art. 44-49)
+- Breach notification to authority (Art. 33) within 72h
+- Data processing agreements (Art. 28)
+- Security measures (Art. 32)
 `,
     "HIPAA": `
-- Notice of Privacy Practices (NPP) contents
-- Individual rights to access/amend PHI
-- Administrative Safeguards (Risk Analysis, Workforce training)
-- Physical Safeguards (Facility access, Workstation security)
-- Technical Safeguards (Access control, Encryption, Audit controls)
+- Privacy Rule: Notice of Privacy Practices, minimum necessary, patient rights
+- Security Rule: risk analysis, workforce training, facility access, workstation security, access controls, audit logs, transmission security
+- Breach Notification Rule: timely notification to HHS and individuals
 - Business Associate Agreements (BAAs)
-- Breach Notification Rule compliance
+- Documentation retention (6 years)
 `,
     "SOC 2": `
-- Common Criteria (Security, Availability, Processing Integrity, Confidentiality, Privacy)
-- Logical and physical access controls (CC6.x)
-- System operations and monitoring (CC7.x)
-- Change management (CC8.x)
-- Risk mitigation (CC9.x)
+- CC2.1: Communication of objectives
+- CC3.1: Risk assessment
+- CC5.1: Control activities
+- CC6.1: Logical access controls
+- CC6.6: Physical security
+- CC6.8: Encryption
+- CC7.1: Incident management
+- CC7.2: Monitoring
+- CC8.1: Change management
+- C1.1: Confidential information protection
 `,
     "ISO 27001": `
-- Information security policy (A.5)
-- Organization of information security (A.6)
-- Human resource security (A.7)
-- Asset management (A.8)
-- Access control (A.9)
-- Cryptography (A.10)
-- Physical and environmental security (A.11)
+- A.5.1.1: Information security policy
+- A.5.2.1: Roles and responsibilities
+- A.5.9.1: Asset inventory
+- A.5.12.1: Information classification
+- A.5.14.1: Information transfer
+- A.5.15.1: Access control policy
+- A.5.16.1: Identity management
+- A.5.17.1: Authentication
+- A.5.18.1: Access rights
+- A.5.23.1: Cloud service use
+- A.5.24.1: Incident management planning
+- A.5.25.1: Incident assessment
+- A.5.26.1: Incident response
+- A.5.27.1: Learning from incidents
+- A.5.29.1: Disruption management
+- A.5.31.1: Legal requirements
+- A.5.32.1: IP rights
+- A.5.33.1: Record protection
+- A.5.34.1: Privacy & PII
+- A.5.35.1: Independent review
+- A.5.36.1: Policy compliance
+- A.8.1.1: User endpoint devices
+- A.8.2.1: Privileged access
+- A.8.3.1: Awareness & training
+- A.8.4.1: Vulnerability management
+- A.8.5.1: Secure coding
+- A.8.6.1: Configuration management
+- A.8.7.1: Change management
+- A.8.8.1: Vulnerability management
+- A.8.9.1: Business continuity
 `
 };
 
@@ -115,10 +141,13 @@ export const analyzeFullDocument = async (
         const userPrompt = `
 Framework: ${frameworkName}
 
-Check the document for compliance against the following specific requirements:
+Checklist:
 ${checklist}
 
-Analyze the document for gaps. Return the JSON report.
+Document:
+[Document Content follows in subsequent parts]
+
+Analyze the document for gaps against the framework and checklist. Return the JSON report.
 `;
         
         const contentParts: any[] = [{ text: userPrompt }];
