@@ -140,16 +140,20 @@ export const getFrameworks = async (): Promise<Framework[]> => {
  * and then kicks off the actual analysis in the background. This provides a
  * responsive UI experience.
  */
-export const createScan = async (file: File, frameworkId: string): Promise<AuditScan> => {
-    console.log(`API Client: Creating scan for ${file.name} with framework ${frameworkId}`);
+export const createScan = async (file: File | File[], frameworkId: string): Promise<AuditScan> => {
+    const isArray = Array.isArray(file);
+    const mainFile = isArray ? file[0] : file;
+    const documentName = isArray ? `${file.length} files selected` : mainFile.name;
+
+    console.log(`API Client: Creating scan for ${documentName} with framework ${frameworkId}`);
 
     const selectedFramework = mockFrameworks.find(f => f.id === frameworkId);
     const newScan: AuditScan = {
         id: `scan-${crypto.randomUUID()}`,
-        user_id: 'user-123', // In a real app, this would be the actual user ID
+        user_id: 'user-123',
         framework_id: frameworkId,
         framework_name: selectedFramework?.name || 'Unknown',
-        document_name: file.name,
+        document_name: documentName,
         status: AuditStatus.Processing,
         findings_count: 0,
         findings: [],
@@ -160,16 +164,11 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
     // Get current user to check limits
     const user = getStoredUser();
     if (user) {
-        // -1 means unlimited
         if (user.scan_limit_this_month !== -1 && user.documents_scanned_this_month >= user.scan_limit_this_month) {
             throw new Error("SCAN_LIMIT_REACHED");
         }
-
-        // Increment usage count immediately and persist it
-        // This simulates the backend updating the record transactionally
         user.documents_scanned_this_month += 1;
         saveStoredUser(user);
-        console.log(`API Client: Scan limit updated. ${user.documents_scanned_this_month}/${user.scan_limit_this_month}`);
     }
 
     // Save initial state
@@ -182,29 +181,29 @@ export const createScan = async (file: File, frameworkId: string): Promise<Audit
         try {
             console.log(`Starting analysis for scan: ${newScan.id}`);
             
-            let content: MultimodalContent;
-            let documentTextForExcerpt = "";
-            const ext = file.name.split('.').pop()?.toLowerCase();
+            const fileArray = Array.isArray(file) ? file : [file];
+            const contents: MultimodalContent[] = [];
 
-            if (ext === 'pdf') {
-                const base64 = await readFileAsBase64(file);
-                content = { data: base64, mimeType: 'application/pdf' };
-                documentTextForExcerpt = "[PDF Document]";
-            } else if (ext === 'docx' || ext === 'doc') {
-                documentTextForExcerpt = await readDocxAsText(file);
-                content = documentTextForExcerpt;
-            } else {
-                documentTextForExcerpt = await readFileAsText(file);
-                content = documentTextForExcerpt;
+            for (const f of fileArray) {
+                const ext = f.name.split('.').pop()?.toLowerCase();
+                if (ext === 'pdf') {
+                    const base64 = await readFileAsBase64(f);
+                    contents.push({ data: base64, mimeType: 'application/pdf' });
+                } else if (ext === 'docx' || ext === 'doc') {
+                    const text = await readDocxAsText(f);
+                    contents.push(text);
+                } else {
+                    const text = await readFileAsText(f);
+                    contents.push(text);
+                }
             }
 
             const rules = mockFrameworkRules.filter(r => r.framework_id === frameworkId);
             const frameworkName = selectedFramework?.name || "GDPR";
             
-            const allFindings = await analyzeFullDocument(frameworkName, content, newScan.id, rules);
+            const allFindings = await analyzeFullDocument(frameworkName, contents, newScan.id, rules);
             
             // Calculate compliance score base on findings
-            // Deduction per finding weighted by framework size
             const deductionPerFinding = rules.length > 0 ? (100 / rules.length) : 10;
             const calculatedScore = Math.max(0, 100 - (allFindings.length * deductionPerFinding));
             

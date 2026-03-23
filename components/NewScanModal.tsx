@@ -106,31 +106,12 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
     setError(null);
 
     try {
-      let finalFile: File;
-      
-      if (files.length === 1) {
-        finalFile = files[0];
-      } else {
-        // combine multiple files into one "virtual" document for analysis
-        const combinedContent = await Promise.all(files.map(async (f) => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(`--- DOCUMENT: ${f.name} ---\n${reader.result as string}\n\n`);
-            reader.readAsText(f);
-          });
-        }));
-        
-        const blob = new Blob(combinedContent, { type: 'text/plain' });
-        finalFile = new File([blob], selectedFolderName || "Combined_Documents.txt", { type: 'text/plain' });
-      }
-
-      const processingScan = await createScan(finalFile, frameworkId);
+      const processingScan = await createScan(files, frameworkId);
 
       // Add the new "processing" scan to the dashboard immediately.
       onScanStart(processingScan);
 
       // Close the modal. The dashboard will show the scan in progress.
-      // The analysis now happens on the simulated backend.
       onClose();
 
     } catch (err: any) {

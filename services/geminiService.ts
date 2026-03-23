@@ -97,7 +97,7 @@ interface AIResponse {
 
 export const analyzeFullDocument = async (
     frameworkName: string,
-    content: MultimodalContent,
+    content: MultimodalContent | MultimodalContent[],
     scanId: string,
     frameworkRules: FrameworkRule[] = []
 ): Promise<AuditFinding[]> => {
@@ -107,9 +107,10 @@ export const analyzeFullDocument = async (
 
     try {
         const checklist = FRAMEWORK_CHECKLISTS[frameworkName] || "Evaluate against standard compliance best practices.";
-        const documentText = typeof content === 'string' ? content : "[Multimodal Content]";
         
-        console.debug(`AI Auditor: Analyzing document against ${frameworkName}. Content length: ${documentText.length}`);
+        // Log the types of content being sent
+        const contentArray = Array.isArray(content) ? content : [content];
+        console.debug(`AI Auditor: Analyzing ${contentArray.length} document parts against ${frameworkName}.`);
 
         const userPrompt = `
 Framework: ${frameworkName}
@@ -117,21 +118,23 @@ Framework: ${frameworkName}
 Check the document for compliance against the following specific requirements:
 ${checklist}
 
-Document:
-${documentText}
-
 Analyze the document for gaps. Return the JSON report.
 `;
         
         const contentParts: any[] = [{ text: userPrompt }];
         
-        if (typeof content !== 'string') {
-            contentParts.push({
-                inlineData: {
-                    data: content.data,
-                    mimeType: content.mimeType
-                }
-            });
+        // Add all content items as separate parts
+        for (const item of contentArray) {
+            if (typeof item === 'string') {
+                contentParts.push({ text: item });
+            } else {
+                contentParts.push({
+                    inlineData: {
+                        data: item.data,
+                        mimeType: item.mimeType
+                    }
+                });
+            }
         }
 
         const result = await ai.models.generateContent({
