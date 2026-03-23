@@ -125,7 +125,8 @@ export const analyzeFullDocument = async (
     frameworkName: string,
     content: MultimodalContent | MultimodalContent[],
     scanId: string,
-    frameworkRules: FrameworkRule[] = []
+    frameworkRules: FrameworkRule[] = [],
+    modelName: string = MODEL_NAME
 ): Promise<AuditFinding[]> => {
     if (!ai) {
         return [];
@@ -167,7 +168,7 @@ Analyze the document for gaps against the framework and checklist. Return the JS
         }
 
         const result = await ai.models.generateContent({
-            model: MODEL_NAME,
+            model: modelName,
             contents: [{ parts: contentParts }],
             config: {
                 systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },

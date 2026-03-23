@@ -106,12 +106,15 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
     setError(null);
 
     try {
-      const processingScan = await createScan(files, frameworkId);
+      const queuedScan = await createScan(files, frameworkId);
 
-      // Add the new "processing" scan to the dashboard immediately.
-      onScanStart(processingScan);
+      // Add the new "queued" scan to the dashboard immediately.
+      onScanStart(queuedScan);
 
-      // Close the modal. The dashboard will show the scan in progress.
+      // Inform the user
+      alert("Your scan is queued. We'll email you the report within a few minutes. Check the dashboard for status updates.");
+
+      // Close the modal.
       onClose();
 
     } catch (err: any) {

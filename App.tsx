@@ -16,6 +16,7 @@ import APIIntegration from './components/APIIntegration';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
 import SuccessNotification from './components/common/SuccessNotification';
+import { workerService } from './services/workerService';
 
 const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
@@ -52,6 +53,16 @@ const MainApp: React.FC = () => {
       fetchData();
     }
   }, [isClerkLoaded, clerkUser]);
+
+  // Start Worker on Mount
+  React.useEffect(() => {
+    if (appUser) {
+      workerService.start();
+    }
+    return () => {
+      workerService.stop();
+    };
+  }, [appUser]);
 
   // Poll for scan updates if there are any scans in processing state
   React.useEffect(() => {

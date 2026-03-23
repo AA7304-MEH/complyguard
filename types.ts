@@ -25,6 +25,15 @@ export enum BillingCycle {
 }
 
 export enum AuditStatus {
+  Queued = 'queued',
+  Pending = 'pending',
+  Processing = 'processing',
+  Completed = 'completed',
+  Failed = 'failed',
+}
+
+export enum JobStatus {
+  Pending = 'pending',
   Processing = 'processing',
   Completed = 'completed',
   Failed = 'failed',
@@ -87,6 +96,19 @@ export interface AuditScan {
   findings: AuditFinding[];
   score: number;
   created_at: Date;
+  job_id?: string;
+}
+
+export interface ScanJob {
+  id: string;
+  user_id: string;
+  file_urls: string[]; // Mocking file URLs or storage IDs
+  framework: string;
+  status: JobStatus;
+  result?: any;
+  error_message?: string;
+  created_at: Date;
+  completed_at?: Date;
 }
 export interface SubscriptionPlan {
   id: string;
