@@ -3,6 +3,7 @@ import * as apiClient from './apiClient';
 import { analyzeFullDocument } from './geminiService';
 import { sendScanCompleteEmail } from './notificationService';
 import { mockFrameworkRules } from './mockData';
+import { rateLimiter } from './rateLimiter';
 
 const WORKER_POLL_INTERVAL = 10000; // 10 seconds
 const RATE_LIMIT_DELAY = 5000; // 5 seconds between jobs
@@ -63,6 +64,13 @@ class WorkerService {
 
             console.log(`Worker: Picking up job ${job.id} for user ${job.user_id}...`);
 
+            // Check if we can make a request (don't steal quota from active users)
+            if (!rateLimiter.canMakeRequest()) {
+                console.log("Worker: API rate limit nearing. Skipping job to save quota for users.");
+                this.isProcessing = false;
+                return;
+            }
+
             // 1. Mark as Processing
             await apiClient.updateScanJob(job.id, { status: JobStatus.Processing });
 
@@ -83,6 +91,8 @@ class WorkerService {
                 rules,
                 AI_MODEL
             );
+
+            rateLimiter.recordRequest();
 
             // Calculate mock score
             const score = Math.max(0, 100 - (scanFindings.length * 5));

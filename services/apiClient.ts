@@ -88,6 +88,8 @@ const readFileAsText = (file: File): Promise<string> => {
     });
 };
 
+import { rateLimiter } from './rateLimiter';
+
 // --- API Functions ---
 
 export const getAppUser = async (clerkUserId: string): Promise<User> => {
@@ -111,7 +113,8 @@ export const getFrameworks = async (): Promise<Framework[]> => {
 };
 
 /**
- * Queues a new scan. Creates a job record and returns the scan object in 'Queued' state.
+ * Creates a scan. Attempts immediate processing if Gemini API is available.
+ * Otherwise, queues as a background job.
  */
 export const createScan = async (file: File | File[], frameworkId: string): Promise<AuditScan> => {
     const user = getStoredUser();
@@ -122,9 +125,11 @@ export const createScan = async (file: File | File[], frameworkId: string): Prom
     const isArray = Array.isArray(file);
     const mainFile = isArray ? file[0] : file;
     const documentName = isArray ? `${file.length} files` : mainFile.name;
-    const jobId = `job-${crypto.randomUUID()}`;
+    const scanId = `scan-${crypto.randomUUID()}`;
+    const selectedFramework = mockFrameworks.find(f => f.id === frameworkId);
+    const frameworkName = selectedFramework?.name || 'Unknown';
 
-    // 1. Process files for "Storage"
+    // 1. Process files
     const fileArray = isArray ? file : [file];
     const contents: MultimodalContent[] = [];
     for (const f of fileArray) {
@@ -140,18 +145,72 @@ export const createScan = async (file: File | File[], frameworkId: string): Prom
             contents.push(text);
         }
     }
+
+    // --- CONDITION: Immediate Processing vs Queue ---
+    if (rateLimiter.canMakeRequest()) {
+        console.log("Smart Queue: API quota available. Processing scan immediately...");
+        try {
+            rateLimiter.recordRequest();
+            
+            // Get rules for immediate analysis
+            const rules = mockFrameworkRules.filter(r => 
+                r.framework_id.toLowerCase().includes(frameworkName.toLowerCase()) || 
+                r.framework_id === frameworkName
+            );
+
+            // Execute AI Analysis immediately
+            const findings = await analyzeFullDocument(
+                frameworkName,
+                contents,
+                scanId,
+                rules,
+                "gemini-1.5-pro" // Use Pro for immediate requests
+            );
+
+            const score = Math.max(0, 100 - (findings.length * 5));
+
+            const completedScan: AuditScan = {
+                id: scanId,
+                user_id: user?.id || 'unknown',
+                framework_id: frameworkId,
+                framework_name: frameworkName,
+                document_name: documentName,
+                status: AuditStatus.Completed,
+                findings_count: findings.length,
+                findings: findings,
+                score: score,
+                created_at: new Date()
+            };
+
+            const scans = getStoredScans();
+            saveStoredScans([completedScan, ...scans]);
+
+            if (user) {
+                user.documents_scanned_this_month += 1;
+                saveStoredUser(user);
+            }
+
+            return completedScan;
+
+        } catch (error) {
+            console.error("Immediate processing failed, falling back to queue:", error);
+            // Fall through to queueing logic if immediate fails
+        }
+    }
+
+    // --- FALLBACK: Queue for Background Worker ---
+    console.log("Smart Queue: Rate limit nearing or API busy. Queueing for background worker...");
+    const jobId = `job-${crypto.randomUUID()}`;
     
     // Save to our mock "Cloud Storage"
     MOCK_FILE_STORAGE.set(jobId, contents);
 
-    const selectedFramework = mockFrameworks.find(f => f.id === frameworkId);
-    
     // 2. Create the Scan Job
     const newJob: ScanJob = {
         id: jobId,
         user_id: user?.id || 'unknown',
         file_urls: [`store://${jobId}`], 
-        framework: selectedFramework?.name || "GDPR",
+        framework: frameworkName,
         status: JobStatus.Pending,
         created_at: new Date()
     };
@@ -161,10 +220,10 @@ export const createScan = async (file: File | File[], frameworkId: string): Prom
 
     // 3. Create the placeholder Audit Scan
     const newScan: AuditScan = {
-        id: `scan-${crypto.randomUUID()}`,
+        id: scanId,
         user_id: user?.id || 'unknown',
         framework_id: frameworkId,
-        framework_name: selectedFramework?.name || 'Unknown',
+        framework_name: frameworkName,
         document_name: documentName,
         status: AuditStatus.Queued,
         findings_count: 0,
