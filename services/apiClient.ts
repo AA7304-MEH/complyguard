@@ -192,9 +192,16 @@ export const createScan = async (file: File | File[], frameworkId: string): Prom
 
             return completedScan;
 
-        } catch (error) {
-            console.error("Immediate processing failed, falling back to queue:", error);
-            // Fall through to queueing logic if immediate fails
+        } catch (error: any) {
+            console.error("❌ Smart Queue: Immediate processing failed:", error);
+            
+            // If it's a configuration error (like API Key), don't bother queueing, it will fail there too
+            if (error.message?.includes("API Key") || error.message?.includes("not found")) {
+                throw error;
+            }
+
+            console.log("Smart Queue: Falling back to background queue...");
+            // Fall through to queueing logic for other errors (like transient network issues)
         }
     }
 

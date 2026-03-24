@@ -235,9 +235,23 @@ Analyze the document for gaps against the framework and checklist. Return your r
                 paragraph_number: index + 1,
             };
         });
-    } catch (error) {
-        console.error("Error analyzing full document with Gemini:", error);
-        return [];
+    } catch (error: any) {
+        console.error("❌ AI Auditor: Gemini analysis failed!", {
+            message: error.message,
+            stack: error.stack,
+            framework: frameworkName,
+            model: modelName
+        });
+        
+        // Propagate specific errors back to the caller
+        if (error.message?.includes("API_KEY_INVALID")) {
+            throw new Error("Invalid Gemini API Key. Please check your environment variables.");
+        }
+        if (error.message?.includes("quota")) {
+            throw new Error("Gemini API quota exceeded. Please try again later.");
+        }
+        
+        throw error; // Rethrow to be caught by apiClient
     }
 };
 

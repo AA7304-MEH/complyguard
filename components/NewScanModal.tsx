@@ -135,7 +135,8 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
       if (err.message === "SCAN_LIMIT_REACHED") {
         setError("You have reached your monthly scan limit. Please upgrade your plan to continue.");
       } else {
-        setError("Could not start the scan. Please try again.");
+        // Show the actual error message for better debugging as requested
+        setError(`Could not start the scan: ${err.message || "Unknown error"}. Please check your connection or API key.`);
       }
       setIsProcessing(false);
     }

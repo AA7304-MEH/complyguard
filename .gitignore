@@ -26,3 +26,4 @@ dist-ssr
 
 # Documentation files with example keys (keep in repo but exclude from build scanning)
 # These files contain example API keys for documentation purposes
+.vercel
