@@ -19,6 +19,8 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
   const [selectedFolderName, setSelectedFolderName] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [manualText, setManualText] = React.useState('');
+  const [inputType, setInputType] = React.useState<'file' | 'text'>('file');
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -97,8 +99,11 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
   };
 
   const handleStartScan = async () => {
-    if (files.length === 0 || !frameworkId) {
-      setError("Please select one or more files and a framework.");
+    const hasFiles = inputType === 'file' && files.length > 0;
+    const hasText = inputType === 'text' && manualText.trim().length > 0;
+
+    if ((!hasFiles && !hasText) || !frameworkId) {
+      setError("Please provide a document (file or text) and select a framework.");
       return;
     }
 
@@ -106,7 +111,13 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
     setError(null);
 
     try {
-      const scan = await createScan(files, frameworkId);
+      let scan;
+      if (inputType === 'text') {
+        const virtualFile = new File([manualText], 'pasted-document.txt', { type: 'text/plain' });
+        scan = await createScan(virtualFile, frameworkId);
+      } else {
+        scan = await createScan(files, frameworkId);
+      }
 
       // Add the new scan (either Completed or Queued) to the dashboard.
       onScanStart(scan);
@@ -153,71 +164,103 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
               )}
             </select>
           </div>
-          <div>
-            <div 
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-all duration-300 ${
-                isDragging 
-                  ? "border-accent bg-accent/10 scale-[1.02] shadow-lg shadow-accent/20" 
-                  : "border-gray-300 hover:border-accent/50 hover:bg-gray-50"
+
+          {/* Input Type Selection */}
+          <div className="flex p-0.5 mb-4 rounded-lg bg-slate-100 border border-slate-200">
+            <button
+              onClick={() => setInputType('file')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                inputType === 'file' 
+                  ? 'bg-white text-accent shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              <div className="space-y-2 text-center">
-                <div className={`mx-auto h-16 w-16 mb-2 rounded-full flex items-center justify-center transition-colors ${isDragging ? "bg-accent text-white" : "bg-gray-100 text-gray-400"}`}>
-                  <FileIcon className="h-8 w-8" />
-                </div>
-                <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600 gap-1">
-                  <div className="flex items-center">
-                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-semibold text-accent hover:text-accent-dark focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
-                      <span>Upload a file</span>
-                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md,.pdf,.doc,.docx" />
-                    </label>
-                    <span className="mx-2 text-gray-400">or</span>
-                    <button 
-                      type="button"
-                      onClick={() => folderInputRef.current?.click()}
-                      className="font-semibold text-accent hover:text-accent-dark transition-colors"
-                    >
-                      Upload a folder
-                    </button>
-                    <input 
-                      ref={folderInputRef}
-                      type="file" 
-                      className="hidden" 
-                      onChange={handleFolderChange} 
-                      webkitdirectory=""
-                      directory=""
-                      {...({ webkitdirectory: "", directory: "" } as any)} 
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400">Supports .txt, .md, .pdf, .doc, .docx</p>
-              </div>
+              Upload Files
+            </button>
+            <button
+              id="btn-paste-text"
+              onClick={() => setInputType('text')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                inputType === 'text' 
+                  ? 'bg-white text-accent shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Paste Text
+            </button>
+          </div>
 
-              {files.length > 0 && (
-                <div className="mt-6 w-full bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-40 overflow-y-auto custom-scrollbar">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      {selectedFolderName ? selectedFolderName : "Selected Files"}
-                    </span>
-                    <span className="text-xs text-accent font-medium">{files.length} items detected</span>
+          <div>
+            {inputType === 'file' ? (
+              <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-all duration-300 ${
+                  isDragging 
+                    ? "border-accent bg-accent/10 scale-[1.02] shadow-lg shadow-accent/20" 
+                    : "border-gray-300 hover:border-accent/50 hover:bg-gray-50"
+                }`}
+              >
+                <div className="space-y-2 text-center">
+                  <div className={`mx-auto h-16 w-16 mb-2 rounded-full flex items-center justify-center transition-colors ${isDragging ? "bg-accent text-white" : "bg-gray-100 text-gray-400"}`}>
+                    <FileIcon className="h-8 w-8" />
                   </div>
-                  <ul className="space-y-1">
-                    {files.slice(0, 5).map((f, i) => (
-                      <li key={i} className="text-xs text-gray-600 flex items-center gap-2 truncate">
-                        <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-                        {f.name}
-                      </li>
-                    ))}
-                    {files.length > 5 && (
-                      <li className="text-xs text-gray-400 italic pl-3">...and {files.length - 5} more files</li>
-                    )}
-                  </ul>
+                  <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600 gap-1">
+                    <div className="flex items-center">
+                      <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-semibold text-accent hover:text-accent-dark focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
+                        <span>Upload a file</span>
+                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md,.pdf,.doc,.docx" />
+                      </label>
+                      <span className="mx-2 text-gray-400">or</span>
+                      <button 
+                        type="button"
+                        onClick={() => folderInputRef.current?.click()}
+                        className="font-semibold text-accent hover:text-accent-dark transition-colors"
+                      >
+                        Upload a folder
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400">Supports .txt, .md, .pdf, .doc, .docx</p>
                 </div>
-              )}
-            </div>
+
+                {files.length > 0 && (
+                  <div className="mt-6 w-full bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-40 overflow-y-auto custom-scrollbar">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        {selectedFolderName ? selectedFolderName : "Selected Files"}
+                      </span>
+                      <span className="text-xs text-accent font-medium">{files.length} items detected</span>
+                    </div>
+                    <ul className="space-y-1">
+                      {files.slice(0, 5).map((f, i) => (
+                        <li key={i} className="text-xs text-gray-600 flex items-center gap-2 truncate">
+                          <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
+                          {f.name}
+                        </li>
+                      ))}
+                      {files.length > 5 && (
+                        <li className="text-xs text-gray-400 italic pl-3">...and {files.length - 5} more files</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-1">
+                <textarea
+                  id="textarea-manual-text"
+                  value={manualText}
+                  onChange={(e) => setManualText(e.target.value)}
+                  placeholder="Paste context of your policy document here (e.g. 'We keep data forever')..."
+                  className="w-full h-48 p-4 text-sm border border-gray-300 rounded-xl focus:ring-accent focus:border-accent resize-none placeholder:text-slate-400"
+                />
+                <p className="mt-2 text-[10px] text-slate-400 italic">
+                  Tip: Direct text input is useful for quick spot-checks.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -246,7 +289,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
             <button
             onClick={handleStartScan}
             type="button"
-            disabled={files.length === 0 || !frameworkId || isProcessing}
+            disabled={(inputType === 'file' ? files.length === 0 : !manualText.trim()) || !frameworkId || isProcessing}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center min-w-[120px] justify-center"
           >
             {isProcessing ? (

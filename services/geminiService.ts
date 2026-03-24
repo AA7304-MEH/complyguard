@@ -13,51 +13,33 @@ const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 const MODEL_NAME = "gemini-1.5-pro";
 
 const SYSTEM_INSTRUCTION = `
-You are a senior compliance auditor specializing in GDPR, HIPAA, SOC 2, and ISO 27001. 
-Your task is to analyze a company policy document and identify gaps against the selected framework checklist.
+You are a senior, highly critical compliance auditor. 
+You never assume compliance. You examine every line of the document and compare it against the framework's requirements. 
+If any requirement is missing, incomplete, or unclear, you MUST report it as a gap.
 
 Rules:
-- Be critical, thorough, and pedantic. If a requirement is missing, unclear, or partially addressed, you MUST flag it.
-- Do not assume context that is not explicitly in the document.
-- For each gap identified, provide:
-  1. The specific Article or Requirement (e.g., GDPR Art. 5(1)(e), SOC 2 CC6.1)
-  2. A clear description of what is missing or insufficient
-  3. Severity: Critical (high risk/legal violation), Major (important gap), Minor (best practice improvement)
-  4. Actionable remediation advice (what specific text to add or change)
-- If the document meets all checklist items, output a JSON object with "findings": []
-- Output only a valid JSON object. No other text.
-
-JSON structure:
-{
-  "framework": "string",
-  "total_findings": number,
-  "findings": [
-    {
-      "requirement": "string",
-      "description": "string",
-      "severity": "Critical | Major | Minor",
-      "remediation": "string"
-    }
-  ]
-}
+- Be pedantic and thorough.
+- Do not assume context not explicitly in the text.
+- If a document is minimal or vague (e.g., "We keep data forever"), it is a CRITICAL violation of retention requirements.
+- Use the provided checklists precisely.
 `;
 
 const FRAMEWORK_CHECKLISTS: Record<string, string> = {
     "GDPR": `
-- Lawful basis for processing (Art. 6)
-- Data subject rights (Art. 12-22: access, rectification, erasure, portability, etc.)
-- Data Protection Officer contact (if applicable) (Art. 37)
-- Data retention period (Art. 5(1)(e)) - MUST NOT be "indefinite"
-- International transfers (Art. 44-49)
-- Breach notification to authority (Art. 33) within 72h
-- Data processing agreements (Art. 28)
-- Security measures (Art. 32)
+1. Lawful basis (Art. 6) – must state one of: consent, contract, legal obligation, vital interests, public task, legitimate interests.
+2. Data subject rights (Art. 12-22) – must describe how users can access, rectify, delete their data.
+3. Data Protection Officer contact (Art. 37) – if applicable, must have contact or justification why none.
+4. Retention period (Art. 5(1)(e)) – must specify a time limit, not "forever".
+5. International transfers (Art. 44-49) – if data is transferred outside EU, must mention safeguards like SCCs.
+6. Breach notification to authority (Art. 33) – must state 72‑hour notification to supervisory authority.
+7. Data processing agreements (Art. 28) – must require contracts with third‑party processors.
+8. Security measures (Art. 32) – must describe technical/organizational measures.
 `,
     "HIPAA": `
 - Privacy Rule: Notice of Privacy Practices, minimum necessary, patient rights
 - Security Rule: risk analysis, workforce training, facility access, workstation security, access controls, audit logs, transmission security
 - Breach Notification Rule: timely notification to HHS and individuals
-- Business Associate Agreements (BAAs)
+- Business Associate Agreements
 - Documentation retention (6 years)
 `,
     "SOC 2": `
@@ -106,6 +88,35 @@ const FRAMEWORK_CHECKLISTS: Record<string, string> = {
 `
 };
 
+const AUDIT_TOOL = {
+    functionDeclarations: [
+        {
+            name: "report_compliance_gaps",
+            description: "Report gap findings identified during a policy document audit.",
+            parameters: {
+                type: "object",
+                properties: {
+                    findings: {
+                        type: "array",
+                        description: "List of identified compliance gaps.",
+                        items: {
+                            type: "object",
+                            properties: {
+                                requirement: { type: "string", description: "The specific framework requirement or Article." },
+                                description: { type: "string", description: "Description of why the document is insufficient." },
+                                severity: { type: "string", enum: ["Critical", "Major", "Minor"], description: "Risk level of the gap." },
+                                remediation: { type: "string", description: "Actionable advice to fix the gap." }
+                            },
+                            required: ["requirement", "description", "severity", "remediation"]
+                        }
+                    }
+                },
+                required: ["findings"]
+            }
+        }
+    ]
+};
+
 export type MultimodalContent = string | { data: string; mimeType: string };
 
 interface AIFinding {
@@ -142,13 +153,12 @@ export const analyzeFullDocument = async (
         const userPrompt = `
 Framework: ${frameworkName}
 
-Checklist:
+Check the document against these requirements. For each requirement, state whether it is met. If not met, output a finding with severity and remediation. If the document does not contain a required element, that is a gap.
+
+Requirements:
 ${checklist}
 
-Document:
-[Document Content follows in subsequent parts]
-
-Analyze the document for gaps against the framework and checklist. Return the JSON report.
+Analyze the document for gaps against the framework and checklist. Return your report by calling the 'report_compliance_gaps' tool.
 `;
         
         const contentParts: any[] = [{ text: userPrompt }];
@@ -167,26 +177,37 @@ Analyze the document for gaps against the framework and checklist. Return the JS
             }
         }
 
-        const result = await ai.models.generateContent({
+        console.log("AI Auditor: Sending prompt to Gemini...", JSON.stringify(contentParts, null, 2));
+
+        const model = ai.getGenerativeModel({ 
             model: modelName,
-            contents: [{ parts: contentParts }],
-            config: {
-                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-                responseMimeType: "application/json",
+            systemInstruction: SYSTEM_INSTRUCTION,
+            tools: [AUDIT_TOOL],
+            toolConfig: { functionCallingConfig: { mode: "ANY" } as any }
+        });
+
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: contentParts }],
+            generationConfig: {
                 temperature: 0.0,
             }
         });
 
-        const textResponse = (result.text || "").trim();
-        if (!textResponse) {
-            console.warn("AI Auditor: Received empty response from Gemini.");
+        const response = result.response;
+        console.log("AI Auditor: Raw Response received:", JSON.stringify(response, null, 2));
+        
+        const call = response.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+        
+        if (!call || call.name !== 'report_compliance_gaps') {
+            console.warn("AI Auditor: No function call detected in response.");
             return [];
         }
 
-        const aiResponse = JSON.parse(textResponse) as AIResponse;
-        console.debug(`AI Auditor: Found ${aiResponse.total_findings} gaps.`);
+        const args = call.args as { findings: AIFinding[] };
+        const findings = args.findings || [];
+        console.log(`AI Auditor: Detected ${findings.length} findings.`);
         
-        return aiResponse.findings.map((finding, index) => {
+        return findings.map((finding, index) => {
             let severity = FindingSeverity.Low;
             if (finding.severity === "Critical") severity = FindingSeverity.High;
             else if (finding.severity === "Major") severity = FindingSeverity.Medium;

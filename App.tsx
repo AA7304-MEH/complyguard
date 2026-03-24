@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
-import { User, AuditScan, AuditStatus, SubscriptionPlan, BillingCycle } from './types';
+import { User, AuditScan, AuditStatus, SubscriptionPlan, SubscriptionTier, SubscriptionStatus, BillingCycle } from './types';
 import { getAppUser, getScans, enableAdminMode } from './services/apiClient';
 import { getPlanByTier } from './config/subscriptionPlans';
 import LandingPage from './components/LandingPage';
