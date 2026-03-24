@@ -1,5 +1,7 @@
 import * as React from 'react';
-import { SignInButton } from '@clerk/clerk-react';
+import { SignInButton, SignUpButton } from '@clerk/clerk-react';
+import ReportPage from './ReportPage';
+import { AuditScan, AuditStatus, FindingSeverity } from '../types';
 import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { ScaleIcon } from './icons/ScaleIcon';
 import { ZapIcon } from './icons/ZapIcon';
@@ -7,10 +9,73 @@ import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import { FileTextIcon } from './icons/FileTextIcon';
 import { UploadCloudIcon } from './icons/UploadCloudIcon';
 import ScrollToTop from './ScrollToTop';
+import TermsOfService from './TermsOfService';
+import HelpPage from './HelpPage';
 
+// --- Mock Data for Sample Report ---
+const MOCK_SAMPLE_SCAN: AuditScan = {
+  id: 'sample-report',
+  user_id: 'sample',
+  framework_id: 'gdpr',
+  framework_name: 'GDPR (EU General Data Protection Regulation)',
+  document_name: 'Privacy_Policy_v2.pdf',
+  status: AuditStatus.Completed,
+  findings_count: 3,
+  score: 85,
+  created_at: new Date(),
+  findings: [
+    {
+      id: 'f1',
+      audit_scan_id: 'sample-report',
+      framework_rule: { id: 'r1', framework_id: 'gdpr', article: 'Article 13', title: 'Information to be provided where personal data are collected', requirement_text: 'must provide contact info' },
+      severity: FindingSeverity.High,
+      excerpt_from_document: 'We collect data for analytics.',
+      remediation_advice: 'Explicitly state the data controller identity, contact details, and the purpose of processing.',
+      paragraph_number: 2,
+    },
+    {
+      id: 'f2',
+      audit_scan_id: 'sample-report',
+      framework_rule: { id: 'r2', framework_id: 'gdpr', article: 'Article 5(1)(e)', title: 'Storage limitation', requirement_text: 'kept in a form which permits identification no longer than necessary' },
+      severity: FindingSeverity.Medium,
+      excerpt_from_document: 'Data will be kept indefinitely for historical analysis.',
+      remediation_advice: 'Define a specific data retention period or the criteria used to determine that period.',
+      paragraph_number: 5,
+    },
+    {
+      id: 'f3',
+      audit_scan_id: 'sample-report',
+      framework_rule: { id: 'r3', framework_id: 'gdpr', article: 'Article 32', title: 'Security of processing', requirement_text: 'implement appropriate technical and organisational measures' },
+      severity: FindingSeverity.Low,
+      excerpt_from_document: 'Data is stored on our servers.',
+      remediation_advice: 'Include a mention of encryption or access controls to satisfy security requirement transparency.',
+      paragraph_number: 12,
+    }
+  ]
+};
 
 const LandingPage: React.FC = () => {
-  
+    const [showSampleReport, setShowSampleReport] = React.useState(false);
+    const [publicView, setPublicView] = React.useState<'landing' | 'privacy' | 'terms' | 'help'>('landing');
+
+    if (showSampleReport) {
+      return (
+        <div className="bg-slate-50 min-h-screen py-10 w-full">
+           <ReportPage scan={MOCK_SAMPLE_SCAN} onBack={() => setShowSampleReport(false)} />
+        </div>
+      );
+    }
+
+    if (publicView === 'privacy') {
+        return <PrivacyPolicy onBack={() => setPublicView('landing')} />;
+    }
+    if (publicView === 'terms') {
+        return <TermsOfService onBack={() => setPublicView('landing')} />;
+    }
+    if (publicView === 'help') {
+        return <HelpPage onBack={() => setPublicView('landing')} />;
+    }
+
   return (
     <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white w-full relative overflow-hidden">
       <ScrollToTop />
@@ -61,11 +126,11 @@ const LandingPage: React.FC = () => {
               </span>
             </h1>
             <p className="mt-6 text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-200">
-              Stop spending weeks on manual audits. Our AI instantly scans your policies against 
-              <span className="text-blue-400 font-semibold"> GDPR, HIPAA, SOC 2</span> and more—identifying risks and providing actionable remediation in minutes.
+              Upload your policy and get a report in minutes – no manual reading. Our AI scans your documents against 
+              <span className="text-blue-400 font-semibold"> GDPR, HIPAA, SOC 2</span> and more, identifying risks instantly.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300">
-              <SignInButton mode="modal">
+              <SignUpButton mode="modal">
                 <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 text-lg">
                   <span className="flex items-center">
                     Start Free Trial
@@ -74,9 +139,12 @@ const LandingPage: React.FC = () => {
                     </svg>
                   </span>
                 </button>
-              </SignInButton>
-              <button className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 text-lg">
-                Watch Demo
+              </SignUpButton>
+              <button 
+                onClick={() => setShowSampleReport(true)}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-2"
+              >
+                <span>👀</span> View Sample Report
               </button>
             </div>
             
@@ -273,7 +341,14 @@ const LandingPage: React.FC = () => {
                     </button>
                 </SignInButton>
             </div>
-            <p className="mt-12 text-sm text-slate-400">&copy; {new Date().getFullYear()} ComplyGuard AI. All rights reserved.</p>
+            <div className="mt-12 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400 gap-4">
+                <p>&copy; {new Date().getFullYear()} ComplyGuard AI. All rights reserved.</p>
+                <div className="flex gap-6">
+                    <button onClick={() => setPublicView('privacy')} className="hover:text-white transition-colors">Privacy Policy</button>
+                    <button onClick={() => setPublicView('terms')} className="hover:text-white transition-colors">Terms of Service</button>
+                    <button onClick={() => setPublicView('help')} className="hover:text-white transition-colors">Help & FAQ</button>
+                </div>
+            </div>
         </div>
       </footer>
     </div>

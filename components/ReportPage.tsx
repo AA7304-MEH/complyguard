@@ -59,34 +59,73 @@ const FindingCard: React.FC<{ finding: AuditFinding }> = ({ finding }) => {
 };
 
 
+const GaugeChart = ({ score }: { score: number }) => {
+    const radius = 36;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (score / 100) * circumference;
+    
+    const getColor = (s: number) => {
+      if (s >= 90) return "text-green-500";
+      if (s >= 70) return "text-yellow-500";
+      return "text-red-500";
+    };
+  
+    return (
+      <div className="relative flex items-center justify-center h-24 w-24">
+        <svg className="transform -rotate-90 w-full h-full">
+          <circle cx="48" cy="48" r="36" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-200" />
+          <circle cx="48" cy="48" r="36" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className={`${getColor(score)} transition-all duration-1000 ease-in-out`} />
+        </svg>
+        <div className="absolute flex flex-col items-center justify-center text-gray-700">
+          <span className="text-2xl font-bold">{score}</span>
+        </div>
+      </div>
+    );
+};
+
 const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
 
     const findingsBySeverity = (severity: FindingSeverity) => scan.findings.filter(f => f.severity === severity);
 
   return (
-    <div className="max-w-5xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md border border-slate-200">
+    <div className="max-w-5xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md border border-slate-200" id="report-content">
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Compliance Report</h1>
           <p className="text-md text-gray-500 mt-1">{scan.document_name}</p>
         </div>
-        <button onClick={onBack} className="text-sm font-medium text-accent hover:underline">
-          &larr; Back to Dashboard
-        </button>
+        <div className="flex gap-4 print:hidden">
+            <button 
+                onClick={() => window.print()} 
+                className="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md shadow-sm text-slate-700 bg-white hover:bg-slate-50 focus:outline-none"
+            >
+                ⬇️ Download PDF
+            </button>
+            <button onClick={onBack} className="text-sm font-medium text-accent hover:underline">
+            &larr; Back to Dashboard
+            </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
-        <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-gray-50 p-4 rounded-lg flex flex-col justify-center">
           <p className="text-sm font-medium text-gray-500">Framework</p>
           <p className="text-xl font-bold text-gray-900">{scan.framework_name}</p>
         </div>
-        <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="bg-gray-50 p-4 rounded-lg flex flex-col justify-center">
           <p className="text-sm font-medium text-gray-500">Scan Date</p>
           <p className="text-xl font-bold text-gray-900">{scan.created_at.toLocaleDateString()}</p>
         </div>
-        <div className="bg-red-100 border border-red-200 p-4 rounded-lg">
+        <div className="bg-red-50 border border-red-100 p-4 rounded-lg flex flex-col justify-center">
           <p className="text-sm font-medium text-red-700">Total Findings</p>
-          <p className="text-xl font-bold text-red-900">{scan.findings_count}</p>
+          <p className="text-2xl font-bold text-red-900">{scan.findings_count}</p>
+        </div>
+        <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex items-center justify-between">
+           <div>
+               <p className="text-sm font-medium text-blue-700 mb-1">Compliance Score</p>
+               <p className="text-xs text-blue-600/80 leading-tight">Out of 100</p>
+           </div>
+           <GaugeChart score={scan.score} />
         </div>
       </div>
 

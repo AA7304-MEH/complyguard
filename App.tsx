@@ -17,12 +17,15 @@ import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
 import SuccessNotification from './components/common/SuccessNotification';
 import { workerService } from './services/workerService';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import HelpPage from './components/HelpPage';
 
 const MainApp: React.FC = () => {
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
-  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'report' | 'pricing' | 'subscription' | 'checkout' | 'analytics' | 'templates' | 'calendar' | 'api' | 'privacy' | 'terms' | 'help'>('dashboard');
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null);
   const [selectedBillingCycle, setSelectedBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
@@ -274,6 +277,9 @@ const MainApp: React.FC = () => {
             onUpgrade={handleUpgrade}
           />
         )}
+        {view === 'privacy' && <PrivacyPolicy onBack={backToDashboard} />}
+        {view === 'terms' && <TermsOfService onBack={backToDashboard} />}
+        {view === 'help' && <HelpPage onBack={backToDashboard} />}
       </main>
 
       {view === 'checkout' && selectedPlan && (
@@ -284,6 +290,18 @@ const MainApp: React.FC = () => {
           onSuccess={handlePaymentSuccess}
           onCancel={backToDashboard}
         />
+      )}
+
+      {/* Footer for Legal & Support navigation */}
+      {view !== 'checkout' && view !== 'report' && view !== 'privacy' && view !== 'terms' && view !== 'help' && (
+        <footer className="mt-8 py-6 text-center text-sm text-slate-500 border-t border-slate-200">
+          <div className="flex justify-center gap-6 mb-2">
+              <button onClick={() => setView('privacy')} className="hover:text-slate-800 transition-colors">Privacy Policy</button>
+              <button onClick={() => setView('terms')} className="hover:text-slate-800 transition-colors">Terms of Service</button>
+              <button onClick={() => setView('help')} className="hover:text-slate-800 transition-colors">Help & FAQ</button>
+          </div>
+          <p>&copy; {new Date().getFullYear()} ComplyGuard AI. All rights reserved.</p>
+        </footer>
       )}
 
       {/* Success Notification */}

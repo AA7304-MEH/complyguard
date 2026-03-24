@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { createScan, getFrameworks } from '../services/apiClient';
-import { AuditScan, Framework } from '../types';
+import { AuditScan, Framework, AuditStatus } from '../types';
 import Spinner from './common/Spinner';
 import { FileIcon } from './icons/FileIcon';
 
@@ -47,6 +47,11 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
       });
 
       if (validFiles.length > 0) {
+        const oversizeFiles = validFiles.filter(f => f.size > 10 * 1024 * 1024);
+        if (oversizeFiles.length > 0) {
+          setError("File size limit exceeded. Each file must be under 10MB.");
+          return;
+        }
         setFiles(validFiles);
         if (validFiles.length === 1) {
           setSelectedFolderName(null);
@@ -74,6 +79,11 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
+      const oversizeFiles = newFiles.filter(f => f.size > 10 * 1024 * 1024);
+      if (oversizeFiles.length > 0) {
+        setError("File size limit exceeded. Each file must be under 10MB.");
+        return;
+      }
       setFiles(newFiles);
       setSelectedFolderName(null);
       setError(null);
@@ -89,6 +99,11 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
       });
 
       if (validFiles.length > 0) {
+        const oversizeFiles = validFiles.filter(f => f.size > 10 * 1024 * 1024);
+        if (oversizeFiles.length > 0) {
+          setError("File size limit exceeded. Checked files in folder are over the 10MB limit.");
+          return;
+        }
         setFiles(validFiles);
         setSelectedFolderName(`${validFiles.length} files in folder`);
         setError(null);

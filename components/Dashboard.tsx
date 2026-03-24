@@ -190,6 +190,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Framework</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Findings</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">View</span></th>
                 </tr>
@@ -201,6 +202,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{scan.framework_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{scan.created_at.toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getStatusChip(scan.status)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {scan.status === 'completed' ? (
+                            <span className={`font-semibold ${scan.score >= 90 ? 'text-green-600' : scan.score >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {scan.score}/100
+                            </span>
+                        ) : <span className="text-gray-400">N/A</span>}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{scan.status === 'completed' ? scan.findings_count : 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {scan.status === 'completed' && (
