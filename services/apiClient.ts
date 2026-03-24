@@ -125,9 +125,14 @@ export const createScan = async (file: File | File[], frameworkId: string): Prom
     const isArray = Array.isArray(file);
     const mainFile = isArray ? file[0] : file;
     const documentName = isArray ? `${file.length} files` : mainFile.name;
-    const scanId = `scan-${crypto.randomUUID()}`;
+    
+    // Fallback for randomUUID if crypto.randomUUID is not available (e.g. non-secure context or older browser)
+    const scanId = `scan-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)}`;
+    
     const selectedFramework = mockFrameworks.find(f => f.id === frameworkId);
     const frameworkName = selectedFramework?.name || 'Unknown';
+
+    console.log(`Starting scan ${scanId} for ${documentName} on framework ${frameworkName}`);
 
     // 1. Process files
     const fileArray = isArray ? file : [file];
