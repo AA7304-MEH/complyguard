@@ -140,7 +140,7 @@ export const analyzeFullDocument = async (
     modelName: string = MODEL_NAME
 ): Promise<AuditFinding[]> => {
     if (!ai) {
-        return [];
+        throw new Error("Missing Gemini API Key. The application cannot perform AI analysis because the VITE_GEMINI_API_KEY environment variable is missing.");
     }
 
     try {
@@ -199,8 +199,8 @@ Analyze the document for gaps against the framework and checklist. Return your r
         const call = response.candidates?.[0]?.content?.parts?.[0]?.functionCall;
         
         if (!call || call.name !== 'report_compliance_gaps') {
-            console.warn("AI Auditor: No function call detected in response.");
-            return [];
+            console.warn("AI Auditor: No function call detected in response.", response.text());
+            throw new Error(`AI generated an unstructured response instead of the required JSON. Please try again. Raw output: ${response.text().substring(0, 50)}...`);
         }
 
         const args = call.args as { findings: AIFinding[] };
