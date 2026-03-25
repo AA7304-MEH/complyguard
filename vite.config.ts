@@ -23,15 +23,13 @@ export default defineConfig(({ mode }) => {
         }
       ],
       define: {
-        // For development, use local env vars
-        // For production, Netlify will inject VITE_ prefixed vars
-        'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY),
-        'process.env.RAZORPAY_KEY_ID': JSON.stringify(env.VITE_RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID),
-        'process.env.RAZORPAY_KEY_SECRET': JSON.stringify(env.VITE_RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET),
-        'process.env.PAYPAL_CLIENT_ID': JSON.stringify(env.VITE_PAYPAL_CLIENT_ID || env.PAYPAL_CLIENT_ID),
-        'process.env.PAYPAL_CLIENT_SECRET': JSON.stringify(env.VITE_PAYPAL_CLIENT_SECRET || env.PAYPAL_CLIENT_SECRET),
-        'process.env.PAYPAL_ENVIRONMENT': JSON.stringify(env.VITE_PAYPAL_ENVIRONMENT || env.PAYPAL_ENVIRONMENT || 'production')
+        'process.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || process.env.GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || process.env.GEMINI_API_KEY),
+        'process.env.RAZORPAY_KEY_ID': JSON.stringify(env.VITE_RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || ''),
+        'process.env.RAZORPAY_KEY_SECRET': JSON.stringify(env.VITE_RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET || ''),
+        'process.env.PAYPAL_CLIENT_ID': JSON.stringify(env.VITE_PAYPAL_CLIENT_ID || process.env.VITE_PAYPAL_CLIENT_ID || ''),
+        'process.env.PAYPAL_CLIENT_SECRET': JSON.stringify(env.VITE_PAYPAL_CLIENT_SECRET || process.env.VITE_PAYPAL_CLIENT_SECRET || ''),
+        'process.env.PAYPAL_ENVIRONMENT': JSON.stringify(env.VITE_PAYPAL_ENVIRONMENT || process.env.VITE_PAYPAL_ENVIRONMENT || 'production')
       },
       resolve: {
         alias: {
