@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node generate-env.js && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "build:netlify": "npm run build",
     "postbuild": "echo 'Build completed successfully for Netlify deployment'"

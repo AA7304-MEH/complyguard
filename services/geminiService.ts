@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { FindingSeverity, AuditFinding, FrameworkRule } from '../types';
 
 // Use Vite's environment variable access with fallback
