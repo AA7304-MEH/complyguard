@@ -16,10 +16,15 @@ export default defineConfig(({ mode }) => {
         {
           name: 'html-transform',
           transformIndexHtml(html) {
-            return html.replace(
-              'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk',
-              env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk'
-            );
+            return html
+              .replace(
+                'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk',
+                env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk'
+              )
+              .replace(
+                'YOUR_GEMINI_API_KEY_PLACEHOLDER',
+                env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || ''
+              );
           }
         }
       ],
