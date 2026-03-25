@@ -1,8 +1,8 @@
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { FindingSeverity, AuditFinding, FrameworkRule } from '../types';
 
-// Use Vite's environment variable access with fallback
-// Support window injection (most reliable for production), Vite env, and process.env fallback
-const API_KEY = (window as any).GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY));
+const HARDCODED_API_KEY = "AIzaSyD9ZK0a92__91N5RgXCCk1tEWDNAU4tZZ8"; // From user screenshot
+const API_KEY = HARDCODED_API_KEY || (window as any).GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && (process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY));
 
 if (!API_KEY) {
     console.warn("⚠️ Gemini API key not found. AI analysis will be mocked.");

@@ -7,7 +7,8 @@ export default async function handler(req: any, res: any) {
     }
 
     const { framework, contents, rules, model } = req.body;
-    const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const HARDCODED_KEY = "AIzaSyD9ZK0a92__91N5RgXCCk1tEWDNAU4tZZ8"; // From user screenshot
+    const API_KEY = HARDCODED_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
         console.error('❌ Server-side GEMINI_API_KEY is missing');
