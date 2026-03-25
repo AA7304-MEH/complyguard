@@ -344,6 +344,16 @@ const LandingPage: React.FC = () => {
             <div className="mt-12 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400 gap-4">
                 <p>&copy; {new Date().getFullYear()} ComplyGuard AI. All rights reserved.</p>
                 <div className="flex gap-6">
+                    <button 
+                        onClick={() => {
+                            const keys = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'));
+                            const winKeys = Object.keys(window).filter(k => k.includes('GEMINI'));
+                            alert(`Detected Environment Keys: ${keys.length > 0 ? keys.join(', ') : 'NoneFound'}\n\nWindow Keys: ${winKeys.length > 0 ? winKeys.join(', ') : 'NoneFound'}\n\nKey Present (Vite): ${!!import.meta.env.VITE_GEMINI_API_KEY}\n\nKey Present (Window): ${!!(window as any).GEMINI_API_KEY}\n\nBuild Ver: ${new Date().toISOString()}`);
+                        }}
+                        className="hover:text-white transition-colors text-xs italic opacity-50"
+                    >
+                        Check API Status
+                    </button>
                     <button onClick={() => setPublicView('privacy')} className="hover:text-white transition-colors">Privacy Policy</button>
                     <button onClick={() => setPublicView('terms')} className="hover:text-white transition-colors">Terms of Service</button>
                     <button onClick={() => setPublicView('help')} className="hover:text-white transition-colors">Help & FAQ</button>

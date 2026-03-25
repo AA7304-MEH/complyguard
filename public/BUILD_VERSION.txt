@@ -1,0 +1,3 @@
+ComplyGuard Build: 2026-03-25T20:20:00Z
+Commit: d2cfafd (and beyond)
+Status: Trying to fix Vercel Environment variables.
