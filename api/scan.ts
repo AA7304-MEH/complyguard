@@ -31,12 +31,12 @@ export default async function handler(req: any, res: any) {
                                 properties: {
                                     id: { type: SchemaType.STRING },
                                     rule_id: { type: SchemaType.STRING },
-                                    severity: { type: SchemaType.STRING, enum: ["Critical", "High", "Medium", "Low"] },
+                                    severity: { type: SchemaType.STRING, enum: ["Critical", "High", "Medium", "Low"], format: "string" },
                                     title: { type: SchemaType.STRING },
                                     description: { type: SchemaType.STRING },
                                     suggestion: { type: SchemaType.STRING },
                                     clause: { type: SchemaType.STRING },
-                                    status: { type: SchemaType.STRING, enum: ["Fail", "Pass", "Warning"] }
+                                    status: { type: SchemaType.STRING, enum: ["Fail", "Pass", "Warning"], format: "string" }
                                 },
                                 required: ["id", "rule_id", "severity", "title", "description", "suggestion", "status"]
                             }
