@@ -291,11 +291,14 @@ const MainApp: React.FC = () => {
           onCancel={backToDashboard}
         />
       )}
-
       {/* Footer for Legal & Support navigation */}
       {view !== 'checkout' && view !== 'report' && view !== 'privacy' && view !== 'terms' && view !== 'help' && (
         <footer className="mt-8 py-6 text-center text-sm text-slate-500 border-t border-slate-200">
           <div className="flex justify-center gap-6 mb-2">
+              <button onClick={() => {
+                const keys = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'));
+                alert(`Detected Environment Keys: ${keys.length > 0 ? keys.join(', ') : 'NoneFound'}\n\nKey Present: ${!!import.meta.env.VITE_GEMINI_API_KEY}\n\nIf VITE_GEMINI_API_KEY is not listed, your Vercel deployment did not bake the key correctly.`);
+              }} className="text-xs text-slate-300 hover:text-slate-100 mr-4 italic">Check API Status</button>
               <button onClick={() => setView('privacy')} className="hover:text-slate-800 transition-colors">Privacy Policy</button>
               <button onClick={() => setView('terms')} className="hover:text-slate-800 transition-colors">Terms of Service</button>
               <button onClick={() => setView('help')} className="hover:text-slate-800 transition-colors">Help & FAQ</button>
