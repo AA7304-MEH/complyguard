@@ -22,6 +22,9 @@ import TermsOfService from './components/TermsOfService';
 import HelpPage from './components/HelpPage';
 
 const MainApp: React.FC = () => {
+  React.useEffect(() => {
+    console.log("🚀 ComplyGuard AI v1.3.0 [SECURE_SERVER_MODE] - Build: 2026-03-25T21:30:00Z");
+  }, []);
   const [appUser, setAppUser] = React.useState<User | null>(null);
   const [scans, setScans] = React.useState<AuditScan[]>([]);
   const [selectedScan, setSelectedScan] = React.useState<AuditScan | null>(null);
