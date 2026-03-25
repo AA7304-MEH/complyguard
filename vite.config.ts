@@ -3,8 +3,19 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-    // Merge system environment variables (like those in Vercel) with .env files
-    const env = { ...process.env, ...loadEnv(mode, process.cwd(), '') };
+    // Aggressively capture EVERY possible environment variable source
+    // Vite's loadEnv + Node's process.env
+    const env = { 
+        ...process.env, 
+        ...loadEnv(mode, process.cwd(), ''),
+        ...loadEnv(mode, process.cwd(), 'VITE_') 
+    };
+    
+    // Log detected keys during Vercel build (hidden from client)
+    console.log('--- Build Time Environment Check ---');
+    console.log('Detected VITE_ keys:', Object.keys(env).filter(k => k.startsWith('VITE_')));
+    console.log('Detected GEMINI keys:', Object.keys(env).filter(k => k.includes('GEMINI')));
+    console.log('------------------------------------');
     
     return {
       server: {
