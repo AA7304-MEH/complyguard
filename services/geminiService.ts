@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { FindingSeverity, AuditFinding, FrameworkRule } from '../types';
 
 // Use Vite's environment variable access with fallback
@@ -8,7 +8,7 @@ if (!API_KEY) {
     console.warn("⚠️ Gemini API key not found. AI analysis will be mocked.");
 }
 
-const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
+const ai = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 // Upgraded to Pro for better reasoning as requested
 const MODEL_NAME = "gemini-1.5-pro";
 
@@ -88,24 +88,24 @@ const FRAMEWORK_CHECKLISTS: Record<string, string> = {
 `
 };
 
-const AUDIT_TOOL = {
+const AUDIT_TOOL: any = {
     functionDeclarations: [
         {
             name: "report_compliance_gaps",
             description: "Report gap findings identified during a policy document audit.",
             parameters: {
-                type: "object",
+                type: SchemaType.OBJECT,
                 properties: {
                     findings: {
-                        type: "array",
+                        type: SchemaType.ARRAY,
                         description: "List of identified compliance gaps.",
                         items: {
-                            type: "object",
+                            type: SchemaType.OBJECT,
                             properties: {
-                                requirement: { type: "string", description: "The specific framework requirement or Article." },
-                                description: { type: "string", description: "Description of why the document is insufficient." },
-                                severity: { type: "string", enum: ["Critical", "Major", "Minor"], description: "Risk level of the gap." },
-                                remediation: { type: "string", description: "Actionable advice to fix the gap." }
+                                requirement: { type: SchemaType.STRING, description: "The specific framework requirement or Article." },
+                                description: { type: SchemaType.STRING, description: "Description of why the document is insufficient." },
+                                severity: { type: SchemaType.STRING, enum: ["Critical", "Major", "Minor"], description: "Risk level of the gap." },
+                                remediation: { type: SchemaType.STRING, description: "Actionable advice to fix the gap." }
                             },
                             required: ["requirement", "description", "severity", "remediation"]
                         }

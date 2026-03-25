@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
             manualChunks: {
               vendor: ['react', 'react-dom'],
               clerk: ['@clerk/clerk-react'],
-              ai: ['@google/genai']
+              ai: ['@google/generative-ai']
             }
           }
         }
