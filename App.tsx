@@ -298,9 +298,14 @@ const MainApp: React.FC = () => {
       {view !== 'checkout' && view !== 'report' && view !== 'privacy' && view !== 'terms' && view !== 'help' && (
         <footer className="mt-8 py-6 text-center text-sm text-slate-500 border-t border-slate-200">
           <div className="flex justify-center gap-6 mb-2">
-              <button onClick={() => {
-                const keys = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'));
-                alert(`Detected Environment Keys: ${keys.length > 0 ? keys.join(', ') : 'NoneFound'}\n\nKey Present: ${!!import.meta.env.VITE_GEMINI_API_KEY}\n\nIf VITE_GEMINI_API_KEY is not listed, your Vercel deployment did not bake the key correctly.`);
+              <button onClick={async () => {
+                try {
+                  const res = await fetch('/api/scan', { method: 'POST', body: JSON.stringify({ test: true }) });
+                  const data = await res.json();
+                  alert(`Backend Connection: ${res.status === 200 || res.status === 405 ? 'OK' : 'Error'}\nAPI Key Status: ${data.error?.includes('Missing') ? 'Missing' : 'Configured'}\n\nNote: If you get 400 'Key Not Valid', your Vercel Dashboard key is incorrect.`);
+                } catch (e) {
+                  alert('Backend Unreachable. Please check Vercel deployment status.');
+                }
               }} className="text-xs text-slate-300 hover:text-slate-100 mr-4 italic">Check API Status</button>
               <button onClick={() => setView('privacy')} className="hover:text-slate-800 transition-colors">Privacy Policy</button>
               <button onClick={() => setView('terms')} className="hover:text-slate-800 transition-colors">Terms of Service</button>
