@@ -3,6 +3,7 @@ import { createScan, getFrameworks } from '../services/apiClient';
 import { AuditScan, Framework, AuditStatus } from '../types';
 import Spinner from './common/Spinner';
 import { FileIcon } from './icons/FileIcon';
+import { useUser } from '@clerk/clerk-react';
 
 interface NewScanModalProps {
   onClose: () => void;
@@ -11,6 +12,7 @@ interface NewScanModalProps {
 }
 
 const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpgrade }) => {
+  const { user } = useUser();
   const [files, setFiles] = React.useState<File[]>([]);
   const [frameworks, setFrameworks] = React.useState<Framework[]>([]);
   const [frameworkId, setFrameworkId] = React.useState<string>('');
@@ -127,11 +129,24 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
 
     try {
       let scan;
+      const email = user?.primaryEmailAddress?.emailAddress;
+      const userId = user?.id || 'anonymous';
+      
       if (inputType === 'text') {
-        const virtualFile = new File([manualText], 'pasted-document.txt', { type: 'text/plain' });
-        scan = await createScan(virtualFile, frameworkId);
+        scan = await createScan(userId, frameworkId, manualText, email);
       } else {
-        scan = await createScan(files, frameworkId);
+        const file = files[0];
+        const base64File = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result as string;
+                const base64 = result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+        scan = await createScan(userId, frameworkId, undefined, email, base64File, file.name);
       }
 
       // Add the new scan (either Completed or Queued) to the dashboard.

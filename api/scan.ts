@@ -6,7 +6,7 @@ import { extractTextFromUrl } from '../lib/extractor';
 export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-    const { framework, pastedText, userId, email, fileUrl } = req.body;
+    const { framework, pastedText, userId, email, base64File, fileName } = req.body;
     
     // 1. Basic Validation
     if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
@@ -34,9 +34,29 @@ export default async function handler(req: any, res: any) {
             // Extract text from contents
             let textToAnalyze = pastedText;
             
-            if (!textToAnalyze && fileUrl) {
-                 console.log("[API] No pasted text, extracting from fileUrl...");
-                 textToAnalyze = await extractTextFromUrl(fileUrl);
+            if (!textToAnalyze && base64File && fileName) {
+                 console.log(`[API] Processing base64 file: ${fileName}`);
+                 const buffer = Buffer.from(base64File, 'base64');
+                 const extension = fileName.split('.').pop()?.toLowerCase();
+                 
+                 try {
+                     // @ts-ignore
+                     const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
+                     // @ts-ignore
+                     const mammoth = await import('mammoth');
+                     
+                     if (extension === 'pdf') {
+                         const data = await pdfParse(buffer);
+                         textToAnalyze = data.text;
+                     } else if (extension === 'docx') {
+                         const result = await mammoth.extractRawText({ buffer });
+                         textToAnalyze = result.value;
+                     } else {
+                         textToAnalyze = buffer.toString('utf-8');
+                     }
+                 } catch (parseErr: any) {
+                     return res.status(400).json({ error: `Failed to parse document: ${parseErr.message}` });
+                 }
             }
             
             if (!textToAnalyze) {
@@ -51,8 +71,8 @@ export default async function handler(req: any, res: any) {
                 framework,
                 status: 'completed',
                 result: result.findings,
-                file_url: fileUrl,
-                pasted_text: pastedText
+                file_url: fileName, // just save the name for history since we didn't store it
+                pasted_text: pastedText ? "Pasted text" : `Uploaded ${fileName}`
             }]);
 
             await supabase.rpc('increment_usage', { x_id: userId });
@@ -67,8 +87,8 @@ export default async function handler(req: any, res: any) {
                     user_id: userId,
                     framework,
                     status: 'pending',
-                    file_url: fileUrl,
-                    pasted_text: pastedText,
+                    file_url: fileName,
+                    pasted_text: pastedText || `Pending file: ${fileName}`,
                     user_email: email
                 }])
                 .select()

@@ -60,9 +60,10 @@ export const getScans = async (clerkUserId: string): Promise<AuditScan[]> => {
 export const createScan = async (
     userId: string, 
     framework: string, 
-    fileUrl?: string, 
     pastedText?: string,
-    email?: string
+    email?: string,
+    base64File?: string,
+    fileName?: string
 ): Promise<any> => {
     const response = await fetch('/api/scan', {
         method: 'POST',
@@ -70,9 +71,10 @@ export const createScan = async (
         body: JSON.stringify({
             userId,
             framework,
-            fileUrl,
             pastedText,
-            email
+            email,
+            base64File,
+            fileName
         })
     });
 
