@@ -1,11 +1,12 @@
 import { analyzeWithGemini } from '../lib/gemini';
 import { rateLimiter } from '../lib/rateLimiter';
 import { supabase } from '../lib/supabase';
+import { extractTextFromUrl } from '../lib/extractor';
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-    const { framework, contents, rules, model, userId, userEmail, fileUrl } = req.body;
+    const { framework, pastedText, userId, email, fileUrl } = req.body;
     
     // 1. Basic Validation
     if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
@@ -30,8 +31,18 @@ export default async function handler(req: any, res: any) {
             // Record request in rate limiter
             rateLimiter.recordRequest();
 
-            // Extract text from contents (assume already extracted for now or handle here)
-            const textToAnalyze = typeof contents[0] === 'string' ? contents[0] : JSON.stringify(contents[0]);
+            // Extract text from contents
+            let textToAnalyze = pastedText;
+            
+            if (!textToAnalyze && fileUrl) {
+                 console.log("[API] No pasted text, extracting from fileUrl...");
+                 textToAnalyze = await extractTextFromUrl(fileUrl);
+            }
+            
+            if (!textToAnalyze) {
+                 return res.status(400).json({ error: 'No content provided for analysis' });
+            }
+
             const result = await analyzeWithGemini(textToAnalyze, framework);
 
             // Update usage and store in history
@@ -40,7 +51,8 @@ export default async function handler(req: any, res: any) {
                 framework,
                 status: 'completed',
                 result: result.findings,
-                file_url: fileUrl
+                file_url: fileUrl,
+                pasted_text: pastedText
             }]);
 
             await supabase.rpc('increment_usage', { x_id: userId });
@@ -55,7 +67,9 @@ export default async function handler(req: any, res: any) {
                     user_id: userId,
                     framework,
                     status: 'pending',
-                    file_url: fileUrl
+                    file_url: fileUrl,
+                    pasted_text: pastedText,
+                    user_email: email
                 }])
                 .select()
                 .single();
