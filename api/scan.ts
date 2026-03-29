@@ -98,10 +98,25 @@ async function analyzeText(documentText: string, framework: string) {
         - "severity": Assign "Critical" for missing legal bases/breach notifications, "High" for missing security controls, "Medium" for vague clauses, and "Low" for minor administrative gaps.
         - "remediation": Provide highly actionable steps the user must take to fix the document.
     `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return JSON.parse(response.text());
+    // Retry loop for rate limits (free tier allows 2 RPM)
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            return JSON.parse(response.text());
+        } catch (err: any) {
+            const is429 = err?.message?.includes('429') || err?.message?.includes('quota');
+            if (is429 && attempt < MAX_RETRIES) {
+                const waitSec = attempt * 30; // 30s, 60s
+                console.log(`[Gemini] Rate limited. Waiting ${waitSec}s before retry ${attempt + 1}/${MAX_RETRIES}...`);
+                await new Promise(resolve => setTimeout(resolve, waitSec * 1000));
+            } else {
+                throw err;
+            }
+        }
+    }
+    throw new Error('Gemini analysis failed after retries.');
 }
 
 // --- The Vercel Serverless Handler ---
