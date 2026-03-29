@@ -48,7 +48,7 @@ export async function analyzeWithGemini(documentText: string, framework: string)
     const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
 
     const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.0-flash-lite",
         generationConfig: {
             temperature: 0,
             responseMimeType: "application/json",
