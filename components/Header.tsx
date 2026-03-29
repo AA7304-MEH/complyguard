@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { UserButton } from '@clerk/clerk-react';
+import { UserButton, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { User, SubscriptionTier } from '../types';
 import { getPlanByTier } from '../config/subscriptionPlans';
 import NotificationCenter from './NotificationCenter';

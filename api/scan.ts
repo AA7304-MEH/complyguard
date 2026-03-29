@@ -1,65 +1,76 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { analyzeWithGemini } from '../lib/gemini';
+import { rateLimiter } from '../lib/rateLimiter';
+import { supabase } from '../lib/supabase';
 
-// Vercel Serverless Function for AI Scanning
 export default async function handler(req: any, res: any) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-    const { framework, contents, rules, model } = req.body;
-    const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-
-    if (!API_KEY) {
-        console.error('❌ Server-side GEMINI_API_KEY is missing');
-        return res.status(500).json({ error: 'Missing Gemini API Key on server' });
-    }
+    const { framework, contents, rules, model, userId, userEmail, fileUrl } = req.body;
+    
+    // 1. Basic Validation
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
 
     try {
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        const modelInstance = genAI.getGenerativeModel({ 
-            model: model || "gemini-1.5-flash",
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        findings: {
-                            type: SchemaType.ARRAY,
-                            items: {
-                                type: SchemaType.OBJECT,
-                                properties: {
-                                    id: { type: SchemaType.STRING },
-                                    rule_id: { type: SchemaType.STRING },
-                                    severity: { type: SchemaType.STRING, enum: ["Critical", "High", "Medium", "Low"], format: "string" },
-                                    title: { type: SchemaType.STRING },
-                                    description: { type: SchemaType.STRING },
-                                    suggestion: { type: SchemaType.STRING },
-                                    clause: { type: SchemaType.STRING },
-                                    status: { type: SchemaType.STRING, enum: ["Fail", "Pass", "Warning"], format: "string" }
-                                },
-                                required: ["id", "rule_id", "severity", "title", "description", "suggestion", "status"]
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        // 2. Check Subscription Usage (Simple limit enforcement)
+        const { data: usage, error: usageError } = await supabase
+            .from('user_usage')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
 
-        const prompt = `Analyze this document for ${framework} compliance based on these rules: ${JSON.stringify(rules)}.`;
-        
-        // Handle multimodal content (text or PDF data)
-        const parts = contents.map((c: any) => {
-            if (typeof c === 'string') return { text: c };
-            return { inlineData: { data: c.data, mimeType: c.mimeType } };
-        });
+        // (Auto-create usage record if not exists)
+        if (usageError && usageError.code === 'PGRST116') {
+            await supabase.from('user_usage').insert([{ user_id: userId, scan_count_monthly: 0 }]);
+        }
 
-        const result = await modelInstance.generateContent([prompt, ...parts]);
-        const response = await result.response;
-        const text = response.text();
-        
-        return res.status(200).json(JSON.parse(text));
+        // 3. Determine Processing Path (Instant vs Queue)
+        if (rateLimiter.canMakeRequest()) {
+            console.log(`[API] Processing instant scan for ${userId}`);
+            
+            // Record request in rate limiter
+            rateLimiter.recordRequest();
+
+            // Extract text from contents (assume already extracted for now or handle here)
+            const textToAnalyze = typeof contents[0] === 'string' ? contents[0] : JSON.stringify(contents[0]);
+            const result = await analyzeWithGemini(textToAnalyze, framework);
+
+            // Update usage and store in history
+            await supabase.from('scan_jobs').insert([{
+                user_id: userId,
+                framework,
+                status: 'completed',
+                result: result.findings,
+                file_url: fileUrl
+            }]);
+
+            await supabase.rpc('increment_usage', { x_id: userId });
+
+            return res.status(200).json(result);
+        } else {
+            console.log(`[API] Quota reached. Queueing scan for ${userId}`);
+            
+            const { data: job, error: jobError } = await supabase
+                .from('scan_jobs')
+                .insert([{
+                    user_id: userId,
+                    framework,
+                    status: 'pending',
+                    file_url: fileUrl
+                }])
+                .select()
+                .single();
+
+            if (jobError) throw jobError;
+
+            return res.status(202).json({ 
+                status: 'queued', 
+                message: 'Your scan is in the queue. We will email you once it is ready.',
+                jobId: job.id
+            });
+        }
+
     } catch (error: any) {
-        console.error('❌ AI Analysis Error:', error);
-        return res.status(500).json({ error: error.message || 'AI Analysis failed' });
+        console.error('❌ Server-side Error:', error);
+        return res.status(500).json({ error: error.message || 'Analysis failed' });
     }
 }

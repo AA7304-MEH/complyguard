@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { SignInButton, SignUpButton } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from '@clerk/clerk-react';
 import ReportPage from './ReportPage';
+import DemoPage from './DemoPage';
 import { AuditScan, AuditStatus, FindingSeverity } from '../types';
 import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { ScaleIcon } from './icons/ScaleIcon';
@@ -9,71 +10,23 @@ import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import { FileTextIcon } from './icons/FileTextIcon';
 import { UploadCloudIcon } from './icons/UploadCloudIcon';
 import ScrollToTop from './ScrollToTop';
-import TermsOfService from './TermsOfService';
-import HelpPage from './HelpPage';
-
-// --- Mock Data for Sample Report ---
-const MOCK_SAMPLE_SCAN: AuditScan = {
-  id: 'sample-report',
-  user_id: 'sample',
-  framework_id: 'gdpr',
-  framework_name: 'GDPR (EU General Data Protection Regulation)',
-  document_name: 'Privacy_Policy_v2.pdf',
-  status: AuditStatus.Completed,
-  findings_count: 3,
-  score: 85,
-  created_at: new Date(),
-  findings: [
-    {
-      id: 'f1',
-      audit_scan_id: 'sample-report',
-      framework_rule: { id: 'r1', framework_id: 'gdpr', article: 'Article 13', title: 'Information to be provided where personal data are collected', requirement_text: 'must provide contact info' },
-      severity: FindingSeverity.High,
-      excerpt_from_document: 'We collect data for analytics.',
-      remediation_advice: 'Explicitly state the data controller identity, contact details, and the purpose of processing.',
-      paragraph_number: 2,
-    },
-    {
-      id: 'f2',
-      audit_scan_id: 'sample-report',
-      framework_rule: { id: 'r2', framework_id: 'gdpr', article: 'Article 5(1)(e)', title: 'Storage limitation', requirement_text: 'kept in a form which permits identification no longer than necessary' },
-      severity: FindingSeverity.Medium,
-      excerpt_from_document: 'Data will be kept indefinitely for historical analysis.',
-      remediation_advice: 'Define a specific data retention period or the criteria used to determine that period.',
-      paragraph_number: 5,
-    },
-    {
-      id: 'f3',
-      audit_scan_id: 'sample-report',
-      framework_rule: { id: 'r3', framework_id: 'gdpr', article: 'Article 32', title: 'Security of processing', requirement_text: 'implement appropriate technical and organisational measures' },
-      severity: FindingSeverity.Low,
-      excerpt_from_document: 'Data is stored on our servers.',
-      remediation_advice: 'Include a mention of encryption or access controls to satisfy security requirement transparency.',
-      paragraph_number: 12,
-    }
-  ]
-};
 
 const LandingPage: React.FC = () => {
-    const [showSampleReport, setShowSampleReport] = React.useState(false);
-    const [publicView, setPublicView] = React.useState<'landing' | 'privacy' | 'terms' | 'help'>('landing');
+    const [publicView, setPublicView] = React.useState<'landing' | 'demo'>('landing');
 
-    if (showSampleReport) {
+    if (publicView === 'demo') {
       return (
-        <div className="bg-slate-50 min-h-screen py-10 w-full">
-           <ReportPage scan={MOCK_SAMPLE_SCAN} onBack={() => setShowSampleReport(false)} />
+        <div className="bg-slate-50 min-h-screen py-10 w-full relative">
+            <button 
+                onClick={() => setPublicView('landing')}
+                className="absolute top-6 left-6 text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 font-medium"
+            >
+                &larr; Back to Home
+            </button>
+            <DemoPage onGetFullAccess={() => {}} /> 
+            {/* Note: In a real app, onGetFullAccess would open the SignUp modal */}
         </div>
       );
-    }
-
-    if (publicView === 'privacy') {
-        return <PrivacyPolicy onBack={() => setPublicView('landing')} />;
-    }
-    if (publicView === 'terms') {
-        return <TermsOfService onBack={() => setPublicView('landing')} />;
-    }
-    if (publicView === 'help') {
-        return <HelpPage onBack={() => setPublicView('landing')} />;
     }
 
   return (
@@ -84,7 +37,6 @@ const LandingPage: React.FC = () => {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
       {/* Header */}
@@ -118,247 +70,61 @@ const LandingPage: React.FC = () => {
             </div>
             <h1 className="text-5xl md:text-7xl font-extrabold leading-tight max-w-5xl mb-6 animate-fade-in-up">
               <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Transform Compliance
+                Compliance Audits
               </span>
               <br />
               <span className="text-white">
-                Into Your Competitive Edge
+                In Seconds, Not Weeks
               </span>
             </h1>
             <p className="mt-6 text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-200">
-              Upload your policy and get a report in minutes – no manual reading. Our AI scans your documents against 
-              <span className="text-blue-400 font-semibold"> GDPR, HIPAA, SOC 2</span> and more, identifying risks instantly.
+              Transform your legal and security documents into actionable compliance reports. Our AI Auditor finds gaps in 
+              <span className="text-blue-400 font-semibold"> GDPR, HIPAA, and SOC 2</span> instantly.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300">
               <SignUpButton mode="modal">
                 <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 text-lg">
-                  <span className="flex items-center">
-                    Start Free Trial
-                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </span>
+                  Start Free Trial
                 </button>
               </SignUpButton>
               <button 
-                onClick={() => setShowSampleReport(true)}
+                onClick={() => setPublicView('demo')}
                 className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-2"
               >
-                <span>👀</span> View Sample Report
+                <span>⚡</span> Run Interactive Demo
               </button>
-            </div>
-            
-            {/* Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto animate-fade-in-up delay-400">
-              <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">100+</div>
-                <div className="text-sm text-slate-400 mt-1">Compliance Rules</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">95%</div>
-                <div className="text-sm text-slate-400 mt-1">Time Saved</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent">24/7</div>
-                <div className="text-sm text-slate-400 mt-1">AI Monitoring</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="howitworks" className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900">Compliance Analysis in 3 Simple Steps</h2>
-            <p className="mt-4 text-lg text-slate-600">Go from document to actionable report in minutes, not weeks. Our streamlined process makes complex compliance checks effortless.</p>
-          </div>
-          <div className="mt-16 grid md:grid-cols-3 gap-8 text-center">
-            <div className="p-6">
-              <div className="flex items-center justify-center h-16 w-16 bg-blue-100 rounded-full mx-auto">
-                <UploadCloudIcon className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="mt-6 text-xl font-semibold text-slate-900">1. Upload Document</h3>
-              <p className="mt-2 text-slate-600">Securely upload your internal policies, procedures, or contracts in various formats.</p>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-center h-16 w-16 bg-blue-100 rounded-full mx-auto">
-                <ShieldCheckIcon className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="mt-6 text-xl font-semibold text-slate-900">2. Select Framework</h3>
-              <p className="mt-2 text-slate-600">Choose from a library of regulatory frameworks like GDPR, HIPAA, SOC 2, and more.</p>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-center h-16 w-16 bg-blue-100 rounded-full mx-auto">
-                <FileTextIcon className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="mt-6 text-xl font-semibold text-slate-900">3. Get Instant Report</h3>
-              <p className="mt-2 text-slate-600">Receive a detailed report highlighting compliance gaps, risks, and clear remediation advice.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-secondary">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900">Powerful Features for Modern Compliance Teams</h2>
-            <p className="mt-4 text-lg text-slate-600">We provide the tools you need to build a robust and proactive compliance posture.</p>
-          </div>
-          <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
               icon={<ZapIcon className="w-7 h-7 text-accent" />}
-              title="AI-Powered Gap Analysis"
-              description="Our advanced AI reads and understands your documents, comparing them against hundreds of regulatory rules to find what's missing."
+              title="Instant Gap Analysis"
+              description="Upload your policy and get a detailed breakdown of missing clauses and risks in real-time."
             />
             <FeatureCard
               icon={<ScaleIcon className="w-7 h-7 text-accent" />}
-              title="Multiple Frameworks"
-              description="Stay compliant across jurisdictions. Scan against GDPR, HIPAA, SOC 2 and an ever-growing list of regulations."
+              title="Global Frameworks"
+              description="Full support for GDPR, HIPAA, SOC 2, ISO 27001, and custom enterprise checklists."
             />
             <FeatureCard
               icon={<BriefcaseIcon className="w-7 h-7 text-accent" />}
-              title="Actionable Remediation"
-              description="Don't just find problems—fix them. Get clear, concrete advice on how to update your documents to close compliance gaps."
-            />
-            <FeatureCard
-              icon={<ShieldCheckIcon className="w-7 h-7 text-accent" />}
-              title="Secure & Confidential"
-              description="Your documents are encrypted in transit and at rest. We are built on enterprise-grade infrastructure to protect your sensitive data."
-            />
-             <FeatureCard
-              icon={<FileTextIcon className="w-7 h-7 text-accent" />}
-              title="Audit-Ready Reports"
-              description="Generate professional reports that clearly document your compliance status, findings, and remediation actions for stakeholders or auditors."
-            />
-             <FeatureCard
-              icon={<UploadCloudIcon className="w-7 h-7 text-accent" />}
-              title="Centralized Document Hub"
-              description="Keep all your compliance scans and reports in one organized, easily accessible dashboard."
-            />
-          </div>
-        </div>
-      </section>
-      
-       {/* Pricing Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900">Simple, Transparent Pricing</h2>
-            <p className="mt-4 text-lg text-slate-600">Choose the plan that fits your compliance needs. Start free, upgrade as you grow.</p>
-          </div>
-          <div className="mt-16 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <PricingCard
-              name="Free"
-              price="$0"
-              period="forever"
-              description="Perfect for trying out ComplyGuard"
-              features={[
-                "5 document scans per month",
-                "Basic compliance frameworks",
-                "Email support",
-                "Standard reporting"
-              ]}
-              buttonText="Get Started Free"
-              isPopular={false}
-            />
-            <PricingCard
-              name="Professional"
-              price="$99"
-              period="per month"
-              description="Perfect for growing businesses"
-              features={[
-                "200 document scans per month",
-                "All compliance frameworks",
-                "Priority support + phone",
-                "Advanced reporting & analytics",
-                "Custom compliance rules",
-                "Team collaboration",
-                "API access"
-              ]}
-              buttonText="Start Free Trial"
-              isPopular={true}
-            />
-            <PricingCard
-              name="Enterprise"
-              price="Custom"
-              period="pricing"
-              description="For large organizations"
-              features={[
-                "Unlimited document scans",
-                "All compliance frameworks",
-                "Dedicated account manager",
-                "Custom integrations",
-                "On-premise deployment",
-                "Advanced security features",
-                "Custom SLA"
-              ]}
-              buttonText="Contact Sales"
-              isPopular={false}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-secondary">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900">Trusted by Industry Leaders</h2>
-            <p className="mt-4 text-lg text-slate-600">Hear how ComplyGuard AI is transforming compliance for businesses like yours.</p>
-          </div>
-          <div className="mt-16 grid lg:grid-cols-3 gap-8">
-            <TestimonialCard
-              quote="ComplyGuard AI saved us over 100 hours in our last audit cycle. The accuracy of the gap analysis is unparalleled. It's a must-have for any compliance officer."
-              author="Jane Doe"
-              title="Chief Compliance Officer, TechFin Corp"
-            />
-            <TestimonialCard
-              quote="As a startup, we don't have a large legal team. This tool gave us the confidence to launch in the EU, knowing our GDPR policies were solid. The remediation advice was incredibly helpful."
-              author="John Smith"
-              title="CEO & Founder, HealthNow"
-            />
-            <TestimonialCard
-              quote="The ability to scan a contract against SOC 2 controls before signing has fundamentally changed our vendor management process. We catch risks before they become problems."
-              author="Emily White"
-              title="Head of Security, DataSolutions Inc."
+              title="Auto-Remediation"
+              description="Get AI-generated legal clause suggestions to fix compliance gaps immediately."
             />
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-primary text-primary-foreground py-12">
+      <footer className="bg-slate-950 text-slate-400 py-12 border-t border-white/5">
         <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold">Ready to Automate Your Compliance?</h2>
-            <p className="mt-4 max-w-2xl mx-auto">Sign in to your account and run your first scan today. Experience a smarter, faster, and more effective way to manage regulatory risk.</p>
-            <div className="mt-8">
-                <SignInButton mode="modal">
-                    <button className="px-8 py-4 bg-accent text-white font-semibold rounded-lg shadow-md hover:bg-accent/90 transition-colors text-lg">
-                        Get Started Now
-                    </button>
-                </SignInButton>
-            </div>
-            <div className="mt-12 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400 gap-4">
-                <p>&copy; {new Date().getFullYear()} ComplyGuard AI. All rights reserved.</p>
-                <div className="flex gap-6">
-                    <button 
-                        onClick={() => {
-                            const keys = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'));
-                            const winKeys = Object.keys(window).filter(k => k.includes('GEMINI'));
-                            alert(`Detected Environment Keys: ${keys.length > 0 ? keys.join(', ') : 'NoneFound'}\n\nWindow Keys: ${winKeys.length > 0 ? winKeys.join(', ') : 'NoneFound'}\n\nKey Present (Vite): ${!!import.meta.env.VITE_GEMINI_API_KEY}\n\nKey Present (Window): ${!!(window as any).GEMINI_API_KEY}\n\nBuild Ver: ${new Date().toISOString()}`);
-                        }}
-                        className="hover:text-white transition-colors text-xs italic opacity-50"
-                    >
-                        Check API Status
-                    </button>
-                    <button onClick={() => setPublicView('privacy')} className="hover:text-white transition-colors">Privacy Policy</button>
-                    <button onClick={() => setPublicView('terms')} className="hover:text-white transition-colors">Terms of Service</button>
-                    <button onClick={() => setPublicView('help')} className="hover:text-white transition-colors">Help & FAQ</button>
-                </div>
-            </div>
+            <p>&copy; {new Date().getFullYear()} ComplyGuard AI. Built for Production.</p>
         </div>
       </footer>
     </div>
@@ -366,12 +132,12 @@ const LandingPage: React.FC = () => {
 };
 
 const FeatureCard: React.FC<{icon: React.ReactNode, title: string, description: string}> = ({icon, title, description}) => (
-    <div className="bg-white p-6 rounded-lg border border-slate-200">
-        <div className="flex items-center justify-center h-12 w-12 bg-blue-100 rounded-lg">
+    <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200">
+        <div className="flex items-center justify-center h-12 w-12 bg-blue-100 rounded-xl mb-6">
             {icon}
         </div>
-        <h3 className="mt-5 text-lg font-semibold text-slate-900">{title}</h3>
-        <p className="mt-2 text-sm text-slate-600">{description}</p>
+        <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
+        <p className="text-slate-600 leading-relaxed">{description}</p>
     </div>
 );
 

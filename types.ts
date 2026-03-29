@@ -40,9 +40,10 @@ export enum JobStatus {
 }
 
 export enum FindingSeverity {
-  High = 'high',
-  Medium = 'medium',
-  Low = 'low',
+  Critical = 'Critical',
+  High = 'High',
+  Medium = 'Medium',
+  Low = 'Low',
 }
 
 export interface User {
@@ -76,27 +77,23 @@ export interface FrameworkRule {
 }
 
 export interface AuditFinding {
-  id: string;
-  audit_scan_id: string;
-  framework_rule: FrameworkRule;
+  requirement: string;
+  description: string;
   severity: FindingSeverity;
-  excerpt_from_document: string;
-  remediation_advice: string;
-  paragraph_number: number;
+  remediation: string;
 }
 
 export interface AuditScan {
   id: string;
   user_id: string;
-  framework_id: string;
-  framework_name: string;
-  document_name: string;
+  framework: string;
   status: AuditStatus;
-  findings_count: number;
-  findings: AuditFinding[];
+  result: AuditFinding[];
   score: number;
+  file_url?: string;
   created_at: Date;
-  job_id?: string;
+  updated_at?: Date;
+  error_message?: string;
 }
 
 export interface ScanJob {
