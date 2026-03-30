@@ -40,8 +40,43 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
     const mediumCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'medium').length;
     const lowCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'low').length;
 
-    const handlePrint = () => {
-        window.print();
+    const [isDownloading, setIsDownloading] = React.useState(false);
+
+    const handleDownload = async () => {
+        const element = document.getElementById('report-container');
+        if (!element || isDownloading) return;
+
+        setIsDownloading(true);
+        try {
+            const html2pdf = (window as any).html2pdf;
+            if (!html2pdf) {
+                alert("The PDF generator is still loading. Please try again in 2 seconds.");
+                setIsDownloading(false);
+                return;
+            }
+
+            const opt = {
+                margin: [15, 15],
+                filename: `ComplyGuard_Audit_${scan.framework}_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    letterRendering: true,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            // Generate and save
+            await html2pdf().set(opt).from(element).save();
+        } catch (err) {
+            console.error("PDF Download Error:", err);
+            alert("Could not generate PDF. Please try again or use the browser's Print feature (Ctrl+P).");
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     return (
@@ -109,13 +144,30 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                 </button>
                 <div className="flex items-center gap-3">
                     <button 
-                        onClick={handlePrint}
-                        className="px-6 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2"
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        className={`px-6 py-2 bg-accent text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-accent/20 ${isDownloading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-accent/90'}`}
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download PDF
+                        {isDownloading ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download Audit PDF
+                            </>
+                        )}
+                    </button>
+                    <button 
+                        onClick={() => window.print()}
+                        className="px-4 py-2 bg-white border border-slate-200 text-slate-500 font-medium rounded-lg hover:bg-slate-50 transition-all text-sm no-print"
+                        title="Open Printer Dialog"
+                    >
+                        Print
                     </button>
                 </div>
             </div>
