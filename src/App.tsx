@@ -72,8 +72,17 @@ const MainApp: React.FC = () => {
     return () => clearInterval(interval);
   }, [scans, clerkUser]);
 
-  const onScanStarted = React.useCallback(() => {
-    // Refresh scans to show the new placeholder
+  const onScanStarted = React.useCallback((newScan: AuditScan) => {
+    // Add the new scan to state immediately
+    setScans(prev => [newScan, ...prev]);
+    
+    // If the scan completed instantly, auto-navigate to the report
+    if (newScan.status === AuditStatus.Completed || newScan.status === 'completed') {
+      setSelectedScan(newScan);
+      setView('report');
+    }
+    
+    // Also refresh from DB in background
     if (clerkUser) fetchData();
   }, [clerkUser, fetchData]);
 

@@ -165,14 +165,25 @@ export default async function handler(req: any, res: any) {
         const result = await analyzeText(textToAnalyze, framework);
         console.log(`[API] Gemini returned ${result.findings?.length || 0} findings`);
 
-        // 3. Save to DB (best-effort, don't crash if DB is down)
+        // 3. Calculate compliance score based on findings
+        const findings = result.findings || [];
+        const maxScore = 100;
+        const deductions: Record<string, number> = { Critical: 20, High: 15, Medium: 8, Low: 3 };
+        const totalDeduction = findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0);
+        const score = Math.max(0, maxScore - totalDeduction);
+
+        // 4. Build the scan ID
+        const scanId = 'scan-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+        // 5. Save to DB (best-effort, don't crash if DB is down)
         if (supabase) {
             try {
                 await supabase.from('scan_jobs').insert([{
                     user_id: userId,
                     framework,
                     status: 'completed',
-                    result: result.findings,
+                    result: findings,
+                    score,
                     file_url: fileName || null,
                     user_email: email || null
                 }]);
@@ -182,8 +193,17 @@ export default async function handler(req: any, res: any) {
             }
         }
 
-        // 4. Return the analysis result
-        return res.status(200).json(result);
+        // 6. Return a full AuditScan object the frontend can display immediately
+        return res.status(200).json({
+            id: scanId,
+            user_id: userId,
+            framework,
+            status: 'completed',
+            result: findings,
+            score,
+            file_url: fileName || null,
+            created_at: new Date().toISOString()
+        });
 
     } catch (error: any) {
         console.error('❌ /api/scan fatal error:', error);
