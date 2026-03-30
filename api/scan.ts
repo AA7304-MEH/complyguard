@@ -168,8 +168,16 @@ export default async function handler(req: any, res: any) {
         // 3. Calculate compliance score based on findings
         const findings = result.findings || [];
         const maxScore = 100;
-        const deductions: Record<string, number> = { Critical: 20, High: 15, Medium: 8, Low: 3 };
-        const totalDeduction = findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0);
+        const deductions: Record<string, number> = { 
+            Critical: 25, 
+            High: 15, 
+            Medium: 7, 
+            Low: 2 
+        };
+        const totalDeduction = findings.reduce((acc: number, f: any) => {
+            const severity = f.severity || 'Medium';
+            return acc + (deductions[severity] || 5);
+        }, 0);
         const score = Math.max(0, maxScore - totalDeduction);
 
         // 4. Build the scan ID

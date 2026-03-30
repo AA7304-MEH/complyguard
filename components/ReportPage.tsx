@@ -10,9 +10,19 @@ interface ReportPageProps {
 }
 
 const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
-    const colors = severity.toLowerCase() === 'high' 
-        ? 'bg-red-50 text-red-700 border-red-100' 
-        : 'bg-yellow-50 text-yellow-700 border-yellow-100';
+    let colors = 'bg-slate-50 text-slate-700 border-slate-100'; // Default
+    const lowerSeverity = severity.toLowerCase();
+    
+    if (lowerSeverity === 'critical') {
+        colors = 'bg-red-600 text-white border-red-700 shadow-sm';
+    } else if (lowerSeverity === 'high') {
+        colors = 'bg-red-50 text-red-700 border-red-100'; 
+    } else if (lowerSeverity === 'medium') {
+        colors = 'bg-yellow-50 text-yellow-700 border-yellow-100';
+    } else if (lowerSeverity === 'low') {
+        colors = 'bg-blue-50 text-blue-700 border-blue-100';
+    }
+
     return (
         <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-widest border ${colors}`}>
             {severity}
@@ -23,7 +33,12 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
     // findings from scan.result
     const findings = Array.isArray(scan.result) ? scan.result : (scan.result as any)?.findings || [];
-    const highSeverityCount = findings.filter((f: any) => f.severity.toLowerCase() === 'high').length;
+    
+    const criticalCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'critical').length;
+    const highCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'high').length;
+    const severeCount = criticalCount + highCount;
+    const mediumCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'medium').length;
+    const lowCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'low').length;
 
     const handlePrint = () => {
         window.print();
@@ -120,12 +135,12 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                             <div className="text-xl font-bold text-slate-900">{findings.length}</div>
                         </div>
                         <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                            <div className="text-xs text-red-500 uppercase font-bold mb-1">Critical</div>
-                            <div className="text-xl font-bold text-red-700">{highSeverityCount}</div>
+                            <div className="text-xs text-red-500 uppercase font-bold mb-1">Critical/High</div>
+                            <div className="text-xl font-bold text-red-700">{severeCount}</div>
                         </div>
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div className="text-xs text-slate-500 uppercase font-bold mb-1">Medium</div>
-                            <div className="text-xl font-bold text-slate-900">{findings.length - highSeverityCount}</div>
+                            <div className="text-xs text-slate-500 uppercase font-bold mb-1">Med/Low</div>
+                            <div className="text-xl font-bold text-slate-900">{mediumCount + lowCount}</div>
                         </div>
                         <div className="p-3 bg-white rounded-xl border border-accent">
                             <div className="text-xs text-accent uppercase font-bold mb-1">Health</div>
@@ -146,15 +161,12 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                         <div key={idx} className="finding-row p-8 hover:bg-slate-50/50 transition-colors group">
                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
+                                    <div className="flex items-center gap-3">
                                         <SeverityBadge severity={finding.severity} />
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
                                             {finding.requirement}
-                                        </span>
+                                        </h3>
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-900">
-                                        {finding.requirement}
-                                    </h3>
                                 </div>
                             </div>
 
