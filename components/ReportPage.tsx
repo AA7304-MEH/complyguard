@@ -55,21 +55,48 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                         padding: 0 !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
+                        height: auto !important;
+                        overflow: visible !important;
                     }
                     .no-print { display: none !important; }
                     .print-only { display: block !important; }
                     
-                    /* Clean up Shadows & Borders for Print */
-                    .shadow-xl, .shadow-lg, .shadow-inner { box-shadow: none !important; }
+                    /* Force visibility of the container and its parents */
+                    html, body, #root, .min-h-screen, main, #report-container { 
+                        height: auto !important;
+                        overflow: visible !important;
+                        background: white !important;
+                        display: block !important;
+                        position: relative !important;
+                    }
+
+                    /* Hide everything outside of this component more reliably */
+                    header, footer, nav, aside, .no-print { display: none !important; }
                     
                     /* Page Break Management */
-                    .finding-row { page-break-inside: avoid; break-inside: avoid; }
+                    .finding-row { 
+                        page-break-inside: avoid !important; 
+                        break-inside: avoid !important; 
+                        display: block !important;
+                        margin-bottom: 2rem !important;
+                        position: relative !important;
+                    }
                     h1, h2, h3 { page-break-after: avoid; }
                     
-                    /* Hide everything outside of this component */
-                    body * { visibility: hidden; }
-                    #report-container, #report-container * { visibility: visible; }
-                    #report-container { position: absolute; left: 0; top: 0; width: 100%; }
+                    #report-container { 
+                        width: 100% !important; 
+                        max-width: 100% !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    /* Clean up Shadows & Borders for Print */
+                    .shadow-xl, .shadow-lg, .shadow-inner { box-shadow: none !important; }
+                    .rounded-2xl { border: 1px solid #e2e8f0 !important; border-radius: 8px !important; }
+                    .bg-slate-50\/50 { background-color: #f8fafc !important; }
+
+                    /* Ensure finding details don't get clipped */
+                    .overflow-hidden { overflow: visible !important; }
                 }
             `}} />
 
@@ -151,7 +178,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
             </div>
 
             {/* Findings Section */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xl">
                 <div className="px-8 py-5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                     <h2 className="font-bold text-slate-900 text-lg">Detailed Findings & Gaps</h2>
                 </div>
