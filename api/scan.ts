@@ -43,13 +43,12 @@ const FRAMEWORKS: Record<string, string> = {
     `
 };
 
-async function analyzeText(documentText: string, framework: string) {
+async function analyzeMultimodal(framework: string, pastedText?: string, base64File?: string, fileName?: string) {
     const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
     if (!API_KEY) throw new Error("Missing Gemini API Key in environment.");
 
     const genAI = new GoogleGenerativeAI(API_KEY);
     const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
-
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
@@ -78,38 +77,57 @@ async function analyzeText(documentText: string, framework: string) {
 
     const prompt = `
         You are a highly pedantic, expert compliance auditor and legal professional. 
-        Analyze the following document against the strict requirements of the ${framework} framework.
+        Analyze the provided content against the strict requirements of the ${framework} framework.
         
         Requirements Checklist:
         ${checklist}
 
-        Document Content:
-        """${documentText.substring(0, 30000)}"""
-
         Strict Auditing Rules:
         1. Only report items that are MISSING, INCOMPLETE, NON-COMPLIANT, or VAGUE regarding the requirement.
-        2. If a section is vague or uses non-committal language (e.g., "we try to protect data"), record it as a finding.
-        3. If the document is clearly not a policy or contract, generate findings stating that the text completely fails to address the framework.
-        4. If you find absolute perfection and NO issues, return an empty 'findings' array (this should be exceedingly rare).
+        2. If the document is an image or scan with no text layer, use your native OCR to read it.
+        3. Output the result in JSON format only.
         
         Output Formatting Guidelines:
         - "requirement": Quote the specific Framework Article/Criterion being violated.
-        - "description": Provide a professional, objective statement of what is missing or wrong in the text.
+        - "description": Provide a professional, objective statement of what is missing or wrong.
         - "severity": Assign "Critical" for missing legal bases/breach notifications, "High" for missing security controls, "Medium" for vague clauses, and "Low" for minor administrative gaps.
-        - "remediation": Provide highly actionable steps the user must take to fix the document.
+        - "remediation": Provide highly actionable steps to fix the document.
     `;
-    // Retry loop for rate limits (free tier allows 2 RPM)
+
+    const parts: any[] = [{ text: prompt }];
+
+    if (pastedText) {
+        parts.push({ text: `Document Text: """${pastedText}"""` });
+    }
+
+    if (base64File && fileName) {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/pdf';
+        if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        if (ext === 'doc') mimeType = 'application/msword';
+        if (ext === 'txt') mimeType = 'text/plain';
+        if (['png', 'jpg', 'jpeg'].includes(ext || '')) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+
+        parts.push({
+            inlineData: {
+                data: base64File,
+                mimeType
+            }
+        });
+    }
+
+    // Retry loop for rate limits
     const MAX_RETRIES = 3;
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-            const result = await model.generateContent(prompt);
+            const result = await model.generateContent(parts);
             const response = await result.response;
             return JSON.parse(response.text());
         } catch (err: any) {
             const is429 = err?.message?.includes('429') || err?.message?.includes('quota');
             if (is429 && attempt < MAX_RETRIES) {
-                const waitSec = attempt * 30; // 30s, 60s
-                console.log(`[Gemini] Rate limited. Waiting ${waitSec}s before retry ${attempt + 1}/${MAX_RETRIES}...`);
+                const waitSec = attempt * 30;
+                console.log(`[Gemini] Rate limited. Waiting ${waitSec}s...`);
                 await new Promise(resolve => setTimeout(resolve, waitSec * 1000));
             } else {
                 throw err;
@@ -121,7 +139,6 @@ async function analyzeText(documentText: string, framework: string) {
 
 // --- The Vercel Serverless Handler ---
 export default async function handler(req: any, res: any) {
-    // Always return JSON, even on crash
     try {
         if (req.method !== 'POST') {
             return res.status(405).json({ error: 'Method Not Allowed' });
@@ -130,39 +147,10 @@ export default async function handler(req: any, res: any) {
         const { framework, pastedText, userId, email, base64File, fileName } = req.body;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
-        if (!supabase) {
-            console.error('[API] Supabase not configured. VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing.');
-            // Continue without DB - still do the analysis
-        }
 
-        // 1. Extract text
-        let textToAnalyze = pastedText;
-
-        if (!textToAnalyze && base64File && fileName) {
-            console.log(`[API] Processing base64 file: ${fileName}`);
-            const buffer = Buffer.from(base64File, 'base64');
-            const extension = fileName.split('.').pop()?.toLowerCase();
-
-            if (extension === 'pdf') {
-                const pdfParse = (await import('pdf-parse')).default;
-                const data = await pdfParse(buffer);
-                textToAnalyze = data.text;
-            } else if (extension === 'docx') {
-                const mammoth = await import('mammoth');
-                const result = await mammoth.extractRawText({ buffer });
-                textToAnalyze = result.value;
-            } else {
-                textToAnalyze = buffer.toString('utf-8');
-            }
-        }
-
-        if (!textToAnalyze || textToAnalyze.trim().length === 0) {
-            return res.status(400).json({ error: 'No content provided for analysis. Upload a file or paste text.' });
-        }
-
-        // 2. Run Gemini Analysis
-        console.log(`[API] Starting Gemini analysis for ${framework}, text length: ${textToAnalyze.length}`);
-        const result = await analyzeText(textToAnalyze, framework);
+        // 1. Run Gemini Analysis (Multimodal)
+        console.log(`[API] Starting Gemini analysis for ${framework}...`);
+        const result = await analyzeMultimodal(framework, pastedText, base64File, fileName);
         console.log(`[API] Gemini returned ${result.findings?.length || 0} findings`);
 
         // 3. Calculate compliance score based on findings

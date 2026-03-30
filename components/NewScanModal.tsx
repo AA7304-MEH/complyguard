@@ -9,9 +9,10 @@ interface NewScanModalProps {
   onClose: () => void;
   onScanStart: (newScan: AuditScan) => void;
   onUpgrade?: () => void;
+  initialFiles?: File[];
 }
 
-const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpgrade }) => {
+const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpgrade, initialFiles }) => {
   const { user } = useUser();
   const [files, setFiles] = React.useState<File[]>([]);
   const [frameworks, setFrameworks] = React.useState<Framework[]>([]);
@@ -76,7 +77,22 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
       }
     }
     fetchFrameworks();
-  }, []);
+
+    // If initial files are provided (e.g. from global drag-drop), use them immediately
+    if (initialFiles && initialFiles.length > 0) {
+      const validFiles = initialFiles.filter(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        return ['txt', 'md', 'pdf', 'doc', 'docx'].includes(ext || '');
+      });
+
+      if (validFiles.length > 0) {
+        setFiles(validFiles);
+        if (validFiles.length > 1) {
+            setSelectedFolderName(`${validFiles.length} files selected`);
+        }
+      }
+    }
+  }, [initialFiles]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

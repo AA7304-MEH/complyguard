@@ -32,6 +32,41 @@ const getStatusChip = (status: AuditStatus) => {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onViewReport, onUpgrade }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isGlobalDragging, setIsGlobalDragging] = React.useState(false);
+  const [droppedFiles, setDroppedFiles] = React.useState<File[]>([]);
+
+  // --- Global Drag and Drop Handlers ---
+  const handleGlobalDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsGlobalDragging(true);
+  };
+
+  const handleGlobalDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only hide if we're actually leaving the window or hitting a target inside
+    if (e.relatedTarget === null) {
+      setIsGlobalDragging(false);
+    }
+  };
+
+  const handleGlobalDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsGlobalDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      setDroppedFiles(files);
+      setIsModalOpen(true);
+    }
+  };
+
+  const closeScanModal = () => {
+    setIsModalOpen(false);
+    setDroppedFiles([]);
+  };
 
   const scansRemaining = user.scan_limit_this_month === -1 ? Infinity : user.scan_limit_this_month - user.documents_scanned_this_month;
   const usagePercentage = user.scan_limit_this_month > 0 ? (user.documents_scanned_this_month / user.scan_limit_this_month) * 100 : 0;
@@ -43,7 +78,29 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
     : 0;
 
   return (
-    <>
+    <div 
+        className="relative min-h-screen"
+        onDragOver={handleGlobalDragOver}
+    >
+      {/* Global Drag Overlay */}
+      {isGlobalDragging && (
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-accent/90 backdrop-blur-sm transition-all duration-300"
+            onDragLeave={handleGlobalDragLeave}
+            onDrop={handleGlobalDrop}
+        >
+            <div className="text-center p-12 border-4 border-dashed border-white/50 rounded-3xl animate-in zoom-in-95 duration-200">
+                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                    <svg className="w-12 h-12 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <h2 className="text-3xl font-extrabold text-white mb-2 italic">Drop Files "Anywhere"</h2>
+                <p className="text-white/80 font-medium text-lg">Drop your documents here to instantly start a Compliance Audit</p>
+            </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
@@ -162,8 +219,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onVie
           </div>
         </div>
       </div>
-      {isModalOpen && <NewScanModal onClose={() => setIsModalOpen(false)} onScanStart={onUpdateScans} onUpgrade={() => { setIsModalOpen(false); onUpgrade?.(); }} />}
-    </>
+      {isModalOpen && (
+        <NewScanModal 
+            onClose={closeScanModal} 
+            onScanStart={onUpdateScans} 
+            initialFiles={droppedFiles}
+            onUpgrade={() => { closeScanModal(); onUpgrade?.(); }} 
+        />
+      )}
+    </div>
   );
 };
 
