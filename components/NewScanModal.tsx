@@ -257,7 +257,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                     <div className="flex items-center">
                       <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-semibold text-accent hover:text-accent-dark focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
                         <span>Upload a file</span>
-                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".txt,.md,.pdf,.doc,.docx" />
+                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.doc,.docx,.txt,.md" />
                       </label>
                       <span className="mx-2 text-gray-400">or</span>
                       <button 
@@ -267,9 +267,19 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                       >
                         Upload a folder
                       </button>
+                      <input 
+                        type="file" 
+                        ref={folderInputRef} 
+                        className="hidden" 
+                        webkitdirectory="" 
+                        directory="" 
+                        multiple 
+                        onChange={handleFolderChange} 
+                        accept=".pdf,.doc,.docx,.txt,.md"
+                      />
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400">Supports .txt, .md, .pdf, .doc, .docx</p>
+                  <p className="text-xs text-gray-400">Supports PDF, Word, TXT, and Markdown</p>
                 </div>
 
                 {files.length > 0 && (
