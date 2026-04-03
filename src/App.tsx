@@ -30,6 +30,7 @@ const MainApp: React.FC = () => {
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
   const [successMessage, setSuccessMessage] = React.useState({ title: '', message: '' });
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const { isLoaded: isClerkLoaded, user: clerkUser } = useUser();
 
   const fetchData = React.useCallback(async () => {
@@ -55,6 +56,12 @@ const MainApp: React.FC = () => {
     }
   }, [isClerkLoaded, clerkUser, fetchData]);
 
+  React.useEffect(() => {
+    const handleOpenModal = () => setIsModalOpen(true);
+    window.addEventListener('open-new-scan', handleOpenModal);
+    return () => window.removeEventListener('open-new-scan', handleOpenModal);
+  }, []);
+
   // Poll for scan updates if there are any scans in processing/pending state
   React.useEffect(() => {
     const hasUnfinishedScans = scans.some(s => 
@@ -77,7 +84,7 @@ const MainApp: React.FC = () => {
     setScans(prev => [newScan, ...prev]);
     
     // If the scan completed instantly, auto-navigate to the report
-    if (newScan.status === AuditStatus.Completed || newScan.status === 'completed') {
+    if (newScan.status === AuditStatus.Completed) {
       setSelectedScan(newScan);
       setView('report');
     }
@@ -153,6 +160,8 @@ const MainApp: React.FC = () => {
             onUpdateScans={onScanStarted}
             onViewReport={viewReport}
             onUpgrade={() => setView('pricing')}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
           />
         )}
         {view === 'report' && selectedScan && (

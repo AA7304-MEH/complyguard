@@ -39,43 +39,39 @@ const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-8">
             <h1 className="text-xl font-bold text-slate-900">ComplyGuard AI</h1>
             
-            {/* Navigation Menu */}
-            <nav className="hidden md:flex space-x-6">
+            {/* Navigation Menu - Production Sync */}
+            <nav className="hidden md:flex items-center space-x-1">
               <button
                 onClick={onHome}
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors flex items-center"
+                className="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-semibold transition-all rounded-lg hover:bg-slate-50 flex items-center"
               >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Home
+                Dashboard
+              </button>
+              <button
+                onClick={onHome} // For now, Scans also shows the dashboard (all scans table)
+                className="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-semibold transition-all rounded-lg hover:bg-slate-50"
+              >
+                Scans
               </button>
               <button
                 onClick={onViewAnalytics}
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+                className="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-semibold transition-all rounded-lg hover:bg-slate-50"
               >
-                Analytics
+                Monitoring
               </button>
+              <div className="h-4 w-px bg-slate-200 mx-2"></div>
               <button
-                onClick={onViewTemplates}
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+                onClick={() => {
+                    // Logic to open modal from anywhere - assuming we'll lift this to App level or standard event
+                    window.dispatchEvent(new CustomEvent('open-new-scan'));
+                }}
+                className="bg-accent text-accent-foreground px-4 py-2 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 border border-accent/20"
               >
-                Templates
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                </svg>
+                New Scan
               </button>
-              <button
-                onClick={onViewCalendar}
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Calendar
-              </button>
-              {user.subscription_tier !== SubscriptionTier.Free && (
-                <button
-                  onClick={onViewAPI}
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-                >
-                  API
-                </button>
-              )}
             </nav>
           </div>
           

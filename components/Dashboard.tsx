@@ -12,6 +12,8 @@ interface DashboardProps {
   onUpdateScans: (newScan: AuditScan) => void;
   onViewReport: (scan: AuditScan) => void;
   onUpgrade?: () => void;
+  isModalOpen: boolean;
+  setIsModalOpen: (isOpen: boolean) => void;
 }
 
 const getStatusChip = (status: AuditStatus) => {
@@ -30,8 +32,15 @@ const getStatusChip = (status: AuditStatus) => {
   }
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, scans, onUpdateScans, onViewReport, onUpgrade }) => {
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+const Dashboard: React.FC<DashboardProps> = ({ 
+    user, 
+    scans, 
+    onUpdateScans, 
+    onViewReport, 
+    onUpgrade,
+    isModalOpen,
+    setIsModalOpen
+}) => {
   const [isGlobalDragging, setIsGlobalDragging] = React.useState(false);
   const [droppedFiles, setDroppedFiles] = React.useState<File[]>([]);
 

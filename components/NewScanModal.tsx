@@ -97,12 +97,22 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      const oversizeFiles = newFiles.filter(f => f.size > 10 * 1024 * 1024);
+      const validFiles = newFiles.filter(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase();
+        return ['txt', 'md', 'pdf', 'doc', 'docx'].includes(ext || '');
+      });
+
+      if (validFiles.length === 0) {
+        setError("Please upload .txt, .md, .pdf, or Word files.");
+        return;
+      }
+
+      const oversizeFiles = validFiles.filter(f => f.size > 10 * 1024 * 1024);
       if (oversizeFiles.length > 0) {
         setError("File size limit exceeded. Each file must be under 10MB.");
         return;
       }
-      setFiles(newFiles);
+      setFiles(validFiles);
       setSelectedFolderName(null);
       setError(null);
     }
@@ -249,23 +259,30 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                     : "border-gray-300 hover:border-accent/50 hover:bg-gray-50"
                 }`}
               >
-                <div className="space-y-2 text-center">
-                  <div className={`mx-auto h-16 w-16 mb-2 rounded-full flex items-center justify-center transition-colors ${isDragging ? "bg-accent text-white" : "bg-gray-100 text-gray-400"}`}>
-                    <FileIcon className="h-8 w-8" />
+                <div className="space-y-4 text-center w-full">
+                  <div className={`mx-auto h-20 w-20 mb-2 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg ${isDragging ? "bg-accent text-white scale-110 rotate-3" : "bg-slate-100 text-slate-400"}`}>
+                    <FileIcon className="h-10 w-10" />
                   </div>
-                  <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600 gap-1">
-                    <div className="flex items-center">
-                      <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-semibold text-accent hover:text-accent-dark focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
-                        <span>Upload a file</span>
-                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.doc,.docx,.txt,.md" />
+                  
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <h3 className="text-lg font-bold text-slate-800">Upload Policy Documents</h3>
+                    <p className="text-sm text-slate-500 max-w-[280px]">Drag & drop your files/folders here or choose from your computer</p>
+                    
+                    <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                      <label htmlFor="file-upload" className="cursor-pointer bg-white border-2 border-accent text-accent px-5 py-2 rounded-full font-bold text-sm hover:bg-accent hover:text-white transition-all shadow-sm active:scale-95">
+                        <span>Select Individual Files</span>
+                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} multiple accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                       </label>
-                      <span className="mx-2 text-gray-400">or</span>
+                      
                       <button 
                         type="button"
                         onClick={() => folderInputRef.current?.click()}
-                        className="font-semibold text-accent hover:text-accent-dark transition-colors"
+                        className="bg-slate-800 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-slate-900 transition-all shadow-sm active:scale-95 flex items-center gap-2"
                       >
-                        Upload a folder
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        Upload a Folder
                       </button>
                       <input 
                         type="file" 
@@ -275,11 +292,16 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                         directory="" 
                         multiple 
                         onChange={handleFolderChange} 
-                        accept=".pdf,.doc,.docx,.txt,.md"
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400">Supports PDF, Word, TXT, and Markdown</p>
+                  <div className="flex items-center justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-2">
+                    <span>PDF</span>
+                    <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                    <span>WORD</span>
+                    <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                    <span>TEXT</span>
+                  </div>
                 </div>
 
                 {files.length > 0 && (
