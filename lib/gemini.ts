@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-
-// Framework Checklists
+/**
+ * Framework Checklists
+ */
 export const FRAMEWORKS: Record<string, string> = {
     GDPR: `
         1. Lawful basis (Art. 6) – must state one of: consent, contract, legal obligation, vital interests, public task, legitimate interests.
@@ -38,82 +38,26 @@ export const FRAMEWORKS: Record<string, string> = {
 };
 
 /**
- * Perform AI analysis using Gemini 1.5 Pro with Function Calling
+ * Perform AI analysis using secure serverless backend
  */
 export async function analyzeWithGemini(documentText: string, framework: string) {
-    const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!API_KEY) throw new Error("Missing Gemini API Key in environment.");
-
-    const genAI = new GoogleGenerativeAI(API_KEY);
-    const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
-
-    const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-        generationConfig: {
-            temperature: 0,
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: SchemaType.OBJECT,
-                properties: {
-                    findings: {
-                        type: SchemaType.ARRAY,
-                        items: {
-                            type: SchemaType.OBJECT,
-                            properties: {
-                                requirement: { type: SchemaType.STRING },
-                                description: { type: SchemaType.STRING },
-                                severity: { type: SchemaType.STRING, format: "enum", enum: ["Critical", "High", "Medium", "Low"] },
-                                remediation: { type: SchemaType.STRING }
-                            },
-                            required: ["requirement", "description", "severity", "remediation"]
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    const prompt = `
-        You are a highly pedantic, expert compliance auditor and legal professional. 
-        Analyze the following document against the strict requirements of the ${framework} framework.
-        
-        Requirements Checklist:
-        ${checklist}
-
-        Document Content:
-        """${documentText.substring(0, 30000)}"""
-
-        Strict Auditing Rules:
-        1. Only report items that are MISSING, INCOMPLETE, NON-COMPLIANT, or VAGUE regarding the requirement.
-        2. If a section is vague or uses non-committal language (e.g., "we try to protect data"), record it as a finding.
-        3. If the document is clearly not a policy or contract (e.g., random text or gibberish), generate findings stating that the text completely fails to address the framework.
-        4. If you find absolute perfection and NO issues, return an empty 'findings' array (this should be exceedingly rare).
-        
-        Output Formatting Guidelines:
-        - "requirement": Quote the specific Framework Article/Criterion being violated.
-        - "description": Provide a professional, objective statement of what is missing or wrong in the text. Do not use conversational language.
-        - "severity": Assign "Critical" for missing legal bases/breach notifications, "High" for missing security controls, "Medium" for vague clauses, and "Low" for minor administrative gaps.
-        - "remediation": Provide highly actionable, technical, or legal steps the user must take to fix the document. Write this as a direct instruction (e.g., "Add a clause explicitly stating...").
-    `;
-
-    console.log(`[Gemini] Starting analysis for ${framework}...`);
-    
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const json = JSON.parse(response.text());
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ documentText, framework })
+        });
 
-        // Recursive retry if zero findings on a document that "looks" problematic
-        if (json.findings.length === 0 && documentText.length < 500) {
-            console.warn("[Gemini] No findings detected on short doc. Retrying with higher criticality.");
-            // (One simple retry attempt with stricter prompt)
-            const retryResult = await model.generateContent(prompt + "\nSTRICT MODE: The user needs to see at least some suggestions for improvement.");
-            return JSON.parse(retryResult.response.text());
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Backend analysis failed');
         }
 
-        return json;
+        return await response.json();
     } catch (error) {
-        console.error("[Gemini] Analysis Failed:", error);
+        console.error("[Gemini Proxy] Request Failed:", error);
         throw error;
     }
 }

@@ -2,9 +2,9 @@ import { PaymentProvider, BillingCycle, SubscriptionPlan } from '../types';
 import { getPrice } from '../config/subscriptionPlans';
 
 // Payment configuration with fallbacks
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_R7dfHLEHcCCibm';
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 // Using PayPal sandbox test client ID - Replace with your production client ID when ready
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R';
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 
 export interface PaymentResult {
   success: boolean;

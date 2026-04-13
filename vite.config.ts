@@ -30,23 +30,18 @@ export default defineConfig(({ mode }) => {
               .replace(
                 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk',
                 env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk'
-              )
-              .replace(
-                'YOUR_GEMINI_API_KEY_PLACEHOLDER',
-                env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || ''
               );
           }
         }
       ],
       define: {
-        'process.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || process.env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || process.env.GEMINI_API_KEY),
+
         'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''),
         'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''),
         'process.env.RAZORPAY_KEY_ID': JSON.stringify(env.VITE_RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || ''),
-        'process.env.RAZORPAY_KEY_SECRET': JSON.stringify(env.VITE_RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET || ''),
+
         'process.env.PAYPAL_CLIENT_ID': JSON.stringify(env.VITE_PAYPAL_CLIENT_ID || process.env.VITE_PAYPAL_CLIENT_ID || ''),
-        'process.env.PAYPAL_CLIENT_SECRET': JSON.stringify(env.VITE_PAYPAL_CLIENT_SECRET || process.env.VITE_PAYPAL_CLIENT_SECRET || ''),
+
         'process.env.PAYPAL_ENVIRONMENT': JSON.stringify(env.VITE_PAYPAL_ENVIRONMENT || process.env.VITE_PAYPAL_ENVIRONMENT || 'production')
       },
       resolve: {

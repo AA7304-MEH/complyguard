@@ -2,12 +2,12 @@ import { PaymentProvider, BillingCycle, PaymentIntent, SubscriptionPlan } from '
 import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
 
 // Razorpay configuration - LIVE KEYS
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_R7dfHLEHcCCibm';
-const RAZORPAY_KEY_SECRET = import.meta.env.VITE_RAZORPAY_KEY_SECRET || '';
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
+
 
 // PayPal configuration - SANDBOX KEYS FOR TESTING (Switch to production when ready)
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AYTvYjBG2seZa0FGQlKVLUDH4Mp1ml2BmqEDxgb8ysdoLnVEoa0q7Ceu0ycycxpBu8Nx2iPlW1SpOz5K';
-const PAYPAL_CLIENT_SECRET = import.meta.env.VITE_PAYPAL_CLIENT_SECRET || 'EOhOu8iPdURh0vHiRZ6KQ3j_9guZFpTFoDzknADKzN5DAwnKnpAeXMnCXESSHZsiBsM59fzzND-c27n9';
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
+
 const PAYPAL_ENVIRONMENT = import.meta.env.VITE_PAYPAL_ENVIRONMENT || 'sandbox';
 
 // Debug logging for payment keys
