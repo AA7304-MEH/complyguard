@@ -4,9 +4,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   // Check the presence of critical and optional environment variables.
   // We only return true/false to avoid leaking sensitive secrets in the browser.
 
+  const timestamp = new Date().toISOString();
+
   const envStatus = {
     status: 'ok',
-    timestamp: new Date().toISOString(),
+    timestamp,
     environment: process.env.NODE_ENV || 'unknown',
     critical_vars: {
       VITE_CLERK_PUBLISHABLE_KEY: !!(process.env.VITE_CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY),
@@ -26,6 +28,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.status(200).json(envStatus);
 }
