@@ -34,7 +34,7 @@ These variables activate specific features securely. If they are missing, the ap
 - **What it is:** Razorpay frontend identifier.
 - **Where to find it:** Go to [Razorpay Dashboard](https://dashboard.razorpay.com/) -> Settings -> API Keys -> Copy the "Key Id" (Starts with `rzp_live_` or `rzp_test_`).
 
-> **⚠️ NOTE ON PAYMENT SECRETS:** You do *not* add `VITE_RAZORPAY_KEY_SECRET` or `VITE_PAYPAL_CLIENT_SECRET` in Vite variables. Secret keys have been safely removed from the frontend client to protect your account.
+> **⚠️ NOTE ON PAYMENT SECRETS:** You do *not* add `RAZORPAY_KEY_SECRET` or `VITE_PAYPAL_CLIENT_SECRET` in Vite variables. Secret keys have been safely removed from the frontend client to protect your account.
 
 ### The PayPal Integration (For Global Payments)
 ### `VITE_PAYPAL_CLIENT_ID`
@@ -65,3 +65,4 @@ After setting these variables and deploying, you can instantly verify that the a
 **`https://complyguard-mu.vercel.app/api/health`**
 
 This will show you a secure read-out of exactly which keys the deployed build detected (without exposing the secret values).
+
