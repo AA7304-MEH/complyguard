@@ -1,12 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 import * as fs from "fs";
 
-let API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+let API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {
     try {
         const envConfig = fs.readFileSync(".env.local", "utf8");
-        const match = envConfig.match(/VITE_GEMINI_API_KEY=(.+)/);
+        const match = envConfig.match(/GEMINI_API_KEY=(.+)/);
         if (match) API_KEY = match[1].trim();
     } catch (e) {}
 }

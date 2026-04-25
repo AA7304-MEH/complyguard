@@ -44,7 +44,7 @@ const FRAMEWORKS: Record<string, string> = {
 };
 
 async function analyzeMultimodal(framework: string, pastedText?: string, base64File?: string, fileName?: string) {
-    const API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const API_KEY = process.env.GEMINI_API_KEY;
     if (!API_KEY) throw new Error("Missing Gemini API Key in environment.");
 
     const genAI = new GoogleGenerativeAI(API_KEY);

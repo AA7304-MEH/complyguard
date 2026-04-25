@@ -7,14 +7,13 @@ export default defineConfig(({ mode }) => {
     // Vite's loadEnv + Node's process.env
     const env = { 
         ...process.env, 
-        ...loadEnv(mode, process.cwd(), ''),
         ...loadEnv(mode, process.cwd(), 'VITE_') 
     };
     
     // Log detected keys during Vercel build (hidden from client)
     console.log('--- Build Time Environment Check ---');
     console.log('Detected VITE_ keys:', Object.keys(env).filter(k => k.startsWith('VITE_')));
-    console.log('Detected GEMINI keys:', Object.keys(env).filter(k => k.includes('GEMINI')));
+    console.log('Detected GEMINI keys:', Object.keys(env).filter(k => k === 'VITE_GEMINI_API_KEY'));
     console.log('------------------------------------');
     
     return {
