@@ -75,8 +75,8 @@ class WorkerService {
             await apiClient.updateScanJob(job.id, { status: JobStatus.Processing });
 
             // 2. Get Document Data from "Storage"
-            const contents = apiClient.getDocContentForJob(job.id);
-            if (contents.length === 0) {
+            const contents = await apiClient.getDocContentForJob(job.id);
+            if (!contents || contents.length === 0) {
                 throw new Error("Missing document content in storage.");
             }
 

@@ -113,3 +113,7 @@ export const getFrameworks = async (): Promise<any[]> => {
         { id: 'HIPAA', name: 'HIPAA', version: '1996', description: 'Health Insurance Portability and Accountability Act' }
     ];
 };
+
+export const getPendingJob = async (): Promise<any> => { return null; };
+export const updateScanJob = async (jobId: string, data: any): Promise<any> => { return null; };
+export const getDocContentForJob = async (jobId: string): Promise<any> => { return null; };

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { SubscriptionPlan, BillingCycle, PaymentProvider, User } from '../types';
-import { FunctionalPaymentService, PaymentResult } from '../services/functionalPaymentService';
+import { PaymentService } from '../services/paymentService';
 import { getPrice } from '../config/subscriptionPlans';
 
 interface FunctionalPaymentFlowProps {
@@ -40,7 +40,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
     const detectProvider = async () => {
       setIsDetecting(true);
       try {
-        const location = await FunctionalPaymentService.getUserLocation();
+        const location = await PaymentService.getUserLocation();
         setDetectedLocation(location);
         // Always use Razorpay for instant experience
         setPaymentProvider(PaymentProvider.Razorpay);
@@ -203,18 +203,12 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
 
             updateProgress(3, 'Creating subscription...');
 
-            const subscription = await FunctionalPaymentService.createSubscription(
+            const subscription = await PaymentService.createSubscription(
               user.id,
               plan.id,
               billingCycle,
-              {
-                success: true,
-                paymentId: orderDetails.id,
-                orderId: data.orderID,
-                amount: amount,
-                currency: 'USD',
-                provider: PaymentProvider.PayPal
-              }
+              PaymentProvider.PayPal,
+              orderDetails.id
             );
 
             updateProgress(4, 'Success! Redirecting...');
@@ -268,87 +262,93 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const handleRazorpayPayment = async () => {
     setIsProcessing(true);
     setError(null);
-    updateProgress(1, 'Initializing Razorpay payment...');
-
-    try {
-      const paymentResult = await FunctionalPaymentService.processRazorpayPayment(
-        plan,
-        billingCycle,
-        user.email,
-        (message) => updateProgress(2, message)
-      );
-
-      updateProgress(3, 'Payment successful! Creating subscription...');
-
-      const subscription = await FunctionalPaymentService.createSubscription(
-        user.id,
-        plan.id,
-        billingCycle,
-        paymentResult
-      );
-
-      updateProgress(4, 'Success! Redirecting to dashboard...');
-
-      setTimeout(() => {
-        onSuccess({
-          provider: PaymentProvider.Razorpay,
-          paymentId: paymentResult.paymentId,
-          orderId: paymentResult.orderId,
-          amount: paymentResult.amount,
-          currency: paymentResult.currency,
-          subscription
-        });
-      }, 1500);
-
-    } catch (error: any) {
-      console.error('❌ Razorpay payment error:', error);
-      setError(error.error || 'Payment failed. Please try again.');
-      setIsProcessing(false);
-      setCurrentStep(1);
-    }
+    PaymentService.processPaymentWithRetry(
+      PaymentProvider.Razorpay,
+      plan,
+      billingCycle,
+      user.id,
+      user.email,
+      (message) => updateProgress(2, message),
+      async (result) => {
+        updateProgress(3, 'Payment successful! Creating subscription...');
+        try {
+          const subscription = await PaymentService.createSubscription(
+            user.id,
+            plan.id,
+            billingCycle,
+            PaymentProvider.Razorpay,
+            result.razorpay_payment_id || result.paymentID
+          );
+          updateProgress(4, 'Success! Redirecting to dashboard...');
+          setTimeout(() => {
+            onSuccess({
+              provider: PaymentProvider.Razorpay,
+              paymentId: result.razorpay_payment_id || result.paymentID,
+              orderId: result.razorpay_order_id || result.orderID,
+              amount: price,
+              currency: currency,
+              subscription
+            });
+          }, 1500);
+        } catch (e: any) {
+          setError(e.message || 'Subscription failed');
+          setIsProcessing(false);
+          setCurrentStep(1);
+        }
+      },
+      (error) => {
+        console.error('❌ Razorpay payment error:', error);
+        setError(error.reason || error.error || 'Payment failed. Please try again.');
+        setIsProcessing(false);
+        setCurrentStep(1);
+      }
+    );
   };
 
   const handlePayPalPayment = async () => {
     setIsProcessing(true);
     setError(null);
-    updateProgress(1, 'Initializing PayPal payment...');
-
-    try {
-      const paymentResult = await FunctionalPaymentService.processPayPalPayment(
-        plan,
-        billingCycle,
-        'paypal-button-container',
-        (message) => updateProgress(2, message)
-      );
-
-      updateProgress(3, 'Payment successful! Creating subscription...');
-
-      const subscription = await FunctionalPaymentService.createSubscription(
-        user.id,
-        plan.id,
-        billingCycle,
-        paymentResult
-      );
-
-      updateProgress(4, 'Success! Redirecting to dashboard...');
-
-      setTimeout(() => {
-        onSuccess({
-          provider: PaymentProvider.PayPal,
-          paymentId: paymentResult.paymentId,
-          orderId: paymentResult.orderId,
-          amount: paymentResult.amount,
-          currency: paymentResult.currency,
-          subscription
-        });
-      }, 1500);
-
-    } catch (error: any) {
-      console.error('❌ PayPal payment error:', error);
-      setError(error.error || 'PayPal payment failed. Please try Razorpay instead.');
-      setIsProcessing(false);
-      setCurrentStep(1);
-    }
+    PaymentService.processPaymentWithRetry(
+      PaymentProvider.PayPal,
+      plan,
+      billingCycle,
+      user.id,
+      user.email,
+      (message) => updateProgress(2, message),
+      async (result) => {
+        updateProgress(3, 'Payment successful! Creating subscription...');
+        try {
+          const subscription = await PaymentService.createSubscription(
+            user.id,
+            plan.id,
+            billingCycle,
+            PaymentProvider.PayPal,
+            result.paymentID || result.id
+          );
+          updateProgress(4, 'Success! Redirecting to dashboard...');
+          setTimeout(() => {
+            onSuccess({
+              provider: PaymentProvider.PayPal,
+              paymentId: result.paymentID || result.id,
+              orderId: result.orderID,
+              amount: price,
+              currency: currency,
+              subscription
+            });
+          }, 1500);
+        } catch (e: any) {
+          setError(e.message || 'Subscription failed');
+          setIsProcessing(false);
+          setCurrentStep(1);
+        }
+      },
+      (error) => {
+        console.error('❌ PayPal payment error:', error);
+        setError(error.reason || error.error || 'PayPal payment failed. Please try Razorpay instead.');
+        setIsProcessing(false);
+        setCurrentStep(1);
+      }
+    );
   };
 
   const handlePayment = () => {

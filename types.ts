@@ -44,6 +44,8 @@ export enum FindingSeverity {
   High = 'High',
   Medium = 'Medium',
   Low = 'Low',
+  Fail = 'Fail',
+  Warning = 'Warning',
 }
 
 export interface User {
@@ -74,13 +76,20 @@ export interface FrameworkRule {
   article: string;
   title: string;
   requirement_text: string;
+  severity?: string;
 }
 
 export interface AuditFinding {
-  requirement: string;
+  requirement?: string;
   description: string;
-  severity: FindingSeverity;
-  remediation: string;
+  severity: FindingSeverity | string;
+  remediation?: string;
+  id?: string;
+  rule_id?: string;
+  title?: string;
+  suggestion?: string;
+  clause?: string;
+  status?: any;
 }
 
 export interface AuditScan {
@@ -94,6 +103,11 @@ export interface AuditScan {
   created_at: Date;
   updated_at?: Date;
   error_message?: string;
+  findings_count?: number;
+  findings?: any[];
+  framework_name?: string;
+  framework_id?: string;
+  document_name?: string;
 }
 
 export interface ScanJob {

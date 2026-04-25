@@ -17,7 +17,7 @@ async function verify() {
         console.log("✅ Gemini Success!");
         console.log("Response:", result.response.text());
         console.log("\nYour API key is valid and working with gemini-1.5-pro.");
-    } catch (error: any) {
+    } catch (error) {
         console.error("❌ Gemini API Error:");
         console.error(error.message);
         if (error.message.includes("403")) {

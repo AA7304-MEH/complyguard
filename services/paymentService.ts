@@ -38,6 +38,10 @@ export interface PaymentConfig {
 
 export class PaymentService {
   
+  static async getUserLocation(): Promise<string> {
+    return 'US'; // Mock for compatibility
+  }
+  
   static detectPaymentProvider(userLocation?: string): PaymentProvider {
     // Enhanced geo-detection with browser locale and timezone
     const locale = navigator.language || 'en-US';

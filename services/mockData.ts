@@ -92,7 +92,7 @@ export const mockFrameworkRules: FrameworkRule[] = [
 ];
 
 
-export const mockScans: AuditScan[] = [
+export const mockScans: any[] = [
   {
     id: 'scan-001',
     user_id: 'user-123',
