@@ -10,7 +10,7 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   console.error("Could not find root element to mount to");
 } else {
-  const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || (window as any).CLERK_PUBLISHABLE_KEY;
+  const PUBLISHABLE_KEY = import.meta.env?.VITE_CLERK_PUBLISHABLE_KEY || (window as any).CLERK_PUBLISHABLE_KEY;
 
   // Only Clerk is strictly required to mount the app
   const requiredEnvVars = [
