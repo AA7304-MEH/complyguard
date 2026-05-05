@@ -2,6 +2,7 @@ import * as React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import App from './App';
+import './index.css';
 
 console.log("📍 main.tsx: Executing full app mount");
 
