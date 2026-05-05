@@ -109,6 +109,15 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
         return;
       }
 
+      // Inject PayPal SDK dynamically if not present
+      if (!document.querySelector('script[src*="paypal.com/sdk"]')) {
+        console.log('🔄 Injecting PayPal SDK dynamically...');
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=${import.meta.env.VITE_PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=venmo,paylater&disable-funding=card`;
+        script.async = true;
+        document.head.appendChild(script);
+      }
+
       // Quick check with very short intervals
       let attempts = 0;
       const checkInterval = setInterval(() => {
