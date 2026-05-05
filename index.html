@@ -69,62 +69,17 @@
         background: #4b5563;
       }
     </style>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: {
-                DEFAULT: '#020617',
-                'foreground': '#f8fafc'
-              },
-              secondary: {
-                DEFAULT: '#f1f5f9',
-                'foreground': '#0f172a'
-              },
-              accent: {
-                DEFAULT: '#2563eb',
-                'foreground': '#ffffff'
-              },
-              destructive: {
-                DEFAULT: '#dc2626',
-                'foreground': '#ffffff'
-              },
-              muted: {
-                  DEFAULT: '#f1f5f9',
-                  foreground: '#64748b'
-              }
-            },
-            animation: {
-              'slide-in': 'slideIn 0.3s ease-out',
-              'progress': 'progress linear forwards'
-            },
-            keyframes: {
-              slideIn: {
-                '0%': { transform: 'translateX(100%)', opacity: '0' },
-                '100%': { transform: 'translateX(0)', opacity: '1' }
-              },
-              progress: {
-                '0%': { width: '100%' },
-                '100%': { width: '0%' }
-              }
-            }
-          }
-        }
-      }
-    </script>
+
   <script>
     // Clerk Publishable Key - will be replaced by environment variable in production
     window.CLERK_PUBLISHABLE_KEY = 'pk_test_c2VsZWN0ZWQtbW9sZS0xNy5jbGVyay5hY2NvdW50cy5kZXYk';
   </script>
 </head>
   <body class="bg-secondary">
-    <div id="root" class="min-h-screen">
-      <div style="padding: 50px; text-align: center; font-family: sans-serif; color: #dc2626; background: #fee2e2; border: 2px solid #b91c1c; margin: 20px; border-radius: 8px;">
-        <h2 style="margin-bottom: 10px;">React Failed to Mount!</h2>
-        <p>If you see this red box, the React application crashed before calling <code>root.render()</code>, or an uncaught exception occurred during initial module evaluation.</p>
-        <p style="font-size: 14px; margin-top: 20px; color: #7f1d1d;">Check the browser console (F12) for uncaught ReferenceErrors, SyntaxErrors, or undefined imports in <code>main.tsx</code> or <code>App.tsx</code>.</p>
+    <div id="root">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f172a;">
+        <div style="width:40px;height:40px;border:3px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
       </div>
     </div>
     <!-- PayPal SDK is loaded dynamically by the payment services at runtime -->
