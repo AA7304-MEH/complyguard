@@ -23,7 +23,7 @@ export async function sendReportEmail(userEmail: string, jobId: string, summary:
                     <h2>Compliance Audit Complete</h2>
                     <p>${summary}</p>
                     <p>Click the link below to view your full detailed report:</p>
-                    <a href="https://complyguard-gamma.vercel.app/reports/${jobId}" 
+                    <a href="https://complyguard-mu.vercel.app/reports/${jobId}" 
                        style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
                        View Detailed Report
                     </a>
