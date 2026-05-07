@@ -1,62 +1,67 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { callGeminiWithFallback, FRAMEWORKS } from '../lib/gemini-service';
+import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
+import { FRAMEWORKS } from '../lib/frameworks';
 
-// --- Inline Supabase client for serverless (no import.meta) ---
+// --- Inline Supabase client for serverless ---
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
+const MODELS = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-pro"];
 
-async function analyzeMultimodal(framework: string, pastedText?: string, base64File?: string, fileName?: string) {
-    const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
-    
-    const prompt = `
-        You are a highly pedantic, expert compliance auditor and legal professional. 
-        Analyze the provided content against the strict requirements of the ${framework} framework.
-        
-        Requirements Checklist:
-        ${checklist}
-
-        Strict Auditing Rules:
-        1. Only report items that are MISSING, INCOMPLETE, NON-COMPLIANT, or VAGUE regarding the requirement.
-        2. If the document is an image or scan with no text layer, use your native OCR to read it.
-        3. Output the result in JSON format only.
-        
-        Output Formatting Guidelines:
-        - "requirement": Quote the specific Framework Article/Criterion being violated.
-        - "description": Provide a professional, objective statement of what is missing or wrong.
-        - "severity": Assign "Critical" for missing legal bases/breach notifications, "High" for missing security controls, "Medium" for vague clauses, and "Low" for minor administrative gaps.
-        - "remediation": Provide highly actionable steps to fix the document.
-    `;
-
-    const parts: any[] = [{ text: prompt }];
-
-    if (pastedText) {
-        parts.push({ text: `Document Text: """${pastedText}"""` });
+const RESPONSE_SCHEMA: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    findings: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          requirement: { type: SchemaType.STRING },
+          description: { type: SchemaType.STRING },
+          severity: { type: SchemaType.STRING },
+          remediation: { type: SchemaType.STRING }
+        },
+        required: ["requirement", "description", "severity", "remediation"]
+      }
     }
+  }
+};
 
-    if (base64File && fileName) {
-        const ext = fileName.split('.').pop()?.toLowerCase();
-        let mimeType = 'application/pdf';
-        if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        if (ext === 'doc') mimeType = 'application/msword';
-        if (ext === 'txt') mimeType = 'text/plain';
-        if (['png', 'jpg', 'jpeg'].includes(ext || '')) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+async function callGeminiWithFallback(parts: any[]) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
 
-        parts.push({
-            inlineData: {
-                data: base64File,
-                mimeType
-            }
-        });
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  for (const modelName of MODELS) {
+    try {
+      console.log(`[Gemini] Attempting with model: ${modelName}`);
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: "application/json",
+          responseSchema: modelName.includes('1.5') ? RESPONSE_SCHEMA : undefined
+        }
+      });
+      
+      const result = await model.generateContent(parts);
+      const response = await result.response;
+      const text = await response.text();
+      return JSON.parse(text);
+    } catch (error: any) {
+      console.warn(`[Gemini] Model ${modelName} failed:`, error.message);
+      if (MODELS.indexOf(modelName) === MODELS.length - 1) throw error;
+      continue;
     }
-
-    return await callGeminiWithFallback(parts);
+  }
 }
 
-
-// --- The Vercel Serverless Handler ---
-export default async function handler(req: any, res: any) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+    res.setHeader('Content-Type', 'application/json');
+    
     try {
         if (req.method !== 'POST') {
             return res.status(405).json({ error: 'Method Not Allowed' });
@@ -66,30 +71,45 @@ export default async function handler(req: any, res: any) {
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
 
-        // 1. Run Gemini Analysis (Multimodal)
-        console.log(`[API] Starting Gemini analysis for ${framework}...`);
-        const result = await analyzeMultimodal(framework, pastedText, base64File, fileName);
-        console.log(`[API] Gemini returned ${result.findings?.length || 0} findings`);
+        const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
+        
+        const prompt = `
+            You are a highly pedantic, expert compliance auditor and legal professional. 
+            Analyze the provided content against the strict requirements of the ${framework} framework.
+            
+            Requirements Checklist:
+            ${checklist}
 
-        // 3. Calculate compliance score based on findings
+            Strict Auditing Rules:
+            1. Only report items that are MISSING, INCOMPLETE, NON-COMPLIANT, or VAGUE regarding the requirement.
+            2. If the document is an image or scan with no text layer, use your native OCR to read it.
+            3. Output the result in JSON format only.
+        `;
+
+        const parts: any[] = [{ text: prompt }];
+        if (pastedText) parts.push({ text: `Document Text: """${pastedText}"""` });
+        if (base64File && fileName) {
+            const ext = fileName.split('.').pop()?.toLowerCase();
+            let mimeType = 'application/pdf';
+            if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            if (ext === 'doc') mimeType = 'application/msword';
+            if (ext === 'txt') mimeType = 'text/plain';
+            if (['png', 'jpg', 'jpeg'].includes(ext || '')) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+
+            parts.push({ inlineData: { data: base64File, mimeType } });
+        }
+
+        // 1. Run Gemini Analysis
+        const result = await callGeminiWithFallback(parts);
+
+        // 3. Calculate score
         const findings = result.findings || [];
-        const maxScore = 100;
-        const deductions: Record<string, number> = { 
-            Critical: 25, 
-            High: 15, 
-            Medium: 7, 
-            Low: 2 
-        };
-        const totalDeduction = findings.reduce((acc: number, f: any) => {
-            const severity = f.severity || 'Medium';
-            return acc + (deductions[severity] || 5);
-        }, 0);
-        const score = Math.max(0, maxScore - totalDeduction);
+        const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
+        const totalDeduction = findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0);
+        const score = Math.max(0, 100 - totalDeduction);
 
-        // 4. Build the scan ID
-        const scanId = 'scan-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const scanId = 'scan-' + Date.now().toString(36);
 
-        // 5. Save to DB (best-effort, don't crash if DB is down)
         if (supabase) {
             try {
                 await supabase.from('scan_jobs').insert([{
@@ -101,13 +121,11 @@ export default async function handler(req: any, res: any) {
                     file_url: fileName || null,
                     user_email: email || null
                 }]);
-                await supabase.rpc('increment_usage', { x_id: userId });
             } catch (dbErr: any) {
-                console.error('[API] DB save failed (non-fatal):', dbErr.message);
+                console.error('[DB Error]:', dbErr.message);
             }
         }
 
-        // 6. Return a full AuditScan object the frontend can display immediately
         return res.status(200).json({
             id: scanId,
             user_id: userId,
@@ -115,12 +133,16 @@ export default async function handler(req: any, res: any) {
             status: 'completed',
             result: findings,
             score,
-            file_url: fileName || null,
             created_at: new Date().toISOString()
         });
 
     } catch (error: any) {
-        console.error('❌ /api/scan fatal error:', error);
-        return res.status(500).json({ error: error.message || 'Analysis failed. Please try again.' });
+        console.error('❌ Scan fatal error:', error);
+        return res.status(500).json({ 
+            error: 'Scan failed', 
+            message: error.message || 'Unknown error',
+            details: error.toString()
+        });
     }
 }
+
