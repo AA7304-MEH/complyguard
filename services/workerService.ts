@@ -7,7 +7,7 @@ import { rateLimiter } from './rateLimiter';
 
 const WORKER_POLL_INTERVAL = 10000; // 10 seconds
 const RATE_LIMIT_DELAY = 5000; // 5 seconds between jobs
-const AI_MODEL = "gemini-1.5-flash"; // Use Flash for worker to save quota
+const AI_MODEL = "gemini-1.5-flash-latest"; // Use Flash for worker to save quota
 
 class WorkerService {
     private isRunning = false;

@@ -12,7 +12,7 @@ export const analyzeFullDocument = async (
     contents: MultimodalContent[],
     scanId: string,
     rules: FrameworkRule[],
-    model: string = "gemini-1.5-flash"
+    model: string = "gemini-1.5-flash-latest"
 ): Promise<AuditFinding[]> => {
     console.log(`🚀 [ComplyGuard] Initiating secure server-side scan for ${scanId}...`);
 

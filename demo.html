@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComplyGuard AI Demo</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.5);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --critical: #f43f5e;
+            --high: #fb7185;
+            --medium: #fbbf24;
+            --success: #10b981;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #demo-scaler {
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: scale(calc(min(100vw / 1920, 100vh / 1080)));
+        }
+
+        /* Main Container */
+        #demo-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Background Effects */
+        .bg-shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            from { transform: translateY(0) translateX(0); }
+            to { transform: translateY(-1080px) translateX(100px); }
+        }
+
+        /* Main Container */
+        #demo-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .scene {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 100;
+        }
+
+        #global-progress {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            box-shadow: 0 0 20px var(--primary-glow);
+            transition: width 0.1s linear;
+        }
+
+        /* Scene 1: Brand Intro */
+        .logo-text {
+            font-size: 84px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px var(--primary-glow));
+            margin-bottom: 20px;
+            animation: pulse-glow 3s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            from { filter: drop-shadow(0 0 20px var(--primary-glow)); }
+            to { filter: drop-shadow(0 0 40px var(--primary-glow)); }
+        }
+
+        .tagline {
+            font-size: 32px;
+            color: var(--text-muted);
+            font-weight: 300;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .active .tagline {
+            animation: slideUpFade 1s forwards 0.5s;
+        }
+
+        @keyframes slideUpFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scene 2: The Problem */
+        .scene-title {
+            font-size: 64px;
+            font-weight: 700;
+            margin-bottom: 60px;
+        }
+
+        .pain-points {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: flex-start;
+            max-width: 800px;
+        }
+
+        .pain-point {
+            font-size: 36px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        .active .pain-point:nth-child(1) { animation: slideRightFade 0.8s forwards 0.5s; }
+        .active .pain-point:nth-child(2) { animation: slideRightFade 0.8s forwards 1.5s; }
+        .active .pain-point:nth-child(3) { animation: slideRightFade 0.8s forwards 2.5s; }
+
+        @keyframes slideRightFade {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Scene 3: Upload */
+        .upload-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 60px;
+            width: 700px;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-icon {
+            width: 100px;
+            height: 120px;
+            background: rgba(255,255,255,0.05);
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            margin: 0 auto 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .file-anim {
+            position: absolute;
+            top: -200px;
+            opacity: 0;
+        }
+
+        .active .file-anim {
+            animation: dragIn 2s forwards 0.5s;
+        }
+
+        @keyframes dragIn {
+            0% { top: -200px; opacity: 0; transform: scale(0.8) rotate(-5deg); }
+            50% { top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.1) rotate(2deg); opacity: 1; }
+            100% { top: 120px; left: 50%; transform: translate(-50%, -50%) scale(1) rotate(0); opacity: 1; }
+        }
+
+        .scan-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            margin-top: 40px;
+            overflow: hidden;
+        }
+
+        .scan-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+        }
+
+        .active .scan-progress-fill {
+            animation: fillProgress 4s forwards 2.5s;
+        }
+
+        @keyframes fillProgress {
+            to { width: 100%; }
+        }
+
+        /* Scene 4: AI Scanning */
+        .terminal {
+            background: #020617;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 900px;
+            padding: 40px;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        .terminal-line {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            width: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .terminal-line.done {
+            color: var(--success);
+            width: 100%;
+            transition: color 0.3s;
+        }
+
+        .terminal-line i {
+            font-style: normal;
+            opacity: 0;
+        }
+
+        /* Scene 5: Results */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 60px;
+            width: 1100px;
+            align-items: center;
+        }
+
+        .score-circle {
+            width: 350px;
+            height: 350px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .score-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .score-svg circle {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: round;
+        }
+
+        .score-bg { stroke: rgba(255,255,255,0.05); }
+        .score-fill {
+            stroke: var(--critical);
+            stroke-dasharray: 1005;
+            stroke-dashoffset: 1005;
+            filter: drop-shadow(0 0 10px var(--critical));
+        }
+
+        .score-number {
+            position: absolute;
+            font-size: 100px;
+            font-weight: 800;
+            color: var(--critical);
+        }
+
+        .findings {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .finding {
+            background: rgba(255,255,255,0.03);
+            border-left: 4px solid transparent;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+            text-align: left;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .finding.critical { border-color: var(--critical); }
+        .finding.high { border-color: var(--high); }
+        .finding.medium { border-color: var(--medium); }
+
+        .finding-label {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .finding.critical .finding-label { color: var(--critical); }
+        .finding.high .finding-label { color: var(--high); }
+        .finding.medium .finding-label { color: var(--medium); }
+
+        .finding-text { font-size: 20px; }
+
+        /* Scene 6: Report Ready */
+        .report-preview {
+            background: white;
+            color: #1e293b;
+            width: 600px;
+            height: 750px;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+            transform: translateY(100px) rotateX(15deg);
+            opacity: 0;
+        }
+
+        .active .report-preview {
+            animation: slideUp3D 1s forwards;
+        }
+
+        @keyframes slideUp3D {
+            to { opacity: 1; transform: translateY(0) rotateX(0); }
+        }
+
+        .download-btn {
+            margin-top: 40px;
+            background: var(--primary);
+            color: white;
+            padding: 20px 60px;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 0 30px var(--primary-glow);
+            animation: pulse-button 2s infinite;
+        }
+
+        @keyframes pulse-button {
+            0% { transform: scale(1); box-shadow: 0 0 20px var(--primary-glow); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px var(--primary-glow); }
+            100% { transform: scale(1); box-shadow: 0 0 20px var(--primary-glow); }
+        }
+
+        /* Scene 7: CTA */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            width: 1400px;
+            margin-top: 50px;
+        }
+
+        .pricing-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 40px;
+            border-radius: 20px;
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .active .pricing-card:nth-child(1) { animation: popIn 0.5s forwards 0.5s; }
+        .active .pricing-card:nth-child(2) { animation: popIn 0.5s forwards 0.7s; }
+        .active .pricing-card:nth-child(3) { animation: popIn 0.5s forwards 0.9s; }
+        .active .pricing-card:nth-child(4) { animation: popIn 0.5s forwards 1.1s; }
+
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .watermark {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            color: var(--text-muted);
+            font-size: 18px;
+            opacity: 0.5;
+        }
+
+        /* Helpers */
+        .glow-text {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shimmer"></div>
+    <div class="particles" id="particles"></div>
+
+    <div id="demo-scaler">
+        <div id="demo-container">
+            <!-- Scene 1: Brand Intro -->
+            <div class="scene" id="scene-1">
+                <h1 class="logo-text">ComplyGuard AI</h1>
+                <p class="tagline">AI-Powered Compliance Auditing in 60 Seconds</p>
+            </div>
+
+            <!-- Scene 2: The Problem -->
+            <div class="scene" id="scene-2">
+                <h2 class="scene-title">Compliance Auditing is Broken</h2>
+                <div class="pain-points">
+                    <div class="pain-point"><span>💸</span> "Traditional audits cost $15,000–$50,000"</div>
+                    <div class="pain-point"><span>⏰</span> "Takes weeks or months to complete"</div>
+                    <div class="pain-point"><span>😰</span> "83% of startups ignore it until fined"</div>
+                </div>
+            </div>
+
+            <!-- Scene 3: Upload -->
+            <div class="scene" id="scene-3">
+                <div class="upload-card">
+                    <div class="file-icon">
+                        <div class="file-anim" style="font-size: 60px;">📄</div>
+                        <div style="margin-top: 60px; font-weight: 600;">company-privacy-policy.pdf</div>
+                    </div>
+                    <p style="font-size: 24px; color: var(--text-muted);">Scanning against GDPR framework...</p>
+                    <div class="scan-progress-bar">
+                        <div class="scan-progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scene 4: AI Scanning -->
+            <div class="scene" id="scene-4">
+                <div class="terminal" id="terminal">
+                    <div class="terminal-line" data-delay="1000">✓ Analyzing data collection practices...</div>
+                    <div class="terminal-line" data-delay="2500">✓ Checking consent mechanisms...</div>
+                    <div class="terminal-line" data-delay="4000">✓ Reviewing retention policies...</div>
+                    <div class="terminal-line" data-delay="5500">✓ Auditing third-party disclosures...</div>
+                    <div class="terminal-line" data-delay="7000">✓ Generating compliance report...</div>
+                </div>
+            </div>
+
+            <!-- Scene 5: Results -->
+            <div class="scene" id="scene-5">
+                <div class="results-grid">
+                    <div class="score-circle">
+                        <svg class="score-svg" viewBox="0 0 340 340">
+                            <circle class="score-bg" cx="170" cy="170" r="160"></circle>
+                            <circle class="score-fill" id="score-fill" cx="170" cy="170" r="160"></circle>
+                        </svg>
+                        <div class="score-number" id="score-val">0</div>
+                    </div>
+                    <div class="findings">
+                        <div class="finding critical">
+                            <div class="finding-label">CRITICAL</div>
+                            <div class="finding-text">No lawful basis for data processing</div>
+                        </div>
+                        <div class="finding high">
+                            <div class="finding-label">HIGH</div>
+                            <div class="finding-text">Missing data retention specifications</div>
+                        </div>
+                        <div class="finding medium">
+                            <div class="finding-label">MEDIUM</div>
+                            <div class="finding-text">Consent withdrawal not documented</div>
+                        </div>
+                        <div class="finding medium">
+                            <div class="finding-label">MEDIUM</div>
+                            <div class="finding-text">Third-party sharing not disclosed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scene 6: Report Ready -->
+            <div class="scene" id="scene-6">
+                <div class="report-preview">
+                    <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-weight: 800; font-size: 24px; color: var(--primary);">ComplyGuard</div>
+                        <div style="color: #64748b;">May 2026</div>
+                    </div>
+                    <h3 style="font-size: 28px; margin-bottom: 30px;">Compliance Audit Report</h3>
+                    <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="color: #64748b; font-size: 14px;">Framework</div>
+                        <div style="font-weight: 600; font-size: 18px;">GDPR / CCPA v2.4</div>
+                    </div>
+                    <div style="display: flex; gap: 20px;">
+                        <div style="flex: 1; background: #fee2e2; padding: 20px; border-radius: 8px;">
+                            <div style="color: #991b1b; font-size: 14px;">Score</div>
+                            <div style="font-weight: 800; font-size: 32px; color: #b91c1c;">42/100</div>
+                        </div>
+                        <div style="flex: 1; background: #fef3c7; padding: 20px; border-radius: 8px;">
+                            <div style="color: #92400e; font-size: 14px;">Status</div>
+                            <div style="font-weight: 800; font-size: 20px; color: #b45309;">NON-COMPLIANT</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 40px; color: #64748b;">
+                        <p>• 4 Major violations found</p>
+                        <p>• 12 Security recommendations</p>
+                        <p>• Immediate action required</p>
+                    </div>
+                </div>
+                <button class="download-btn">Download Full Report</button>
+                <p style="margin-top: 20px; color: var(--text-muted); font-size: 24px;">Audit-ready report generated</p>
+            </div>
+
+            <!-- Scene 7: CTA -->
+            <div class="scene" id="scene-7">
+                <h2 class="scene-title">Join businesses staying compliant with AI</h2>
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <h3 style="font-size: 24px; margin-bottom: 10px;">Free</h3>
+                        <p style="font-size: 36px; font-weight: 800;">$0</p>
+                        <p style="color: var(--text-muted); margin-top: 10px;">1 Scan / Month</p>
+                    </div>
+                    <div class="pricing-card" style="border-color: var(--primary); transform: scale(1.05);">
+                        <h3 style="font-size: 24px; margin-bottom: 10px; color: var(--primary);">Basic</h3>
+                        <p style="font-size: 36px; font-weight: 800;">$49</p>
+                        <p style="color: var(--text-muted); margin-top: 10px;">5 Scans / Month</p>
+                    </div>
+                    <div class="pricing-card">
+                        <h3 style="font-size: 24px; margin-bottom: 10px;">Pro</h3>
+                        <p style="font-size: 36px; font-weight: 800;">$199</p>
+                        <p style="color: var(--text-muted); margin-top: 10px;">Unlimited Scans</p>
+                    </div>
+                    <div class="pricing-card">
+                        <h3 style="font-size: 24px; margin-bottom: 10px;">Enterprise</h3>
+                        <p style="font-size: 36px; font-weight: 800;">Custom</p>
+                        <p style="color: var(--text-muted); margin-top: 10px;">Full API Access</p>
+                    </div>
+                </div>
+                <button class="download-btn" style="margin-top: 60px; padding: 25px 80px; font-size: 32px;">Start Free Compliance Scan</button>
+                <div class="watermark">complyguard-mu.vercel.app</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <div id="global-progress"></div>
+    </div>
+
+    <script>
+        const scenes = [
+            { id: 'scene-1', duration: 5000 },
+            { id: 'scene-2', duration: 6000 },
+            { id: 'scene-3', duration: 6000 },
+            { id: 'scene-4', duration: 8000 },
+            { id: 'scene-5', duration: 8000 },
+            { id: 'scene-6', duration: 5000 },
+            { id: 'scene-7', duration: 5000 }
+        ];
+
+        let currentSceneIndex = 0;
+        const totalDuration = scenes.reduce((acc, scene) => acc + scene.duration, 0);
+        const progressBar = document.getElementById('global-progress');
+        let sceneTimeout;
+        let scoreInterval;
+
+        // Create particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 60; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 3 + 1;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = (Math.random() * 100 + 100) + '%';
+            p.style.animationDuration = (Math.random() * 10 + 15) + 's';
+            p.style.animationDelay = (Math.random() * 20) + 's';
+            p.style.opacity = Math.random() * 0.4;
+            particlesContainer.appendChild(p);
+        }
+
+        function runDemo() {
+            const scene = scenes[currentSceneIndex];
+            
+            // Deactivate all scenes
+            document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+            
+            // Clear any active intervals/timeouts
+            if (scoreInterval) clearInterval(scoreInterval);
+
+            // Activate current after a tiny delay for CSS reset
+            setTimeout(() => {
+                const el = document.getElementById(scene.id);
+                el.classList.add('active');
+
+                // Scene specific logic
+                if (scene.id === 'scene-4') animateTerminal();
+                if (scene.id === 'scene-5') animateResults();
+            }, 50);
+
+            // Next scene
+            sceneTimeout = setTimeout(() => {
+                currentSceneIndex = (currentSceneIndex + 1) % scenes.length;
+                if (currentSceneIndex === 0) startTime = Date.now(); // Reset progress sync
+                runDemo();
+            }, scene.duration);
+        }
+
+        function animateTerminal() {
+            const lines = document.querySelectorAll('#terminal .terminal-line');
+            lines.forEach(line => {
+                line.classList.remove('done');
+                line.style.width = '0';
+                const delay = parseInt(line.getAttribute('data-delay'));
+                setTimeout(() => {
+                    line.classList.add('done');
+                    line.style.width = '100%';
+                }, delay);
+            });
+        }
+
+        function animateResults() {
+            const scoreVal = document.getElementById('score-val');
+            const scoreFill = document.getElementById('score-fill');
+            const findings = document.querySelectorAll('.finding');
+            
+            // Reset
+            scoreVal.innerText = '0';
+            scoreFill.style.strokeDashoffset = '1005';
+            findings.forEach(f => {
+                f.style.opacity = '0';
+                f.style.transform = 'translateX(20px)';
+            });
+
+            // Animate counter
+            let currentScore = 0;
+            const targetScore = 42;
+            scoreInterval = setInterval(() => {
+                if (currentScore >= targetScore) {
+                    clearInterval(scoreInterval);
+                } else {
+                    currentScore++;
+                    scoreVal.innerText = currentScore;
+                    const offset = 1005 - (currentScore / 100) * 1005;
+                    scoreFill.style.strokeDashoffset = offset;
+                }
+            }, 30);
+
+            // Animate findings with staggered delay
+            findings.forEach((f, i) => {
+                setTimeout(() => {
+                    f.style.opacity = '1';
+                    f.style.transform = 'translateX(0)';
+                    f.style.transition = 'all 0.8s ease';
+                }, (i + 1) * 1500);
+            });
+        }
+
+        // Global Progress Bar
+        let startTime = Date.now();
+        function updateProgress() {
+            const elapsed = (Date.now() - startTime) % totalDuration;
+            const percent = (elapsed / totalDuration) * 100;
+            progressBar.style.width = percent + '%';
+            requestAnimationFrame(updateProgress);
+        }
+
+        // Handle window resizing (scaling is handled by CSS calc(min(...)) mostly, but can add JS if needed)
+        
+        // Start
+        runDemo();
+        updateProgress();
+    </script>
+</body>
+</html>

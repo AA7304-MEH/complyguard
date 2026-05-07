@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import { FRAMEWORKS } from '../lib/gemini';
+import { callGeminiWithFallback, FRAMEWORKS } from '../lib/gemini-service';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -17,43 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Document text exceeds 50,000 character limit' });
   }
 
-  const API_KEY = process.env.GEMINI_API_KEY;
-  if (!API_KEY) {
-    console.error('[API] Missing GEMINI_API_KEY');
-    return res.status(500).json({ error: 'Server configuration error' });
-  }
-
   try {
-    const genAI = new GoogleGenerativeAI(API_KEY);
     const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
     
-    // Using the same stable model as the original implementation
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", 
-      generationConfig: {
-        temperature: 0,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            findings: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  requirement: { type: SchemaType.STRING },
-                  description: { type: SchemaType.STRING },
-                  severity: { type: SchemaType.STRING, format: "enum", enum: ["Critical", "High", "Medium", "Low"] },
-                  remediation: { type: SchemaType.STRING }
-                },
-                required: ["requirement", "description", "severity", "remediation"]
-              }
-            }
-          }
-        }
-      }
-    });
-
     const prompt = `
         You are a highly pedantic, expert compliance auditor and legal professional. 
         Analyze the following document against the strict requirements of the ${framework} framework.
@@ -77,14 +42,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         - "remediation": Provide highly actionable steps to fix the document as a direct instruction.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const json = JSON.parse(response.text());
+    const json = await callGeminiWithFallback([{ text: prompt }]);
 
     res.setHeader('Content-Type', 'application/json');
     return res.status(200).json(json);
   } catch (error: any) {
-    console.error('[API] Gemini Error:', error);
+    console.error('[API] Analysis Error:', error);
     return res.status(500).json({ error: 'AI Analysis failed', details: error.message });
   }
 }
+

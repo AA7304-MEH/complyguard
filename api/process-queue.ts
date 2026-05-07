@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { analyzeWithGemini } from '../lib/gemini';
+import { analyzeWithGemini } from '../lib/gemini-service';
 import { rateLimiter } from '../lib/rateLimiter';
 import { extractTextFromUrl } from '../lib/extractor';
 import { sendReportEmail } from '../lib/email';
