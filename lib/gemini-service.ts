@@ -49,7 +49,8 @@ export async function callGeminiWithFallback(parts: any[]) {
       
       const result = await model.generateContent(parts);
       const response = await result.response;
-      return JSON.parse(response.text());
+      const text = await response.text();
+      return JSON.parse(text);
     } catch (error: any) {
       const status = error?.status || (error?.message?.includes('404') ? 404 : error?.message?.includes('429') ? 429 : 500);
       
