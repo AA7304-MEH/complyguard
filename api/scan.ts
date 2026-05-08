@@ -1,9 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import { FRAMEWORKS } from '../lib/frameworks';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Supabase once at the top level
+// Inlined FRAMEWORKS to avoid any relative import issues in serverless
+const FRAMEWORKS: Record<string, string> = {
+    GDPR: "Lawful basis, Data subject rights, DPO contact, Retention period, International transfers, Breach notification, Security measures.",
+    HIPAA: "Privacy Rule, Security Rule, Breach Notification, BAAs, Documentation retention.",
+    SOC2: "Communication of objectives, Risk assessment, Control activities, Logical access, Physical security, Encryption, Change management.",
+    ISO27001: "Information security policy, Access control, Authentication, Privacy & PII protection, Secure coding."
+};
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
@@ -11,30 +17,18 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', 'application/json');
     
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
     try {
         const { framework, pastedText, userId, email, base64File, fileName } = req.body;
-        
-        if (!userId) {
-            return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
-        }
+        if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
 
         const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
-        }
+        if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash-latest",
-            generationConfig: {
-                temperature: 0,
-                responseMimeType: "application/json"
-            }
-        });
+        // Using Gemini 2.0 Flash as verified in list_models
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `
@@ -53,28 +47,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (ext === 'doc') mimeType = 'application/msword';
             if (ext === 'txt') mimeType = 'text/plain';
             if (['png', 'jpg', 'jpeg'].includes(ext || '')) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-            
-            parts.push({
-                inlineData: {
-                    data: base64File,
-                    mimeType: mimeType
-                }
-            });
+            parts.push({ inlineData: { data: base64File, mimeType } });
         }
 
-        console.log(`[API] Starting Gemini analysis for ${userId}...`);
-        
         const result = await model.generateContent(parts);
         const response = await result.response;
-        const text = response.text(); // Note: SDK text() is often synchronous on the response object
-        
-        const jsonResult = JSON.parse(text);
+        const jsonResult = JSON.parse(response.text());
         const findings = jsonResult.findings || [];
 
-        // Calculate score
         const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
-        const totalDeduction = findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0);
-        const score = Math.max(0, 100 - totalDeduction);
+        const score = Math.max(0, 100 - findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0));
 
         if (supabase) {
             try {
@@ -103,14 +85,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
     } catch (error: any) {
-        console.error('❌ API Fatal Error:', error);
+        console.error('❌ API Error:', error);
         return res.status(500).json({ 
             error: 'AI Analysis Failed', 
-            message: error.message || 'Unknown error occurred during analysis',
-            details: error.toString()
+            message: error.message || 'Unknown error'
         });
     }
 }
+
 
 
 
