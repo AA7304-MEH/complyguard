@@ -1,59 +1,51 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { FRAMEWORKS } from '../lib/frameworks';
+
+// Initialize Supabase once at the top level
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', 'application/json');
     
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
     try {
-        if (req.method !== 'POST') {
-            return res.status(405).json({ error: 'Method Not Allowed' });
+        const { framework, pastedText, userId, email, base64File, fileName } = req.body;
+        
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
         }
 
-        const { framework, pastedText, userId, email, base64File, fileName } = req.body;
-        if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
-
-        // Dynamic imports to catch loading errors
-        const { GoogleGenerativeAI, SchemaType } = await import('@google/generative-ai');
-        const { createClient } = await import('@supabase/supabase-js');
-        const { FRAMEWORKS } = await import('../lib/frameworks');
-
         const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+        if (!apiKey) {
+            return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
+        }
 
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-        const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-        const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
-
-        const MODELS = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-pro"];
-
-        const RESPONSE_SCHEMA: any = {
-            type: SchemaType.OBJECT,
-            properties: {
-                findings: {
-                    type: SchemaType.ARRAY,
-                    items: {
-                        type: SchemaType.OBJECT,
-                        properties: {
-                            requirement: { type: SchemaType.STRING },
-                            description: { type: SchemaType.STRING },
-                            severity: { type: SchemaType.STRING },
-                            remediation: { type: SchemaType.STRING }
-                        },
-                        required: ["requirement", "description", "severity", "remediation"]
-                    }
-                }
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash-latest",
+            generationConfig: {
+                temperature: 0,
+                responseMimeType: "application/json"
             }
-        };
+        });
 
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `
-            You are a highly pedantic, expert compliance auditor and legal professional. 
-            Analyze the provided content against the strict requirements of the ${framework} framework.
+            You are a compliance auditor. Analyze the document against ${framework}.
             Checklist: ${checklist}
-            Output the result in JSON format only with 'findings' array.
+            Return JSON with a 'findings' array. Each finding must have 'requirement', 'description', 'severity', and 'remediation'.
         `;
 
         const parts: any[] = [{ text: prompt }];
         if (pastedText) parts.push({ text: `Document Text: """${pastedText}"""` });
+        
         if (base64File && fileName) {
             const ext = fileName.split('.').pop()?.toLowerCase();
             let mimeType = 'application/pdf';
@@ -61,38 +53,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (ext === 'doc') mimeType = 'application/msword';
             if (ext === 'txt') mimeType = 'text/plain';
             if (['png', 'jpg', 'jpeg'].includes(ext || '')) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-            parts.push({ inlineData: { data: base64File, mimeType } });
+            
+            parts.push({
+                inlineData: {
+                    data: base64File,
+                    mimeType: mimeType
+                }
+            });
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        let result = null;
-        let lastError = null;
+        console.log(`[API] Starting Gemini analysis for ${userId}...`);
+        
+        const result = await model.generateContent(parts);
+        const response = await result.response;
+        const text = response.text(); // Note: SDK text() is often synchronous on the response object
+        
+        const jsonResult = JSON.parse(text);
+        const findings = jsonResult.findings || [];
 
-        for (const modelName of MODELS) {
-            try {
-                console.log(`[Gemini] Trying model: ${modelName}`);
-                const model = genAI.getGenerativeModel({ 
-                    model: modelName,
-                    generationConfig: {
-                        temperature: 0,
-                        responseMimeType: "application/json",
-                        responseSchema: modelName.includes('1.5') ? RESPONSE_SCHEMA : undefined
-                    }
-                });
-                
-                const genResult = await model.generateContent(parts);
-                const response = await genResult.response;
-                result = JSON.parse(await response.text());
-                break;
-            } catch (err: any) {
-                console.warn(`[Gemini] ${modelName} failed:`, err.message);
-                lastError = err;
-            }
-        }
-
-        if (!result) throw lastError || new Error("All AI models failed");
-
-        const findings = result.findings || [];
+        // Calculate score
         const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
         const totalDeduction = findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0);
         const score = Math.max(0, 100 - totalDeduction);
@@ -109,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     user_email: email || null
                 }]);
             } catch (dbErr: any) {
-                console.error('[DB Error]:', dbErr.message);
+                console.error('[DB Error] Non-fatal:', dbErr.message);
             }
         }
 
@@ -124,13 +103,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
     } catch (error: any) {
-        console.error('❌ API Error:', error);
+        console.error('❌ API Fatal Error:', error);
         return res.status(500).json({ 
-            error: 'Internal Server Error', 
-            message: error.message || 'Unknown error',
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            error: 'AI Analysis Failed', 
+            message: error.message || 'Unknown error occurred during analysis',
+            details: error.toString()
         });
     }
 }
+
 
 
