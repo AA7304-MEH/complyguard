@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const FRAMEWORKS: Record<string, string> = {
     GDPR: "Lawful basis, Data subject rights, DPO contact, Retention period, International transfers, Breach notification, Security measures.",
@@ -20,8 +19,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `
@@ -37,8 +36,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         for (const modelName of MODELS_TO_TRY) {
             try {
-                const currentModel = genAI.getGenerativeModel({ model: modelName });
-                result = await currentModel.generateContent([{ text: prompt }]);
+                const currentModel = genAI.getGenerativeModel({ 
+                    model: modelName,
+                    generationConfig: {
+                        temperature: 0,
+                        responseMimeType: "application/json"
+                    }
+                });
+                const genRes = await currentModel.generateContent([{ text: prompt }]);
+                result = await genRes.response;
                 if (result) break;
             } catch (e: any) {
                 lastErr = e;
@@ -46,10 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (!result) throw lastErr || new Error("All AI models failed");
-        
-        const response = await result.response;
-        return res.status(200).json(JSON.parse(response.text()));
-
+        return res.status(200).json(JSON.parse(result.text()));
 
     } catch (error: any) {
         console.error('❌ API Error:', error);
@@ -59,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
     }
 }
+
 
 
 

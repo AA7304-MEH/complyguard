@@ -1,18 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Inlined FRAMEWORKS to avoid any relative import issues in serverless
+// Inlined FRAMEWORKS
 const FRAMEWORKS: Record<string, string> = {
     GDPR: "Lawful basis, Data subject rights, DPO contact, Retention period, International transfers, Breach notification, Security measures.",
     HIPAA: "Privacy Rule, Security Rule, Breach Notification, BAAs, Documentation retention.",
     SOC2: "Communication of objectives, Risk assessment, Control activities, Logical access, Physical security, Encryption, Change management.",
     ISO27001: "Information security policy, Access control, Authentication, Privacy & PII protection, Secure coding."
 };
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', 'application/json');
@@ -26,10 +20,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        // Using Gemini 2.0 Flash as verified in list_models
-        let model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Lazy load heavy dependencies
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
+        const { createClient } = await import('@supabase/supabase-js');
 
+        const genAI = new GoogleGenerativeAI(apiKey);
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `
             You are a compliance auditor. Analyze the document against ${framework}.
@@ -56,28 +51,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         for (const modelName of MODELS_TO_TRY) {
             try {
-                console.log(`[API] Trying model: ${modelName}`);
-                const currentModel = genAI.getGenerativeModel({ model: modelName });
-                result = await currentModel.generateContent(parts);
+                const currentModel = genAI.getGenerativeModel({ 
+                    model: modelName,
+                    generationConfig: {
+                        temperature: 0,
+                        responseMimeType: "application/json"
+                    }
+                });
+                const genRes = await currentModel.generateContent(parts);
+                result = await genRes.response;
                 if (result) break;
             } catch (e: any) {
-                console.warn(`[API] Model ${modelName} failed:`, e.message);
                 lastErr = e;
             }
         }
 
         if (!result) throw lastErr || new Error("All AI models failed");
 
-
-        const response = await result.response;
-        const jsonResult = JSON.parse(response.text());
+        const jsonResult = JSON.parse(result.text());
         const findings = jsonResult.findings || [];
 
         const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
         const score = Math.max(0, 100 - findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0));
 
-        if (supabase) {
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+        const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+        if (supabaseUrl && supabaseKey) {
             try {
+                const supabase = createClient(supabaseUrl, supabaseKey);
                 await supabase.from('scan_jobs').insert([{
                     user_id: userId,
                     framework,
@@ -107,10 +108,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ 
             error: 'AI Analysis Failed', 
             message: error.message || 'Unknown AI error',
-            details: error.toString(),
-            stack: error.stack
+            details: error.toString()
         });
     }
+}
+
 }
 
 
