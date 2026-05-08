@@ -45,7 +45,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             parts.push({ inlineData: { data: base64File, mimeType } });
         }
 
-        const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-pro"];
+        const MODELS_TO_TRY = [
+            "models/gemini-2.0-flash", 
+            "models/gemini-2.5-pro", 
+            "models/gemini-1.5-flash", 
+            "models/gemini-pro",
+            "gemini-2.0-flash",
+            "gemini-2.5-pro"
+        ];
         let result;
         let lastErr;
 
