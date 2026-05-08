@@ -31,9 +31,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             Return JSON with 'findings'.
         `;
 
-        const result = await model.generateContent([{ text: prompt }]);
+        const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-pro"];
+        let result;
+        let lastErr;
+
+        for (const modelName of MODELS_TO_TRY) {
+            try {
+                const currentModel = genAI.getGenerativeModel({ model: modelName });
+                result = await currentModel.generateContent([{ text: prompt }]);
+                if (result) break;
+            } catch (e: any) {
+                lastErr = e;
+            }
+        }
+
+        if (!result) throw lastErr || new Error("All AI models failed");
+        
         const response = await result.response;
         return res.status(200).json(JSON.parse(response.text()));
+
 
     } catch (error: any) {
         console.error('❌ API Error:', error);
