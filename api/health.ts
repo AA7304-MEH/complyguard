@@ -7,8 +7,16 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     environment: process.env.VERCEL_ENV || 'unknown',
     critical_vars: {
       VITE_CLERK_PUBLISHABLE_KEY: !!process.env.VITE_CLERK_PUBLISHABLE_KEY,
-      GEMINI_API_KEY: !!process.env.GEMINI_API_KEY,
+      GEMINI_KEYS_CONFIGURED: [
+        process.env.GEMINI_API_KEY_1,
+        process.env.GEMINI_API_KEY_2,
+        process.env.GEMINI_API_KEY_3,
+        process.env.GEMINI_API_KEY_4,
+        process.env.GEMINI_API_KEY_5,
+        process.env.GEMINI_API_KEY
+      ].filter(Boolean).length
     },
+
     optional_vars: {
       VITE_RAZORPAY_KEY_ID: !!process.env.VITE_RAZORPAY_KEY_ID,
       VITE_PAYPAL_CLIENT_ID: !!process.env.VITE_PAYPAL_CLIENT_ID,

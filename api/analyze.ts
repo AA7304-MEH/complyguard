@@ -30,29 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             Return JSON with 'findings'.
         `;
 
-        const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-pro"];
-        let result;
-        let lastErr;
-
-        for (const modelName of MODELS_TO_TRY) {
-            try {
-                const currentModel = genAI.getGenerativeModel({ 
-                    model: modelName,
-                    generationConfig: {
-                        temperature: 0,
-                        responseMimeType: "application/json"
-                    }
-                });
-                const genRes = await currentModel.generateContent([{ text: prompt }]);
-                result = await genRes.response;
-                if (result) break;
-            } catch (e: any) {
-                lastErr = e;
-            }
-        }
-
-        if (!result) throw lastErr || new Error("All AI models failed");
-        return res.status(200).json(JSON.parse(result.text()));
+        const { callGeminiWithRotation } = await import('../lib/geminiKeyRotator');
+        const response = await callGeminiWithRotation([{ text: prompt }]);
+        return res.status(200).json(JSON.parse(response.text()));
 
     } catch (error: any) {
         console.error('❌ API Error:', error);
@@ -62,6 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
     }
 }
+
 
 
 

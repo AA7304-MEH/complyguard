@@ -45,44 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             parts.push({ inlineData: { data: base64File, mimeType } });
         }
 
-        const MODELS_TO_TRY = [
-            "models/gemini-1.5-flash", 
-            "models/gemini-2.0-flash", 
-            "models/gemini-pro",
-            "models/gemini-2.5-pro"
-        ];
-        let result;
-        let errors: string[] = [];
-
-        for (const modelName of MODELS_TO_TRY) {
-            try {
-                const currentModel = genAI.getGenerativeModel({ 
-                    model: modelName,
-                    generationConfig: {
-                        temperature: 0.1,
-                        responseMimeType: "application/json"
-                    }
-                });
-                const genRes = await currentModel.generateContent(parts);
-                const response = await genRes.response;
-                if (response) {
-                    result = response;
-                    break;
-                }
-            } catch (e: any) {
-                errors.push(`${modelName}: ${e.message}`);
-            }
-        }
-
-        if (!result) {
-            return res.status(500).json({
-                error: 'AI Analysis Failed',
-                message: 'All available AI models returned errors or quota limits.',
-                details: errors.join(' | ')
-            });
-        }
-
-        const jsonResult = JSON.parse(result.text());
+        const { callGeminiWithRotation } = await import('../lib/geminiKeyRotator');
+        
+        const response = await callGeminiWithRotation(parts);
+        const jsonResult = JSON.parse(response.text());
         const findings = jsonResult.findings || [];
 
         const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
@@ -92,6 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
         if (supabaseUrl && supabaseKey) {
             try {
+                const { createClient } = await import('@supabase/supabase-js');
                 const supabase = createClient(supabaseUrl, supabaseKey);
                 await supabase.from('scan_jobs').insert([{
                     user_id: userId,
@@ -126,6 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
     }
 }
+
 
 
 
