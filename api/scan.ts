@@ -46,34 +46,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const MODELS_TO_TRY = [
-            "models/gemini-2.0-flash", 
-            "models/gemini-2.5-pro", 
             "models/gemini-1.5-flash", 
+            "models/gemini-2.0-flash", 
             "models/gemini-pro",
-            "gemini-2.0-flash",
-            "gemini-2.5-pro"
+            "models/gemini-2.5-pro"
         ];
         let result;
-        let lastErr;
+        let errors: string[] = [];
 
         for (const modelName of MODELS_TO_TRY) {
             try {
                 const currentModel = genAI.getGenerativeModel({ 
                     model: modelName,
                     generationConfig: {
-                        temperature: 0,
+                        temperature: 0.1,
                         responseMimeType: "application/json"
                     }
                 });
                 const genRes = await currentModel.generateContent(parts);
-                result = await genRes.response;
-                if (result) break;
+                const response = await genRes.response;
+                if (response) {
+                    result = response;
+                    break;
+                }
             } catch (e: any) {
-                lastErr = e;
+                errors.push(`${modelName}: ${e.message}`);
             }
         }
 
-        if (!result) throw lastErr || new Error("All AI models failed");
+        if (!result) {
+            return res.status(500).json({
+                error: 'AI Analysis Failed',
+                message: 'All available AI models returned errors or quota limits.',
+                details: errors.join(' | ')
+            });
+        }
 
         const jsonResult = JSON.parse(result.text());
         const findings = jsonResult.findings || [];
