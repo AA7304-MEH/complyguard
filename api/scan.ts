@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const genAI = new GoogleGenerativeAI(apiKey);
         // Using Gemini 2.0 Flash as verified in list_models
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        let model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `
@@ -50,7 +50,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             parts.push({ inlineData: { data: base64File, mimeType } });
         }
 
-        const result = await model.generateContent(parts);
+        let result;
+        try {
+            result = await model.generateContent(parts);
+        } catch (e: any) {
+            console.warn('Gemini 2.0 Flash failed, falling back to gemini-1.5-flash:', e.message);
+            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            result = await model.generateContent(parts);
+        }
+
         const response = await result.response;
         const jsonResult = JSON.parse(response.text());
         const findings = jsonResult.findings || [];
@@ -88,7 +96,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('❌ API Error:', error);
         return res.status(500).json({ 
             error: 'AI Analysis Failed', 
-            message: error.message || 'Unknown error'
+            message: error.message || 'Unknown AI error',
+            details: error.toString(),
+            stack: error.stack
         });
     }
 }

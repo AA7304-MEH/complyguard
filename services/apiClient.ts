@@ -79,9 +79,17 @@ export const createScan = async (
     });
 
     if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'Failed to initiate scan');
+        let errorMsg = 'Failed to initiate scan';
+        try {
+            const errData = await response.json();
+            errorMsg = errData.message || errData.error || errorMsg;
+            if (errData.details) errorMsg += `: ${errData.details}`;
+        } catch (e) {
+            // Fallback for non-JSON errors
+        }
+        throw new Error(errorMsg);
     }
+
 
     return response.json();
 };
