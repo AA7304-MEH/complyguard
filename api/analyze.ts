@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { callGeminiWithRotation } from '../lib/geminiKeyRotator';
 
 const FRAMEWORKS: Record<string, string> = {
     GDPR: "Lawful basis, Data subject rights, DPO contact, Retention period, International transfers, Breach notification, Security measures.",
@@ -26,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             Return JSON with 'findings'.
         `;
 
-        const { callGeminiWithRotation } = await import('../lib/geminiKeyRotator');
+        
         const response = await callGeminiWithRotation([{ text: prompt }]);
         return res.status(200).json(JSON.parse(response.text()));
 

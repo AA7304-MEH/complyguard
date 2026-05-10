@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { callGeminiWithRotation } from '../lib/geminiKeyRotator';
 
 // Inlined FRAMEWORKS
 const FRAMEWORKS: Record<string, string> = {
@@ -40,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             parts.push({ inlineData: { data: base64File, mimeType } });
         }
 
-        const { callGeminiWithRotation } = await import('../lib/geminiKeyRotator');
+        
         
         const response = await callGeminiWithRotation(parts);
         const jsonResult = JSON.parse(response.text());

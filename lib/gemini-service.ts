@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import { FRAMEWORKS } from './frameworks';
+import { callGeminiWithRotation } from './geminiKeyRotator';
 
 export { FRAMEWORKS };
 
@@ -30,7 +31,7 @@ const RESPONSE_SCHEMA: Schema = {
 };
 
 export async function callGeminiWithFallback(parts: any[]) {
-  const { callGeminiWithRotation } = await import('./geminiKeyRotator');
+  
   
   const response = await callGeminiWithRotation(parts, {
     temperature: 0,
