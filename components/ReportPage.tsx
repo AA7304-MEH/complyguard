@@ -57,7 +57,6 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
 
             const opt = {
                 margin: [15, 15],
-                filename: `ComplyGuard_Audit_${scan.framework}_${new Date().toISOString().split('T')[0]}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { 
                     scale: 2, 
@@ -69,8 +68,17 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
-            // Generate and save
-            await html2pdf().set(opt).from(element).save();
+            // Force a simple filename if framework contains weird characters
+            const safeFramework = scan.framework.replace(/[^a-z0-9]/gi, '_');
+            const fileName = `Audit_Report_${safeFramework}.pdf`;
+
+            // Use the worker explicitly
+            await html2pdf()
+                .set({...opt, filename: fileName})
+                .from(element)
+                .save();
+
+            console.log("PDF download triggered for:", fileName);
         } catch (err) {
             console.error("PDF Download Error:", err);
             alert("Could not generate PDF. Please try again or use the browser's Print feature (Ctrl+P).");
