@@ -22,6 +22,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { createClient } = await import('@supabase/supabase-js');
 
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
+
+        // --- CREDIT ENFORCEMENT ---
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('credits')
+            .eq('user_id', userId)
+            .single();
+
+        if (profileError || !profile) {
+            return res.status(403).json({ error: 'Profile not found or insufficient credits' });
+        }
+
+        if (profile.credits <= 0) {
+            return res.status(403).json({ 
+                error: 'Insufficient credits', 
+                message: 'You have used all your credits. Please upgrade to continue.',
+                needsPricing: true 
+            });
+        }
+
+        // Consume credit
+        await supabase.from('user_profiles').update({ credits: profile.credits - 1 }).eq('user_id', userId);
+        // --- END CREDIT ENFORCEMENT ---
+
         const prompt = `
             You are a compliance auditor. Analyze the document against ${framework}.
             Checklist: ${checklist}
