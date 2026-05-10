@@ -5,7 +5,7 @@ export const API_KEYS = [
   process.env.GEMINI_API_KEY_4,
   process.env.GEMINI_API_KEY_5,
   process.env.GEMINI_API_KEY, // Fallback to original
-].filter(Boolean) as string[];
+].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[];
 
 let currentKeyIndex = 0;
 
@@ -60,7 +60,8 @@ export async function callGeminiWithRotation(parts: string | any[], customConfig
 
         // If rate limited or quota exceeded, rotate KEY and break inner loop
         if (status === 429 || status === 403 || msg.includes('quota') || msg.includes('leaked')) {
-          console.warn(`Key ${currentKeyIndex + 1} failed (${status}), rotating key...`);
+          console.warn(`Key ${currentKeyIndex + 1} rate limited (${status}), waiting 2s then rotating...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
           rotateKey();
           break; // Move to next key
         }

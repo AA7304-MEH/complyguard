@@ -14,7 +14,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         process.env.GEMINI_API_KEY_4,
         process.env.GEMINI_API_KEY_5,
         process.env.GEMINI_API_KEY
-      ].filter(Boolean).map(k => k?.substring(0, 10) + '...')
+      ].filter(Boolean).map(k => k?.substring(0, 15) + '...')
     },
 
     optional_vars: {
