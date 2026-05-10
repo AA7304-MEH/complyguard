@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, SchemaType, Schema } from '@google/generative-ai';
 import { FRAMEWORKS } from './frameworks';
-import { callGeminiWithRotation } from './geminiKeyRotator';
+import { callGeminiWithRotation } from './geminiKeyRotator.js';
 
 export { FRAMEWORKS };
 

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callGeminiWithRotation } from '../lib/geminiKeyRotator';
+import { callGeminiWithRotation } from '../lib/geminiKeyRotator.js';
 
 const FRAMEWORKS: Record<string, string> = {
     GDPR: "Lawful basis, Data subject rights, DPO contact, Retention period, International transfers, Breach notification, Security measures.",

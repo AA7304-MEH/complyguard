@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callGeminiWithRotation } from '../lib/geminiKeyRotator';
+import { callGeminiWithRotation } from '../lib/geminiKeyRotator.js';
 
 // Inlined FRAMEWORKS
 const FRAMEWORKS: Record<string, string> = {
