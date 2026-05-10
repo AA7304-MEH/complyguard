@@ -25,10 +25,10 @@ export async function callGeminiWithRotation(parts: string | any[], customConfig
   
   // We'll also cycle through models to ensure availability
   const MODELS_TO_TRY = [
-    "models/gemini-1.5-flash", 
-    "models/gemini-1.5-flash-8b", 
-    "models/gemini-2.0-flash", 
-    "models/gemini-1.5-pro"
+    "models/gemini-2.5-flash",
+    "models/gemini-2.0-flash",
+    "models/gemini-2.0-flash-lite",
+    "models/gemini-1.5-flash"
   ];
 
   let lastError;
@@ -59,8 +59,8 @@ export async function callGeminiWithRotation(parts: string | any[], customConfig
         const msg = error?.message?.toLowerCase() || '';
 
         // If rate limited or quota exceeded, rotate KEY and break inner loop
-        if (status === 429 || status === 403 || msg.includes('quota') || msg.includes('leaked')) {
-          console.warn(`Key ${currentKeyIndex + 1} rate limited (${status}), waiting 2s then rotating...`);
+        if (status === 429 || status === 403 || status === 503 || msg.includes('quota') || msg.includes('leaked') || msg.includes('limit')) {
+          console.warn(`Key ${currentKeyIndex + 1} failed (${status}), waiting 2s then rotating...`);
           await new Promise(resolve => setTimeout(resolve, 2000));
           rotateKey();
           break; // Move to next key
