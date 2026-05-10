@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, SignInButton, SignUpButton, useUser, useClerk } from '@clerk/clerk-react';
 import ReportPage from './ReportPage';
 import DemoPage from './DemoPage';
-import { AuditScan, AuditStatus, FindingSeverity } from '../types';
+import PricingPage from './PricingPage';
+import { AuditScan, AuditStatus, FindingSeverity, SubscriptionPlan, BillingCycle } from '../types';
 import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { ScaleIcon } from './icons/ScaleIcon';
 import { ZapIcon } from './icons/ZapIcon';
@@ -12,7 +13,63 @@ import { UploadCloudIcon } from './icons/UploadCloudIcon';
 import ScrollToTop from './ScrollToTop';
 
 const LandingPage: React.FC = () => {
-    const [publicView, setPublicView] = React.useState<'landing' | 'demo'>('landing');
+    const { user, isLoaded } = useUser();
+    const { openSignIn } = useClerk();
+    const [publicView, setPublicView] = React.useState<'landing' | 'demo' | 'pricing'>('landing');
+    const [unlockedScan, setUnlockedScan] = React.useState<AuditScan | null>(null);
+
+    const handleUnlock = async () => {
+        if (!isLoaded) return;
+        
+        if (!user) {
+            openSignIn();
+            return;
+        }
+
+        // Check and consume credits
+        try {
+            const { CreditManager } = await import('../lib/creditManager');
+            const profile = await CreditManager.getProfile(user.id, user.primaryEmailAddress?.emailAddress || '');
+            
+            if (profile.credits <= 0) {
+                alert("You have 0 credits. Please upgrade to continue.");
+                setPublicView('pricing');
+                return;
+            }
+
+            const updated = await CreditManager.consumeCredit(user.id);
+            if (updated.error) {
+                alert("Could not unlock: " + updated.error);
+                setPublicView('pricing');
+                return;
+            }
+
+            // In a real app, you'd fetch the full scan data here
+            // For now, we'll simulate unlocking the demo result
+            alert("Success! 1 credit used. Remaining: " + updated.credits);
+            setPublicView('landing'); // Or redirect to a specific report page
+        } catch (err) {
+            console.error("Unlock failed", err);
+            alert("An error occurred while processing credits.");
+        }
+    };
+
+    if (publicView === 'pricing') {
+        return (
+            <div className="relative">
+                <button 
+                    onClick={() => setPublicView('landing')}
+                    className="absolute top-6 left-6 z-50 text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 font-medium"
+                >
+                    &larr; Back
+                </button>
+                <PricingPage onPlanSelect={(plan, cycle) => {
+                    console.log("Plan selected", plan, cycle);
+                    // Handle plan selection/payment
+                }} />
+            </div>
+        );
+    }
 
     if (publicView === 'demo') {
       return (
@@ -23,8 +80,7 @@ const LandingPage: React.FC = () => {
             >
                 &larr; Back to Home
             </button>
-            <DemoPage onGetFullAccess={() => {}} /> 
-            {/* Note: In a real app, onGetFullAccess would open the SignUp modal */}
+            <DemoPage onGetFullAccess={handleUnlock} /> 
         </div>
       );
     }
