@@ -20,15 +20,14 @@ export function rotateKey(): string {
   return API_KEYS[currentKeyIndex];
 }
 
-export async function callGeminiWithRotation(parts: string | any[]): Promise<any> {
+export async function callGeminiWithRotation(parts: string | any[], customConfig?: any): Promise<any> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   
   // We'll also cycle through models to ensure availability
   const MODELS_TO_TRY = [
     "models/gemini-1.5-flash", 
     "models/gemini-2.0-flash", 
-    "models/gemini-pro",
-    "models/gemini-2.5-pro"
+    "models/gemini-pro"
   ];
 
   let lastError;
@@ -43,7 +42,7 @@ export async function callGeminiWithRotation(parts: string | any[]): Promise<any
       try {
         const model = genAI.getGenerativeModel({ 
           model: modelName,
-          generationConfig: {
+          generationConfig: customConfig || {
             temperature: 0.1,
             responseMimeType: "application/json"
           }

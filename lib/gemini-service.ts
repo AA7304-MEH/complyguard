@@ -30,39 +30,16 @@ const RESPONSE_SCHEMA: Schema = {
 };
 
 export async function callGeminiWithFallback(parts: any[]) {
-  const API_KEY = process.env.GEMINI_API_KEY;
-  if (!API_KEY) throw new Error("Missing Gemini API Key in environment.");
+  const { callGeminiWithRotation } = await import('./geminiKeyRotator');
+  
+  const response = await callGeminiWithRotation(parts, {
+    temperature: 0,
+    responseMimeType: "application/json",
+    responseSchema: RESPONSE_SCHEMA
+  });
 
-  const genAI = new GoogleGenerativeAI(API_KEY);
-
-  for (const modelName of MODELS) {
-    try {
-      console.log(`[Gemini] Attempting analysis with model: ${modelName}`);
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        generationConfig: {
-          temperature: 0,
-          responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA
-        }
-      });
-      
-      const result = await model.generateContent(parts);
-      const response = await result.response;
-      const text = await response.text();
-      return JSON.parse(text);
-    } catch (error: any) {
-      const status = error?.status || (error?.message?.includes('404') ? 404 : error?.message?.includes('429') ? 429 : 500);
-      
-      if (status === 404 || status === 429) {
-        console.warn(`[Gemini] Model ${modelName} failed (Status: ${status}), trying next...`);
-        continue;
-      }
-      console.error(`[Gemini] Fatal error with model ${modelName}:`, error);
-      throw error;
-    }
-  }
-  throw new Error("All Gemini models exhausted or unavailable.");
+  const text = await response.text();
+  return JSON.parse(text);
 }
 
 export async function analyzeWithGemini(documentText: string, framework: string) {

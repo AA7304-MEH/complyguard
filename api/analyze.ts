@@ -16,11 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { documentText, framework } = req.body;
         if (!documentText) return res.status(400).json({ error: 'Missing documentText' });
 
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(apiKey);
 
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `

@@ -17,14 +17,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { framework, pastedText, userId, email, base64File, fileName } = req.body;
         if (!userId) return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
 
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
-
         // Lazy load heavy dependencies
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
         const { createClient } = await import('@supabase/supabase-js');
 
-        const genAI = new GoogleGenerativeAI(apiKey);
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
         const prompt = `
             You are a compliance auditor. Analyze the document against ${framework}.
