@@ -26,8 +26,9 @@ export async function callGeminiWithRotation(parts: string | any[], customConfig
   // We'll also cycle through models to ensure availability
   const MODELS_TO_TRY = [
     "models/gemini-1.5-flash", 
+    "models/gemini-1.5-flash-8b", 
     "models/gemini-2.0-flash", 
-    "models/gemini-pro"
+    "models/gemini-1.5-pro"
   ];
 
   let lastError;
