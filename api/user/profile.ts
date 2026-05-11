@@ -65,6 +65,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json(profile);
         }
 
+        if (action === 'add_credits') {
+            const { amount } = req.body;
+            if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('credits')
+                .eq('user_id', userId)
+                .single();
+
+            const currentCredits = profile ? profile.credits : 0;
+            const { data: updatedProfile, error: updateError } = await supabase
+                .from('user_profiles')
+                .update({ credits: currentCredits + amount })
+                .eq('user_id', userId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+            return res.status(200).json(updatedProfile);
+        }
+
         if (action === 'consume') {
             const { data: profile } = await supabase
                 .from('user_profiles')

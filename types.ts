@@ -56,6 +56,8 @@ export interface User {
   subscription_status: SubscriptionStatus;
   documents_scanned_this_month: number;
   scan_limit_this_month: number;
+  credits: number;
+  free_credits_used: boolean;
   subscription_start_date?: Date;
   subscription_end_date?: Date;
   trial_end_date?: Date;

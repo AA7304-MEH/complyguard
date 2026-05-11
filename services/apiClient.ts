@@ -4,25 +4,60 @@ import { supabase } from '../lib/supabase';
 /**
  * Fetch application user data from Supabase/Usage table
  */
-export const getAppUser = async (clerkUserId: string): Promise<User> => {
-    const { data: usage, error } = await supabase
-        .from('user_usage')
-        .select('*')
-        .eq('user_id', clerkUserId)
-        .single();
+/**
+ * Fetch application user data via the unified profile API
+ */
+export const getAppUser = async (clerkUserId: string, email?: string, deviceId?: string): Promise<User> => {
+    const response = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            userId: clerkUserId, 
+            email: email || '', 
+            deviceId: deviceId || 'unknown',
+            action: 'get_or_init' 
+        })
+    });
 
-    // Default user skeleton (clerk integration provides email/company via props in App.tsx)
-    const defaultUser: User = {
-        id: clerkUserId,
-        email: '', 
-        company_name: 'Your Company',
-        subscription_tier: SubscriptionTier.Free,
-        subscription_status: SubscriptionStatus.Active,
-        documents_scanned_this_month: usage?.scan_count_monthly || 0,
-        scan_limit_this_month: 2, // Default free limit
+    if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+    }
+
+    const profile = await response.json();
+
+    // Map profile DB fields to Frontend User type
+    return {
+        id: profile.user_id,
+        email: profile.email || '', 
+        company_name: profile.company_name || 'Your Company',
+        subscription_tier: (profile.subscription_tier as SubscriptionTier) || SubscriptionTier.Free,
+        subscription_status: (profile.subscription_status as SubscriptionStatus) || SubscriptionStatus.Active,
+        credits: profile.credits || 0,
+        free_credits_used: profile.free_credits_used || false,
+        documents_scanned_this_month: 0, // Tracked separately if needed
+        scan_limit_this_month: profile.credits || 0, // For display
     };
+};
 
-    return defaultUser;
+/**
+ * Top up user credits after payment
+ */
+export const topUpCredits = async (userId: string, amount: number): Promise<any> => {
+    const response = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            userId, 
+            amount,
+            action: 'add_credits' 
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to top up credits');
+    }
+
+    return response.json();
 };
 
 /**

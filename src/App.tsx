@@ -36,8 +36,10 @@ const MainApp: React.FC = () => {
   const fetchData = React.useCallback(async () => {
     if (clerkUser) {
       try {
+        const { FingerprintService } = await import('../lib/fingerprint');
+        const deviceId = FingerprintService.getDeviceId();
         const [userData, scansData] = await Promise.all([
-          getAppUser(clerkUser.id),
+          getAppUser(clerkUser.id, clerkUser.primaryEmailAddress?.emailAddress, deviceId),
           getScans(clerkUser.id)
         ]);
         setAppUser(userData);
@@ -111,16 +113,29 @@ const MainApp: React.FC = () => {
     setView('checkout');
   }, []);
 
-  const handlePaymentSuccess = React.useCallback((paymentData: any) => {
+  const handlePaymentSuccess = React.useCallback(async (paymentData: any) => {
+    if (clerkUser && selectedPlan) {
+      try {
+        // Add credits based on plan scan_limit
+        const creditsToAdd = selectedPlan.scan_limit;
+        if (creditsToAdd === -1) creditsToAdd = 1000; // Cap enterprise for safety in demo
+
+        await import('../services/apiClient').then(m => m.topUpCredits(clerkUser.id, creditsToAdd));
+        
+        setSuccessMessage({
+            title: 'Payment Successful! 🎉',
+            message: `Your account has been topped up with ${creditsToAdd} credits. Enjoy full access!`
+        });
+        setShowSuccessNotification(true);
+      } catch (error) {
+        console.error("Credit top-up failed:", error);
+      }
+    }
+    
     setSelectedPlan(null);
     setView('dashboard');
-    setSuccessMessage({
-        title: 'Payment Successful! 🎉',
-        message: `Your ${selectedPlan?.name} plan is now active. Welcome to ComplyGuard AI!`
-    });
-    setShowSuccessNotification(true);
     fetchData();
-  }, [selectedPlan, fetchData]);
+  }, [clerkUser, selectedPlan, fetchData]);
 
   if (isLoading || !appUser) {
     return (

@@ -11,8 +11,13 @@ const getEnvVar = (key: string) => {
     return '';
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL') || getEnvVar('SUPABASE_URL') || '';
+let supabaseUrl = getEnvVar('VITE_SUPABASE_URL') || getEnvVar('SUPABASE_URL') || '';
 const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY') || getEnvVar('SUPABASE_ANON_KEY') || '';
+
+// Robust URL fix: If only project ID is provided, expand it
+if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+    supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+}
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("⚠️ Supabase credentials missing. Database features will be limited.");

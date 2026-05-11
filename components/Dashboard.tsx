@@ -77,8 +77,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     setDroppedFiles([]);
   };
 
-  const scansRemaining = user.scan_limit_this_month === -1 ? Infinity : user.scan_limit_this_month - user.documents_scanned_this_month;
-  const usagePercentage = user.scan_limit_this_month > 0 ? (user.documents_scanned_this_month / user.scan_limit_this_month) * 100 : 0;
+  const scansRemaining = user.credits;
+  const usagePercentage = user.subscription_tier === 'free' ? (user.free_credits_used ? 100 : 0) : (user.credits > 0 ? 20 : 100);
   
   // Calculate aggregate compliance score
   const completedScans = scans.filter(s => s.status === AuditStatus.Completed);
@@ -152,8 +152,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-4">
                     <div>
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-600">Monthly Usage</span>
-                            <span className="font-medium text-gray-900">{user.documents_scanned_this_month} / {user.scan_limit_this_month > 0 ? user.scan_limit_this_month : '∞'} scans</span>
+                            <span className="text-gray-600">Available Credits</span>
+                            <span className="font-bold text-accent">{user.credits} scans remaining</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2">
                              <div 

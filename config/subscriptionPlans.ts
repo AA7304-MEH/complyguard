@@ -7,14 +7,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     tier: SubscriptionTier.Free,
     description: 'Perfect for trying out ComplyGuard',
     features: [
-      '5 document scans per month',
+      '1 scan credit (One-time)',
       'Basic compliance frameworks',
       'Email support',
       'Standard reporting',
       'Basic document templates',
       'Compliance calendar'
     ],
-    scan_limit: 5,
+    scan_limit: 1,
     price_monthly_usd: 0,
     price_yearly_usd: 0,
     price_monthly_inr: 0,
@@ -26,7 +26,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     tier: SubscriptionTier.Basic,
     description: 'Great for small teams and startups',
     features: [
-      '50 document scans per month',
+      '10 scan credits',
       'All compliance frameworks',
       'Priority email support',
       'Advanced reporting & analytics',
@@ -52,7 +52,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     tier: SubscriptionTier.Professional,
     description: 'Perfect for growing businesses',
     features: [
-      '200 document scans per month',
+      '50 scan credits',
       'All compliance frameworks',
       'Priority support + phone',
       'Advanced analytics dashboard',
@@ -66,7 +66,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Real-time notifications',
       'Export automation'
     ],
-    scan_limit: 200,
+    scan_limit: 50,
     price_monthly_usd: 99,
     price_yearly_usd: 990, // 2 months free
     price_monthly_inr: 8200,
