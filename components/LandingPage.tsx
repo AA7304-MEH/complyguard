@@ -44,10 +44,17 @@ const LandingPage: React.FC = () => {
                 return;
             }
 
-            // In a real app, you'd fetch the full scan data here
-            // For now, we'll simulate unlocking the demo result
-            alert("Success! 1 credit used. Remaining: " + updated.credits);
-            setPublicView('landing'); // Or redirect to a specific report page
+            // Create a real scan from the demo text!
+            const { createScan } = await import('../services/apiClient');
+            const newScan = await createScan(
+                user.id, 
+                'GDPR', 
+                unlockedScan?.result ? JSON.stringify(unlockedScan.result) : 'Demo Content Unlocked',
+                user.primaryEmailAddress?.emailAddress
+            );
+
+            alert("Success! 1 credit used. Your full report is being generated.");
+            window.location.href = '/dashboard'; // Force refresh to dashboard
         } catch (err) {
             console.error("Unlock failed", err);
             alert("An error occurred while processing credits.");

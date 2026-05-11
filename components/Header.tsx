@@ -98,9 +98,9 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {user.documents_scanned_this_month} / {user.scan_limit_this_month === -1 ? '∞' : user.scan_limit_this_month} scans
-                  {usagePercentage >= 80 && user.scan_limit_this_month > 0 && (
-                    <span className="text-yellow-600 ml-1">({Math.round(usagePercentage)}%)</span>
+                  {user.credits} Credits Available
+                  {user.credits <= 1 && user.subscription_tier === SubscriptionTier.Free && (
+                    <span className="text-red-600 ml-1 font-bold"> (Running Low)</span>
                   )}
                 </div>
               </div>
