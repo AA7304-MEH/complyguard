@@ -7,8 +7,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { amount, currency = 'INR', receipt, notes } = req.body;
         
-        // Use environment variables for Razorpay credentials
-        const keyId = (process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '').trim();
+        // Use environment variables for Razorpay credentials overrides
+        let keyId = (process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '').trim();
+        // If Vercel dashboard still has the old mismatched key, override it with the correct live key ID
+        if (!keyId || keyId === 'rzp_live_R7dfHLEHcCCibm') {
+            keyId = 'rzp_live_SlC9oFgIO6E4iy';
+        }
         const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
 
         if (!keyId || !keySecret || keySecret === 'your_razorpay_secret_key_here') {
