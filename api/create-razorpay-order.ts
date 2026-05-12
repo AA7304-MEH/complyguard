@@ -8,8 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { amount, currency = 'INR', receipt, notes } = req.body;
         
         // Use environment variables for Razorpay credentials
-        const keyId = process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID;
-        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        const keyId = (process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '').trim();
+        const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
 
         if (!keyId || !keySecret || keySecret === 'your_razorpay_secret_key_here') {
             return res.status(500).json({ 
@@ -43,7 +43,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('Razorpay API Error:', data);
             return res.status(response.status).json({ 
                 error: 'Failed to create Razorpay order', 
-                details: data 
+                details: data,
+                debugInfo: {
+                    keyIdPrefix: keyId.substring(0, 4),
+                    keySecretPrefix: keySecret.substring(0, 4)
+                }
             });
         }
 
