@@ -129,19 +129,7 @@ export const createScan = async (
     return response.json();
 };
 
-export const enableAdminMode = async (clerkUserId: string): Promise<User> => {
-    // In production, this would be a secure admin-only update.
-    // For trial/demo, we allow it to mock enterprise access.
-    return {
-        id: clerkUserId,
-        email: '',
-        company_name: 'Admin Enterprise',
-        subscription_tier: SubscriptionTier.Enterprise,
-        subscription_status: SubscriptionStatus.Active,
-        documents_scanned_this_month: 0,
-        scan_limit_this_month: -1,
-    };
-};
+
 
 export const updateUser = async (user: User): Promise<User> => {
     // Sync local changes (e.g. settings)

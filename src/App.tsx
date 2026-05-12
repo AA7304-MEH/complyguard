@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { SignedIn, SignedOut, useUser, ClerkLoading, ClerkLoaded } from '@clerk/clerk-react';
 import { User, AuditScan, AuditStatus, SubscriptionPlan, SubscriptionTier, SubscriptionStatus, BillingCycle } from '../types';
-import { getAppUser, getScans, enableAdminMode } from '../services/apiClient';
+import { getAppUser, getScans } from '../services/apiClient';
 import { getPlanByTier } from '../config/subscriptionPlans';
 import LandingPage from '../components/LandingPage';
 import Dashboard from '../components/Dashboard';
@@ -160,12 +160,6 @@ const MainApp: React.FC = () => {
         onViewTemplates={() => {}}
         onViewCalendar={() => {}}
         onViewAPI={() => {}}
-        onEnableAdmin={async () => {
-            const up = await enableAdminMode(appUser.id);
-            setAppUser(up);
-            setSuccessMessage({ title: 'Admin Mode Active', message: 'Enterprise access granted.' });
-            setShowSuccessNotification(true);
-        }}
       />
       <main className="container mx-auto px-4 py-8">
         {view === 'dashboard' && (
