@@ -190,7 +190,6 @@ export class PaymentService {
       currency: order.currency,
       name: 'ComplyGuard AI',
       description: `${plan.name} Plan - AI-Powered Compliance Platform`,
-      order_id: order.id,
       prefill: {
         email: userEmail,
         name: userEmail.split('@')[0],
