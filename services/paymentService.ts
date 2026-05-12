@@ -151,29 +151,38 @@ export class PaymentService {
     const isYearly = billingCycle === BillingCycle.Yearly;
     const amount = getPrice(plan, isYearly, 'INR') * 100; // Razorpay expects amount in paise
 
-    // Create a proper Razorpay order that works with the live SDK
-    const order = {
-      id: `order_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
-      entity: 'order',
-      amount: amount,
-      amount_paid: 0,
-      amount_due: amount,
-      currency: 'INR',
-      receipt: `cg_${userId}_${Date.now()}`,
-      status: 'created',
-      attempts: 0,
-      notes: {
-        plan_id: plan.id,
-        plan_name: plan.name,
-        user_id: userId,
-        billing_cycle: billingCycle,
-        service: 'ComplyGuard AI'
-      },
-      created_at: Math.floor(Date.now() / 1000)
-    };
+    try {
+      const response = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: amount,
+          currency: 'INR',
+          receipt: `cg_${userId}_${Date.now()}`,
+          notes: {
+            plan_id: plan.id,
+            plan_name: plan.name,
+            user_id: userId,
+            billing_cycle: billingCycle,
+            service: 'ComplyGuard AI'
+          }
+        })
+      });
 
-    console.log('✅ Razorpay order created:', order);
-    return order;
+      const data = await response.json();
+      
+      if (!response.ok) {
+         throw new Error(data.message || data.error || 'Failed to create secure order ID on the server.');
+      }
+      
+      console.log('✅ Razorpay order created securely:', data);
+      return data;
+    } catch (error) {
+       console.error('❌ Error creating server-side order:', error);
+       throw error;
+    }
   }
 
   static initializeRazorpayCheckout(
@@ -188,6 +197,7 @@ export class PaymentService {
       key: RAZORPAY_KEY_ID,
       amount: order.amount,
       currency: order.currency,
+      order_id: order.id, // Secure Order ID from backend
       name: 'ComplyGuard AI',
       description: `${plan.name} Plan - AI-Powered Compliance Platform`,
       prefill: {
