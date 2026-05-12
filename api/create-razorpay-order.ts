@@ -47,11 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('Razorpay API Error:', data);
             return res.status(response.status).json({ 
                 error: 'Failed to create Razorpay order', 
-                details: data,
-                debugInfo: {
-                    keyIdPrefix: keyId.substring(0, 4),
-                    keySecretPrefix: keySecret.substring(0, 4)
-                }
+                details: data
             });
         }
 
