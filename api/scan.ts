@@ -24,7 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
 
         // --- CREDIT ENFORCEMENT ---
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+        let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+        if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+            supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+        }
         const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
         const supabase = createClient(supabaseUrl, supabaseKey);
         
