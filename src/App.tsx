@@ -117,7 +117,7 @@ const MainApp: React.FC = () => {
     if (clerkUser && selectedPlan) {
       try {
         // Add credits based on plan scan_limit
-        const creditsToAdd = selectedPlan.scan_limit;
+        let creditsToAdd = selectedPlan.scan_limit;
         if (creditsToAdd === -1) creditsToAdd = 1000; // Cap enterprise for safety in demo
 
         await import('../services/apiClient').then(m => m.topUpCredits(clerkUser.id, creditsToAdd));
