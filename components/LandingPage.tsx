@@ -37,14 +37,7 @@ const LandingPage: React.FC = () => {
                 return;
             }
 
-            const updated = await CreditManager.consumeCredit(user.id);
-            if (updated.error) {
-                alert("Could not unlock: " + updated.error);
-                setPublicView('pricing');
-                return;
-            }
-
-            // Create a real scan from the demo text!
+            // Create a real scan from the demo text! (This will consume a credit)
             const { createScan } = await import('../services/apiClient');
             const newScan = await createScan(
                 user.id, 

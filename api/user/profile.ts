@@ -32,12 +32,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .single();
 
                 let initialCredits = 0;
-                let freeCreditsUsed = false;
+                let freeCreditsUsed = true; // Default to true (used/unavailable)
 
                 if (!deviceData) {
                     // Device is clean, give 1 free credit
                     initialCredits = 1;
-                    freeCreditsUsed = true;
+                    freeCreditsUsed = false; // They have a credit, so it's not "used" yet
                     
                     // Record device usage
                     await supabase.from('device_tracking').insert([{ 
@@ -90,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (action === 'consume') {
             const { data: profile } = await supabase
                 .from('user_profiles')
-                .select('credits')
+                .select('credits, subscription_tier')
                 .eq('user_id', userId)
                 .single();
 
@@ -98,9 +98,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(403).json({ error: 'Insufficient credits', needsPricing: true });
             }
 
+            const updateData: any = { credits: profile.credits - 1 };
+            if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
+                updateData.free_credits_used = true;
+            }
+
             const { data: updatedProfile, error: updateError } = await supabase
                 .from('user_profiles')
-                .update({ credits: profile.credits - 1 })
+                .update(updateData)
                 .eq('user_id', userId)
                 .select()
                 .single();

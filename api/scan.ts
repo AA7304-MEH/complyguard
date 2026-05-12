@@ -24,10 +24,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const checklist = FRAMEWORKS[framework] || FRAMEWORKS.GDPR;
 
         // --- CREDIT ENFORCEMENT ---
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+        const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
         const supabase = createClient(supabaseUrl, supabaseKey);
+        
         const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
-            .select('credits')
+            .select('credits, subscription_tier')
             .eq('user_id', userId)
             .single();
 
@@ -44,7 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Consume credit
-        await supabase.from('user_profiles').update({ credits: profile.credits - 1 }).eq('user_id', userId);
+        const updateData: any = { credits: profile.credits - 1 };
+        if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
+            updateData.free_credits_used = true;
+        }
+        await supabase.from('user_profiles').update(updateData).eq('user_id', userId);
         // --- END CREDIT ENFORCEMENT ---
 
         const prompt = `
@@ -75,12 +82,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
         const score = Math.max(0, 100 - findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0));
 
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-        const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
         if (supabaseUrl && supabaseKey) {
             try {
-                const { createClient } = await import('@supabase/supabase-js');
-                const supabase = createClient(supabaseUrl, supabaseKey);
                 await supabase.from('scan_jobs').insert([{
                     user_id: userId,
                     framework,
