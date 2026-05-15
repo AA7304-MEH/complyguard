@@ -42,14 +42,19 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
       try {
         const location = await PaymentService.getUserLocation();
         setDetectedLocation(location);
-        // Always use Razorpay for instant experience
-        setPaymentProvider(PaymentProvider.Razorpay);
-        console.log(`🎯 Location: ${location}, Using Razorpay for instant loading`);
+        
+        // IMPORTANT: Hide PayPal for Indian users due to RBI restrictions on domestic USD payments
+        if (location === 'IN') {
+          setShowPayPalOption(false);
+          setPaymentProvider(PaymentProvider.Razorpay);
+          console.log('🇮🇳 Indian user detected: Hiding PayPal to prevent regional cancellation errors');
+        } else {
+          // International users can use both, but still default to Razorpay for instant loading
+          setPaymentProvider(PaymentProvider.Razorpay);
+        }
       } catch (error) {
         setDetectedLocation('Unknown');
-        // Still use Razorpay as default
         setPaymentProvider(PaymentProvider.Razorpay);
-        console.log(`🎯 Using Razorpay for instant loading`);
       } finally {
         setIsDetecting(false);
       }
@@ -113,8 +118,11 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
       if (!document.querySelector('script[src*="paypal.com/sdk"]')) {
         console.log('🔄 Injecting PayPal SDK dynamically...');
         const script = document.createElement('script');
-        script.src = `https://www.paypal.com/sdk/js?client-id=${import.meta.env.VITE_PAYPAL_CLIENT_ID}&currency=USD&intent=capture&enable-funding=venmo,paylater&disable-funding=card`;
+        // Use environment variable for environment detection
+        const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&enable-funding=venmo,paylater&disable-funding=card`;
         script.async = true;
+        script.id = 'paypal-sdk-script';
         document.head.appendChild(script);
       }
 
