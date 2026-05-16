@@ -39,7 +39,20 @@ export interface PaymentConfig {
 export class PaymentService {
   
   static async getUserLocation(): Promise<string> {
-    return 'US'; // Mock for compatibility
+    try {
+      // Try to get location from a free API
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      return data.country_code || 'US';
+    } catch (error) {
+      console.warn('Location detection failed, using fallbacks:', error);
+      // Fallback to timezone detection if API fails
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timezone.includes('Kolkata') || timezone.includes('Mumbai') || timezone.includes('Delhi')) {
+        return 'IN';
+      }
+      return 'US';
+    }
   }
   
   static detectPaymentProvider(userLocation?: string): PaymentProvider {

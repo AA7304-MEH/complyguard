@@ -648,12 +648,14 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
                   <p className="text-sm text-red-700 mb-3">{error}</p>
 
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={switchProvider}
-                      className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                    >
-                      Try {paymentProvider === PaymentProvider.Razorpay ? 'PayPal' : 'Razorpay'}
-                    </button>
+                    {showPayPalOption && (
+                      <button
+                        onClick={switchProvider}
+                        className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                      >
+                        Try {paymentProvider === PaymentProvider.Razorpay ? 'PayPal' : 'Razorpay'}
+                      </button>
+                    )}
                     <button
                       onClick={() => setError(null)}
                       className="px-3 py-1 text-xs border border-red-600 text-red-600 rounded hover:bg-red-50 transition-colors"
