@@ -2,7 +2,8 @@ import { PaymentProvider, BillingCycle, PaymentIntent, SubscriptionPlan } from '
 import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
 
 // Razorpay configuration - LIVE KEYS
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
+// Hardcoding the validated live key to ensure stability across deployments
+const RAZORPAY_KEY_ID = 'rzp_live_SlC9oFgIO6E4iy';
 
 
 // PayPal configuration - SANDBOX KEYS FOR TESTING (Switch to production when ready)
@@ -11,18 +12,12 @@ const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 const PAYPAL_ENVIRONMENT = import.meta.env.VITE_PAYPAL_ENVIRONMENT || 'sandbox';
 
 // Debug logging for payment keys
-console.log('Payment Configuration:', {
-  razorpayKeyId: RAZORPAY_KEY_ID ? 'Present' : 'Missing',
+console.log('🛡️ Payment Security Init:', {
+  razorpayKeyId: RAZORPAY_KEY_ID.substring(0, 12) + '...',
   paypalClientId: PAYPAL_CLIENT_ID ? 'Present' : 'Missing',
-  environment: PAYPAL_ENVIRONMENT
+  environment: PAYPAL_ENVIRONMENT,
+  mode: import.meta.env.MODE
 });
-
-// Validate that we have the required keys
-if (!RAZORPAY_KEY_ID) {
-  console.error('❌ Razorpay Key ID not found. Razorpay payments will not work.');
-} else {
-  console.log('✅ Razorpay Key ID loaded:', RAZORPAY_KEY_ID.substring(0, 10) + '...');
-}
 
 if (!PAYPAL_CLIENT_ID) {
   console.error('❌ PayPal Client ID not found. PayPal payments will not work.');
@@ -162,7 +157,7 @@ export class PaymentService {
     userId: string
   ): Promise<any> {
     const isYearly = billingCycle === BillingCycle.Yearly;
-    const amount = getPrice(plan, isYearly, 'INR') * 100; // Razorpay expects amount in paise
+    const amount = Math.round(getPrice(plan, isYearly, 'INR') * 100); // Razorpay expects amount in paise (integer)
 
     try {
       const response = await fetch('/api/create-razorpay-order', {
@@ -173,7 +168,8 @@ export class PaymentService {
         body: JSON.stringify({
           amount: amount,
           currency: 'INR',
-          receipt: `cg_${userId}_${Date.now()}`,
+          // CRITICAL: Razorpay receipt must be <= 40 characters
+          receipt: `cg_${Date.now()}_${userId.substring(0, 10)}`,
           notes: {
             plan_id: plan.id,
             plan_name: plan.name,
@@ -212,14 +208,19 @@ export class PaymentService {
       currency: order.currency,
       order_id: order.id, // Secure Order ID from backend
       name: 'ComplyGuard AI',
-      description: `${plan.name} Plan - AI-Powered Compliance Platform`,
+      description: `${plan.name} Plan - AI Compliance`,
       prefill: {
         email: userEmail,
         name: userEmail.split('@')[0],
       },
       theme: {
-        color: '#2563eb'
+        color: '#6366f1' // ComplyGuard Indigo
       },
+      retry: {
+        enabled: true,
+        max_count: 3
+      },
+      timeout: 300, // 5 minutes
       handler: (response: any) => {
         console.log('✅ Razorpay payment successful:', response);
         onSuccess({
@@ -231,6 +232,9 @@ export class PaymentService {
         });
       },
       modal: {
+        escape: true,
+        backdropclose: false,
+        handleback: true,
         ondismiss: () => {
           console.log('❌ Razorpay payment cancelled');
           onError({ 
@@ -240,6 +244,13 @@ export class PaymentService {
         }
       }
     };
+
+    console.log('📝 Preparing Razorpay Modal with Options:', {
+      order_id: options.order_id,
+      amount: options.amount,
+      currency: options.currency,
+      key_prefix: options.key.substring(0, 10)
+    });
 
     // Check if Razorpay is already loaded
     if ((window as any).Razorpay) {

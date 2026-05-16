@@ -3,8 +3,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-if (supabaseUrl && !supabaseUrl.startsWith('http')) {
-    supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+if (supabaseUrl) {
+    supabaseUrl = supabaseUrl.split(/[?#]/)[0].trim();
+    if (!supabaseUrl.startsWith('http')) {
+        supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+    }
 }
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 

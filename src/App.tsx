@@ -30,11 +30,14 @@ const MainApp: React.FC = () => {
   const [showSuccessNotification, setShowSuccessNotification] = React.useState(false);
   const [successMessage, setSuccessMessage] = React.useState({ title: '', message: '' });
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [initError, setInitError] = React.useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const { isLoaded: isClerkLoaded, user: clerkUser } = useUser();
 
   const fetchData = React.useCallback(async () => {
     if (clerkUser) {
+      setIsLoading(true);
+      setInitError(null);
       try {
         const { FingerprintService } = await import('../lib/fingerprint');
         const deviceId = FingerprintService.getDeviceId();
@@ -44,8 +47,9 @@ const MainApp: React.FC = () => {
         ]);
         setAppUser(userData);
         setScans(scansData);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch data:", error);
+        setInitError(error.message || "Failed to connect to the production environment. Please check your internet connection and try again.");
       } finally {
         setIsLoading(false);
       }
@@ -137,12 +141,47 @@ const MainApp: React.FC = () => {
     fetchData();
   }, [clerkUser, selectedPlan, fetchData]);
 
-  if (isLoading || !appUser) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 mt-4 font-medium">Loading Production Environment...</p>
+          <p className="text-slate-500 mt-4 font-medium">Connecting to Secure Environment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (initError || !appUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg text-center border border-slate-200">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Connection Error</h2>
+          <p className="text-slate-600 mb-6">
+            {initError || "Unable to load your user profile. This may be due to a temporary network issue or server configuration."}
+          </p>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => fetchData()}
+              className="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-3 rounded-lg transition-all"
+            >
+              Retry Connection
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 rounded-lg transition-all"
+            >
+              Reload Application
+            </button>
+          </div>
+          <p className="mt-6 text-xs text-slate-400">
+            If the issue persists, please contact support with the error details in the console.
+          </p>
         </div>
       </div>
     );
