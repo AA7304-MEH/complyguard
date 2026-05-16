@@ -15,7 +15,7 @@ import ScrollToTop from './ScrollToTop';
 const LandingPage: React.FC = () => {
     const { user, isLoaded } = useUser();
     const { openSignIn } = useClerk();
-    const [publicView, setPublicView] = React.useState<'landing' | 'demo' | 'pricing'>('landing');
+    const [publicView, setPublicView] = React.useState<'landing' | 'demo' | 'pricing' | 'privacy' | 'terms' | 'refund' | 'contact'>('landing');
     const [unlockedScan, setUnlockedScan] = React.useState<AuditScan | null>(null);
 
     const handleUnlock = async () => {
@@ -54,33 +54,85 @@ const LandingPage: React.FC = () => {
         }
     };
 
-    if (publicView === 'pricing') {
-        return (
-            <div className="relative">
-                <button 
-                    onClick={() => setPublicView('landing')}
-                    className="absolute top-6 left-6 z-50 text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 font-medium"
-                >
-                    &larr; Back
-                </button>
-                <PricingPage onPlanSelect={(plan, cycle) => {
-                    console.log("Plan selected", plan, cycle);
-                    // Handle plan selection/payment
-                }} />
-            </div>
-        );
-    }
+    if (publicView !== 'landing') {
+      // Special handling for legal/contact pages
+      if (['privacy', 'terms', 'refund', 'contact'].includes(publicView)) {
+          return (
+              <div className="bg-white text-slate-900 min-h-screen relative">
+                  <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200">
+                      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+                          <button onClick={() => setPublicView('landing')} className="text-accent font-medium flex items-center gap-2">
+                              &larr; Back to Home
+                          </button>
+                          <span className="font-bold text-slate-900">ComplyGuard AI</span>
+                      </div>
+                  </header>
+                  <div className="pt-24 pb-20">
+                      {publicView === 'privacy' && (
+                          <div className="max-w-4xl mx-auto px-4">
+                              <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
+                              <div className="space-y-6 text-slate-600">
+                                  <p>At ComplyGuard AI, we prioritize the security and privacy of your data. This policy outlines how we handle your information.</p>
+                                  <h2 className="text-xl font-semibold text-slate-900">1. Data Collection</h2>
+                                  <p>We collect document text uploaded for analysis, user email addresses for account management, and device identifiers to prevent fraud.</p>
+                                  <h2 className="text-xl font-semibold text-slate-900">2. Data Security</h2>
+                                  <p>All documents are encrypted in transit and at rest. We do not use your proprietary data to train global AI models without explicit permission.</p>
+                                  <h2 className="text-xl font-semibold text-slate-900">3. Contact</h2>
+                                  <p>For privacy concerns, contact privacy@complyguard.com.</p>
+                              </div>
+                          </div>
+                      )}
+                      {publicView === 'terms' && (
+                          <div className="max-w-4xl mx-auto px-4">
+                              <h1 className="text-3xl font-bold mb-8">Terms of Service</h1>
+                              <div className="space-y-6 text-slate-600">
+                                  <p>By using ComplyGuard AI, you agree to these terms. Please read them carefully.</p>
+                                  <h2 className="text-xl font-semibold text-slate-900">1. Service Description</h2>
+                                  <p>ComplyGuard provides AI-powered compliance analysis. The reports generated are for informational purposes and do not constitute legal advice.</p>
+                                  <h2 className="text-xl font-semibold text-slate-900">2. Usage Limits</h2>
+                                  <p>Users are responsible for maintaining the confidentiality of their account and for all activities that occur under their account.</p>
+                              </div>
+                          </div>
+                      )}
+                      {publicView === 'refund' && (
+                          <div className="max-w-4xl mx-auto px-4">
+                              <h1 className="text-3xl font-bold mb-8">Refund Policy</h1>
+                              <div className="space-y-6 text-slate-600">
+                                  <h2 className="text-xl font-semibold text-slate-900">1. Cancellations</h2>
+                                  <p>Subscriptions can be cancelled at any time. Your access will continue until the end of your current billing cycle.</p>
+                                  <h2 className="text-xl font-semibold text-slate-900">2. Refunds</h2>
+                                  <p>We offer a 7-day money-back guarantee for new users who have not utilized more than 1 scan credit. Refunds are processed within 5-7 business days.</p>
+                              </div>
+                          </div>
+                      )}
+                      {publicView === 'contact' && (
+                          <div className="max-w-4xl mx-auto px-4">
+                              <h1 className="text-3xl font-bold mb-8">Contact Us</h1>
+                              <div className="space-y-6 text-slate-600">
+                                  <p>Need help or have questions? Our support team is ready to assist you.</p>
+                                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                      <p className="font-semibold text-slate-900 mb-1">Email Support</p>
+                                      <p className="text-accent mb-4">support@complyguard.com</p>
+                                      <p className="font-semibold text-slate-900 mb-1">Registered Address</p>
+                                      <p>AI Innovation Hub, Block 4, Tech Park, Bangalore, KA, India - 560001</p>
+                                  </div>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          );
+      }
 
-    if (publicView === 'demo') {
       return (
-        <div className="bg-slate-50 min-h-screen py-10 w-full relative">
+        <div className="bg-slate-50 min-h-screen py-10 w-full relative text-slate-900">
             <button 
                 onClick={() => setPublicView('landing')}
-                className="absolute top-6 left-6 text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 font-medium"
+                className="absolute top-6 left-6 text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 font-medium z-50"
             >
                 &larr; Back to Home
             </button>
-            <DemoPage onGetFullAccess={handleUnlock} /> 
+            {publicView === 'demo' ? <DemoPage onGetFullAccess={handleUnlock} /> : <PricingPage onPlanSelect={() => {}} />}
         </div>
       );
     }
@@ -178,9 +230,53 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-950 text-slate-400 py-12 border-t border-white/5">
-        <div className="container mx-auto px-4 text-center">
-            <p>&copy; {new Date().getFullYear()} ComplyGuard AI. Built for Production.</p>
+      <footer className="bg-slate-950 text-slate-400 py-16 border-t border-white/5">
+        <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 text-left">
+                <div className="col-span-1 md:col-span-1">
+                    <div className="flex items-center space-x-2 mb-6">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <ShieldCheckIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-xl font-bold text-white">ComplyGuard</span>
+                    </div>
+                    <p className="text-sm leading-relaxed">
+                        The world's first AI-powered compliance auditor. Secure your business in seconds.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">Platform</h3>
+                    <ul className="space-y-4 text-sm">
+                        <li><button onClick={() => setPublicView('demo')} className="hover:text-white transition-colors">Interactive Demo</button></li>
+                        <li><button onClick={() => setPublicView('pricing')} className="hover:text-white transition-colors">Pricing Plans</button></li>
+                        <li><button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="hover:text-white transition-colors">Features</button></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">Legal</h3>
+                    <ul className="space-y-4 text-sm flex flex-col items-start">
+                        <li><button onClick={() => setPublicView('privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
+                        <li><button onClick={() => setPublicView('terms')} className="hover:text-white transition-colors">Terms of Service</button></li>
+                        <li><button onClick={() => setPublicView('refund')} className="hover:text-white transition-colors">Refund Policy</button></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">Support</h3>
+                    <ul className="space-y-4 text-sm">
+                        <li><button onClick={() => setPublicView('contact')} className="hover:text-white transition-colors">Contact Us</button></li>
+                        <li><p>support@complyguard.com</p></li>
+                        <li><p>Bangalore, India</p></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+                <p>&copy; {new Date().getFullYear()} ComplyGuard AI. All rights reserved.</p>
+                <p className="text-slate-500 italic">Trusted by 500+ legal teams globally.</p>
+            </div>
         </div>
       </footer>
     </div>
