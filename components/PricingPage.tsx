@@ -47,50 +47,56 @@ const PricingPage: React.FC<PricingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-secondary py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50/30 py-16 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-primary mb-4">
-            Choose Your Plan
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+            Simple, Transparent Pricing
           </h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            Scale your compliance operations with the right plan for your needs
+          <p className="text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed">
+            Scale your compliance operations with the right plan for your team's needs. No hidden fees.
           </p>
           
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center mb-8">
-            <span className={`mr-3 ${!isYearly ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setBillingCycle(isYearly ? BillingCycle.Monthly : BillingCycle.Yearly)}
-              className="relative inline-flex h-6 w-11 items-center rounded-full bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isYearly ? 'translate-x-6' : 'translate-x-1'
+          {/* Modern Billing Toggle */}
+          <div className="flex items-center justify-center mt-10 mb-6">
+            <div className="bg-slate-100 p-1 rounded-xl inline-flex items-center border border-slate-200/60 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setBillingCycle(BillingCycle.Monthly)}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                  !isYearly 
+                    ? 'bg-white text-slate-800 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
-              />
-            </button>
-            <span className={`ml-3 ${isYearly ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
-              Yearly
-            </span>
-            {isYearly && (
-              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Save up to 17%
-              </span>
-            )}
+              >
+                Monthly Billing
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingCycle(BillingCycle.Yearly)}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                  isYearly 
+                    ? 'bg-white text-slate-800 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Yearly Billing
+                <span className="px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 text-[9px] font-extrabold uppercase tracking-wide">
+                  Save 17%
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Currency Info */}
-          <div className="text-sm text-muted-foreground mb-8">
-            Prices shown in {currency} • {paymentConfig.provider === PaymentProvider.Razorpay ? 'Indian' : 'International'} pricing
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Prices in {currency} &bull; {paymentConfig.provider === PaymentProvider.Razorpay ? 'Indian Payment System' : 'Stripe & PayPal'}
           </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           {SUBSCRIPTION_PLANS.map((plan) => {
             const savings = getSavings(plan);
             const isCurrentPlan = currentPlan?.id === plan.id;
@@ -99,75 +105,86 @@ const PricingPage: React.FC<PricingPageProps> = ({
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl border-2 p-8 ${
+                className={`relative rounded-3xl border-2 flex flex-col justify-between p-8 bg-white transition-all duration-300 ${
                   isPopular
-                    ? 'border-accent bg-white shadow-xl scale-105'
-                    : 'border-gray-200 bg-white'
-                } ${isCurrentPlan ? 'ring-2 ring-accent' : ''}`}
+                    ? 'border-blue-600 shadow-xl scale-[1.03] z-10'
+                    : 'border-slate-200/80 shadow-sm hover:border-slate-300 hover:shadow-md'
+                } ${isCurrentPlan ? 'ring-2 ring-blue-600/20' : ''}`}
               >
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-medium bg-accent text-accent-foreground">
-                      <ZapIcon className="w-4 h-4 mr-1" />
+                    <span className="inline-flex items-center px-4 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25">
+                      <ZapIcon className="w-3.5 h-3.5 mr-1" />
                       Most Popular
                     </span>
                   </div>
                 )}
 
                 {isCurrentPlan && (
-                  <div className="absolute -top-4 right-4">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Current Plan
+                  <div className="absolute -top-3.5 right-6">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 border border-green-200 text-green-700">
+                      Active Plan
                     </span>
                   </div>
                 )}
 
-                <div className="text-center">
-                  <h3 className="text-2xl font-bold text-primary mb-2">{plan.name}</h3>
-                  <p className="text-muted-foreground mb-6">{plan.description}</p>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">{plan.name}</h3>
+                    <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">{plan.description}</p>
+                  </div>
                   
-                  <div className="mb-6">
-                    <div className="text-4xl font-bold text-primary mb-2">
-                      {formatPrice(plan)}
+                  <div className="border-t border-slate-100 pt-6">
+                    <div className="flex items-baseline">
+                      <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                        {formatPrice(plan).split('/')[0]}
+                      </span>
+                      {plan.tier !== 'free' && (
+                        <span className="text-slate-400 text-sm ml-1">
+                          /{isYearly ? 'yr' : 'mo'}
+                        </span>
+                      )}
                     </div>
                     {savings && (
-                      <div className="text-sm text-green-600 font-medium">
-                        Save {currency === 'USD' ? '$' : '₹'}{savings.amount.toLocaleString()} ({savings.percent}%)
+                      <div className="text-xs text-green-600 font-bold mt-1.5 flex items-center gap-1">
+                        <span>✨</span> Save {currency === 'USD' ? '$' : '₹'}{savings.amount.toLocaleString()} yearly
                       </div>
                     )}
                   </div>
 
-                  <button
-                    onClick={() => onPlanSelect(plan, billingCycle)}
-                    disabled={isCurrentPlan}
-                    className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
-                      isCurrentPlan
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : isPopular
-                        ? 'bg-accent text-accent-foreground hover:bg-accent/90'
-                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    }`}
-                  >
-                    {isCurrentPlan ? 'Current Plan' : plan.tier === 'free' ? 'Get Started' : 'Upgrade Now'}
-                  </button>
-                </div>
+                  <div className="pt-4">
+                    <button
+                      onClick={() => onPlanSelect(plan, billingCycle)}
+                      disabled={isCurrentPlan}
+                      className={`w-full py-3 px-4 rounded-xl text-sm font-bold transition-all ${
+                        isCurrentPlan
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                          : isPopular
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/10 hover:scale-[1.02] active:scale-98'
+                          : 'bg-slate-900 hover:bg-slate-800 text-white hover:scale-[1.02] active:scale-98'
+                      }`}
+                    >
+                      {isCurrentPlan ? 'Current Plan' : plan.tier === 'free' ? 'Get Started' : 'Upgrade Plan'}
+                    </button>
+                  </div>
 
-                <div className="mt-8">
-                  <h4 className="text-sm font-semibold text-primary mb-4">Features included:</h4>
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircleIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="border-t border-slate-100 pt-6 space-y-4">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Included Features</p>
+                    <ul className="space-y-3.5">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2.5 mt-0.5 flex-shrink-0" />
+                          <span className="text-xs text-slate-600 leading-relaxed font-medium">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
                 {plan.is_enterprise && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-muted-foreground text-center">
-                      Contact our sales team for custom pricing and enterprise features
+                  <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100/80">
+                    <p className="text-xs text-slate-400 text-center font-medium leading-relaxed">
+                      Custom volume, single sign-on & dedicated API endpoints.
                     </p>
                   </div>
                 )}
@@ -177,24 +194,24 @@ const PricingPage: React.FC<PricingPageProps> = ({
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-bold text-primary mb-8">Frequently Asked Questions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
-            <div>
-              <h3 className="font-semibold text-primary mb-2">Can I change plans anytime?</h3>
-              <p className="text-muted-foreground">Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.</p>
+        <div className="mt-24 max-w-4xl mx-auto border-t border-slate-200/60 pt-16">
+          <h2 className="text-3xl font-bold text-center text-slate-900 tracking-tight mb-12">Frequently Asked Questions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 text-left">
+            <div className="space-y-2">
+              <h3 className="font-bold text-slate-800 text-base">Can I change plans anytime?</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-primary mb-2">What payment methods do you accept?</h3>
-              <p className="text-muted-foreground">We accept Razorpay for Indian customers and PayPal for international payments.</p>
+            <div className="space-y-2">
+              <h3 className="font-bold text-slate-800 text-base">What payment methods do you accept?</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">We accept Razorpay for Indian customers and PayPal for international payments.</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-primary mb-2">Is there a free trial?</h3>
-              <p className="text-muted-foreground">Yes, all paid plans come with a 14-day free trial. No credit card required.</p>
+            <div className="space-y-2">
+              <h3 className="font-bold text-slate-800 text-base">Is there a money-back guarantee?</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">Yes, we offer a 7-day money-back guarantee for new users who have not utilized more than 1 scan credit.</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-primary mb-2">What happens if I exceed my scan limit?</h3>
-              <p className="text-muted-foreground">You'll be notified when approaching your limit and can upgrade your plan or wait for the next billing cycle.</p>
+            <div className="space-y-2">
+              <h3 className="font-bold text-slate-800 text-base">What happens if I exceed my scan limit?</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">You'll be notified when approaching your limit and can upgrade your plan or wait for the next billing cycle.</p>
             </div>
           </div>
         </div>

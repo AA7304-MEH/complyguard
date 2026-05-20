@@ -88,46 +88,46 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div 
-        className="relative min-h-screen"
+        className="relative min-h-screen bg-slate-50/30 py-8 px-4 sm:px-6 lg:px-8"
         onDragOver={handleGlobalDragOver}
     >
       {/* Global Drag Overlay */}
       {isGlobalDragging && (
         <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-accent/90 backdrop-blur-sm transition-all duration-300"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-blue-600/90 backdrop-blur-md transition-all duration-300"
             onDragLeave={handleGlobalDragLeave}
             onDrop={handleGlobalDrop}
         >
-            <div className="text-center p-12 border-4 border-dashed border-white/50 rounded-3xl animate-in zoom-in-95 duration-200">
-                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                    <svg className="w-12 h-12 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            <div className="text-center p-12 border-4 border-dashed border-white/40 rounded-3xl animate-in zoom-in-95 duration-200 max-w-md">
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                    <svg className="w-10 h-10 text-blue-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                 </div>
-                <h2 className="text-3xl font-extrabold text-white mb-2 italic">Drop Files "Anywhere"</h2>
-                <p className="text-white/80 font-medium text-lg">Drop your documents here to instantly start a Compliance Audit</p>
+                <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Drop Compliance Docs</h2>
+                <p className="text-white/80 font-medium text-sm">Drop your files anywhere to instantly launch an AI audit.</p>
             </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Compliance Dashboard</h1>
-            <p className="mt-1 text-md text-gray-600">Welcome back, {user.company_name}.</p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Compliance Dashboard</h1>
+            <p className="text-sm text-slate-500 mt-1">Welcome back, <span className="font-semibold text-slate-800">{user.company_name}</span>. Here is your overview.</p>
           </div>
-          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <button
               onClick={() => setIsModalOpen(true)}
               disabled={scansRemaining <= 0}
-              className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-accent-foreground bg-accent hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-md text-white bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] active:scale-98 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200"
             >
               New Compliance Scan
             </button>
             {user.subscription_tier === 'free' && (
               <button
                 onClick={onUpgrade}
-                className="w-full md:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 hover:scale-[1.02] active:scale-98 transition-all duration-200"
               >
                 💳 Upgrade Plan
               </button>
@@ -135,91 +135,111 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Aggregate Health */}
-            <div className="bg-white border border-slate-200 p-6 rounded-lg shadow-sm flex flex-col items-center justify-center">
+            <div className="bg-white border border-slate-200/80 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col items-center justify-center">
                 <ComplianceGauge score={averageScore} />
-                <p className="mt-4 text-xs text-center text-slate-400 italic">Based on {completedScans.length} completed audits</p>
+                <p className="mt-4 text-xs text-center text-slate-400 font-semibold tracking-wider uppercase">Based on {completedScans.length} completed audits</p>
             </div>
 
             {/* Plan Info */}
-            <div className="lg:col-span-2 bg-white border border-slate-200 p-6 rounded-lg shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Plan Status: {user.subscription_tier.toUpperCase()}</h3>
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">ACTIVE</span>
-                </div>
-                
-                <div className="space-y-4">
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-600">Available Credits</span>
-                            <span className="font-bold text-accent">{user.credits} scans remaining</span>
+            <div className="lg:col-span-2 bg-white border border-slate-200/80 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col justify-between">
+                <div>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="space-y-0.5">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Tier</p>
+                            <h3 className="text-xl font-bold text-slate-900">{user.subscription_tier.toUpperCase()} Plan</h3>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
-                             <div 
-                                className={`h-2 rounded-full transition-all duration-500 ${usagePercentage > 90 ? 'bg-red-500' : 'bg-accent'}`}
-                                style={{ width: `${Math.min(usagePercentage, 100)}%` }}
-                             ></div>
-                        </div>
+                        <span className="px-3 py-1 bg-green-50 border border-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wider">Active</span>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                        <div className="p-3 bg-slate-50 rounded-md border border-slate-100">
-                             <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Next Audit</p>
-                             <p className="text-sm font-medium">Apr 15, 2026</p>
+                    <div className="space-y-4">
+                        <div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="text-slate-500 font-medium">Available Credits</span>
+                                <span className="font-bold text-blue-600">{user.credits} scans remaining</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                 <div 
+                                    className={`h-2.5 rounded-full transition-all duration-500 bg-gradient-to-r ${usagePercentage > 90 ? 'from-red-500 to-orange-500' : 'from-blue-600 to-indigo-600'}`}
+                                    style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                                 ></div>
+                            </div>
                         </div>
-                        <div className="p-3 bg-slate-50 rounded-md border border-slate-100">
-                             <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Templates Used</p>
-                             <p className="text-sm font-medium">12</p>
-                        </div>
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100 mt-6">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                         <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Next Sync</p>
+                         <p className="text-sm font-bold text-slate-800">Apr 15, 2026</p>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                         <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">Templates Used</p>
+                         <p className="text-sm font-bold text-slate-800">12 templates</p>
                     </div>
                 </div>
             </div>
         </div>
 
         {/* Scan History */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Compliance Scans</h2>
-            <button className="text-sm text-accent font-medium hover:underline">View All</button>
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Recent Compliance Scans</h2>
+            <button className="text-sm text-blue-600 hover:text-blue-700 font-bold">View All</button>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead className="bg-slate-50/70">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Framework</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Health Score</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Framework</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Date</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Health Score</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-100">
                 {scans.length > 0 ? (
                   scans.map((scan) => (
-                    <tr key={scan.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">🛡️ {scan.framework}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(scan.created_at).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getStatusChip(scan.status)}</td>
+                    <tr key={scan.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span className="text-lg">🛡️</span> {scan.framework}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">
+                        {new Date(scan.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {getStatusChip(scan.status)}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {scan.status === AuditStatus.Completed ? (
                               <div className="flex items-center gap-2">
                                   <div className={`w-2 h-2 rounded-full ${scan.score >= 80 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                  <span className="font-bold">{scan.score}%</span>
+                                  <span className="font-extrabold text-slate-800">{scan.score}%</span>
                               </div>
-                          ) : <span className="text-gray-400">-</span>}
+                          ) : <span className="text-slate-400">-</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-accent">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold">
                         {scan.status === AuditStatus.Completed && (
-                          <button onClick={() => onViewReport(scan)} className="hover:underline">View Detailed Report</button>
+                          <button 
+                            onClick={() => onViewReport(scan)} 
+                            className="text-blue-600 hover:text-blue-700 hover:underline transition-all"
+                          >
+                            View Detailed Report
+                          </button>
                         )}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
-                      No scans performed yet. Start your first audit today!
+                    <td colSpan={5} className="px-6 py-16 text-center text-slate-400 font-medium">
+                      <div className="max-w-sm mx-auto space-y-2">
+                        <p className="text-3xl">🗂️</p>
+                        <p className="text-slate-800 font-bold">No scans performed yet</p>
+                        <p className="text-xs text-slate-400">Start your first automated compliance audit by clicking "New Compliance Scan" above.</p>
+                      </div>
                     </td>
                   </tr>
                 )}

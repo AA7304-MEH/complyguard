@@ -138,30 +138,33 @@ const LandingPage: React.FC = () => {
     }
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white w-full relative overflow-hidden">
+    <div className="bg-slate-950 text-white w-full relative overflow-hidden min-h-screen font-sans">
       <ScrollToTop />
       
-      {/* Animated Background Elements */}
+      {/* Modern Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
+
+      {/* Animated Background Highlights */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute top-[20%] right-[5%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[140px] animate-pulse delay-1000"></div>
       </div>
 
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-50 backdrop-blur-sm bg-slate-900/50 border-b border-white/10">
+      <header className="absolute top-0 left-0 right-0 z-50 backdrop-blur-md bg-slate-950/40 border-b border-white/5">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <ShieldCheckIcon className="w-6 h-6 text-white" />
+            <div className="flex items-center space-x-3 cursor-pointer">
+              <div className="w-9 h-9 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <ShieldCheckIcon className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                ComplyGuard AI
-              </h1>
+              <span className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent tracking-tight">
+                ComplyGuard <span className="text-blue-500 font-extrabold">AI</span>
+              </span>
             </div>
             <SignInButton mode="modal">
-              <button className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-                Sign In →
+              <button className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full border border-white/10 hover:border-white/20 shadow-sm active:scale-95 transition-all duration-300 text-sm">
+                Sign In &rarr;
               </button>
             </SignInButton>
           </div>
@@ -169,35 +172,34 @@ const LandingPage: React.FC = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32">
+      <section className="relative pt-36 pb-24 lg:pt-48 lg:pb-36">
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col items-center text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-400/30 rounded-full text-sm font-medium text-blue-300 mb-6 animate-fade-in">
-              <ZapIcon className="w-4 h-4 mr-2" />
-              AI-Powered Compliance Analysis
+            <div className="inline-flex items-center px-4 py-1.5 bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-full text-xs font-semibold text-blue-400 mb-8 animate-fade-in shadow-inner">
+              <ZapIcon className="w-3.5 h-3.5 mr-2 text-blue-400 animate-pulse" />
+              Next-Gen compliance framework validation
             </div>
-            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight max-w-5xl mb-6 animate-fade-in-up">
-              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-8xl font-black leading-none max-w-5xl mb-8 tracking-tight animate-fade-in-up">
+              <span className="bg-gradient-to-b from-white to-slate-300 bg-clip-text text-transparent">
                 Compliance Audits
               </span>
               <br />
-              <span className="text-white">
+              <span className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-500 bg-clip-text text-transparent">
                 In Seconds, Not Weeks
               </span>
             </h1>
-            <p className="mt-6 text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-200">
-              Transform your legal and security documents into actionable compliance reports. Our AI Auditor finds gaps in 
-              <span className="text-blue-400 font-semibold"> GDPR, HIPAA, and SOC 2</span> instantly.
+            <p className="mt-4 text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-200">
+              Transform your legal and security documents into actionable compliance reports. Our AI Auditor finds gaps in <span className="text-white font-semibold underline decoration-blue-500/50 decoration-2 underline-offset-4">GDPR, HIPAA, and SOC 2</span> instantly.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300">
+            <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300 w-full sm:w-auto px-4">
               <SignUpButton mode="modal">
-                <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 text-lg">
+                <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.03] active:scale-98 transition-all duration-300 text-base">
                   Start Free Trial
                 </button>
               </SignUpButton>
               <button 
                 onClick={() => setPublicView('demo')}
-                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-2"
+                className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full border border-white/10 hover:border-white/20 hover:scale-[1.03] active:scale-98 transition-all duration-300 text-base flex items-center justify-center gap-2 backdrop-blur-sm"
               >
                 <span>⚡</span> Run Interactive Demo
               </button>
@@ -207,21 +209,30 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+      <section className="py-24 bg-slate-950 border-t border-white/5 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 to-transparent pointer-events-none"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-b from-white to-slate-200 bg-clip-text text-transparent mb-4">
+              Engineered for speed, security, and precision
+            </h2>
+            <p className="text-slate-400">
+              Simplify audits, reduce manual reviews, and maintain continuous compliance monitoring.
+            </p>
+          </div>
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
-              icon={<ZapIcon className="w-7 h-7 text-accent" />}
+              icon={<ZapIcon className="w-6 h-6 text-blue-500" />}
               title="Instant Gap Analysis"
               description="Upload your policy and get a detailed breakdown of missing clauses and risks in real-time."
             />
             <FeatureCard
-              icon={<ScaleIcon className="w-7 h-7 text-accent" />}
+              icon={<ScaleIcon className="w-6 h-6 text-indigo-500" />}
               title="Global Frameworks"
               description="Full support for GDPR, HIPAA, SOC 2, ISO 27001, and custom enterprise checklists."
             />
             <FeatureCard
-              icon={<BriefcaseIcon className="w-7 h-7 text-accent" />}
+              icon={<BriefcaseIcon className="w-6 h-6 text-purple-500" />}
               title="Auto-Remediation"
               description="Get AI-generated legal clause suggestions to fix compliance gaps immediately."
             />
@@ -284,12 +295,12 @@ const LandingPage: React.FC = () => {
 };
 
 const FeatureCard: React.FC<{icon: React.ReactNode, title: string, description: string}> = ({icon, title, description}) => (
-    <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200">
-        <div className="flex items-center justify-center h-12 w-12 bg-blue-100 rounded-xl mb-6">
+    <div className="bg-slate-900/40 backdrop-blur-md p-8 rounded-2xl border border-white/5 hover:border-white/10 hover:shadow-2xl hover:shadow-blue-500/[0.02] hover:-translate-y-1 transition-all duration-300 text-left">
+        <div className="flex items-center justify-center h-12 w-12 bg-white/[0.03] border border-white/10 rounded-xl mb-6 shadow-inner">
             {icon}
         </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-        <p className="text-slate-600 leading-relaxed">{description}</p>
+        <h3 className="text-lg font-bold text-white mb-2 tracking-tight">{title}</h3>
+        <p className="text-slate-400 leading-relaxed text-sm">{description}</p>
     </div>
 );
 

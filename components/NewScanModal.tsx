@@ -199,52 +199,74 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg m-4">
-        <h2 className="text-2xl font-bold mb-4 text-slate-900">Start New Compliance Scan</h2>
+    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-2xl p-8 w-full max-w-xl transform scale-100 transition-all duration-300">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Start Compliance Scan</h2>
+          <button 
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Regulatory Framework</label>
-            <select
-              value={frameworkId}
-              onChange={(e) => setFrameworkId(e.target.value)}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-accent focus:border-accent sm:text-sm rounded-md"
-              disabled={frameworks.length === 0}
-            >
-              {frameworks.length === 0 ? (
-                <option>Loading frameworks...</option>
-              ) : (
-                frameworks.map(fw => (
-                  <option key={fw.id} value={fw.id}>{fw.name}</option>
-                ))
-              )}
-            </select>
+            <label className="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">Regulatory Framework</label>
+            <div className="relative">
+              <select
+                value={frameworkId}
+                onChange={(e) => setFrameworkId(e.target.value)}
+                className="block w-full pl-4 pr-10 py-3 text-sm font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+                disabled={frameworks.length === 0}
+              >
+                {frameworks.length === 0 ? (
+                  <option>Loading frameworks...</option>
+                ) : (
+                  frameworks.map(fw => (
+                    <option key={fw.id} value={fw.id}>🛡️ {fw.name}</option>
+                  ))
+                )}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
 
           {/* Input Type Selection */}
-          <div className="flex p-0.5 mb-4 rounded-lg bg-slate-100 border border-slate-200">
-            <button
-              onClick={() => setInputType('file')}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                inputType === 'file' 
-                  ? 'bg-white text-accent shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Upload Files
-            </button>
-            <button
-              id="btn-paste-text"
-              onClick={() => setInputType('text')}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                inputType === 'text' 
-                  ? 'bg-white text-accent shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Paste Text
-            </button>
+          <div>
+            <label className="block text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">Source Type</label>
+            <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200/60 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setInputType('file')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  inputType === 'file' 
+                    ? 'bg-white text-slate-800 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Upload Policy Documents
+              </button>
+              <button
+                id="btn-paste-text"
+                type="button"
+                onClick={() => setInputType('text')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  inputType === 'text' 
+                    ? 'bg-white text-slate-800 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Paste Direct Text
+              </button>
+            </div>
           </div>
 
           <div>
@@ -253,36 +275,36 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-all duration-300 ${
+                className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl transition-all duration-300 ${
                   isDragging 
-                    ? "border-accent bg-accent/10 scale-[1.02] shadow-lg shadow-accent/20" 
-                    : "border-gray-300 hover:border-accent/50 hover:bg-gray-50"
+                    ? "border-blue-600 bg-blue-50/50 scale-[1.01]" 
+                    : "border-slate-200 hover:border-blue-400 hover:bg-slate-50/50"
                 }`}
               >
                 <div className="space-y-4 text-center w-full">
-                  <div className={`mx-auto h-20 w-20 mb-2 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg ${isDragging ? "bg-accent text-white scale-110 rotate-3" : "bg-slate-100 text-slate-400"}`}>
-                    <FileIcon className="h-10 w-10" />
+                  <div className={`mx-auto h-14 w-14 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm ${isDragging ? "bg-blue-600 text-white scale-110" : "bg-slate-100 text-slate-400"}`}>
+                    <FileIcon className="h-7 w-7" />
                   </div>
                   
-                  <div className="flex flex-col items-center justify-center space-y-3">
-                    <h3 className="text-lg font-bold text-slate-800">Upload Policy Documents</h3>
-                    <p className="text-sm text-slate-500 max-w-[280px]">Drag & drop your files/folders here or choose from your computer</p>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-slate-800">Add documents for review</h3>
+                    <p className="text-xs text-slate-400 max-w-[280px] mx-auto leading-relaxed">Drag and drop folder or files here, or choose below</p>
                     
-                    <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-                      <label htmlFor="file-upload" className="cursor-pointer bg-white border-2 border-accent text-accent px-5 py-2 rounded-full font-bold text-sm hover:bg-accent hover:text-white transition-all shadow-sm active:scale-95">
-                        <span>Select Individual Files</span>
+                    <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
+                      <label htmlFor="file-upload" className="cursor-pointer bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-slate-50 shadow-sm active:scale-95 transition-all">
+                        <span>Choose Files</span>
                         <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} multiple accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                       </label>
                       
                       <button 
                         type="button"
                         onClick={() => folderInputRef.current?.click()}
-                        className="bg-slate-800 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-slate-900 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
-                        Upload a Folder
+                        Upload Folder
                       </button>
                       <input 
                         type="file" 
@@ -295,7 +317,7 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-2">
+                  <div className="flex items-center justify-center gap-3 text-[9px] text-slate-400 font-extrabold uppercase tracking-widest pt-2">
                     <span>PDF</span>
                     <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
                     <span>WORD</span>
@@ -305,38 +327,38 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                 </div>
 
                 {files.length > 0 && (
-                  <div className="mt-6 w-full bg-gray-50 rounded-lg p-4 border border-gray-100 max-h-40 overflow-y-auto custom-scrollbar">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <div className="mt-6 w-full bg-slate-50/50 rounded-xl p-4 border border-slate-100 max-h-40 overflow-y-auto custom-scrollbar">
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         {selectedFolderName ? selectedFolderName : "Selected Files"}
                       </span>
-                      <span className="text-xs text-accent font-medium">{files.length} items detected</span>
+                      <span className="text-[10px] text-blue-600 font-extrabold">{files.length} items</span>
                     </div>
-                    <ul className="space-y-1">
+                    <ul className="space-y-1.5">
                       {files.slice(0, 5).map((f, i) => (
-                        <li key={i} className="text-xs text-gray-600 flex items-center gap-2 truncate">
-                          <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-                          {f.name}
+                        <li key={i} className="text-xs text-slate-600 flex items-center gap-2 truncate">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500/40" />
+                          <span className="font-medium truncate">{f.name}</span>
                         </li>
                       ))}
                       {files.length > 5 && (
-                        <li className="text-xs text-gray-400 italic pl-3">...and {files.length - 5} more files</li>
+                        <li className="text-xs text-slate-400 italic pl-3">...and {files.length - 5} more files</li>
                       )}
                     </ul>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="mt-1">
+              <div className="space-y-1">
                 <textarea
                   id="textarea-manual-text"
                   value={manualText}
                   onChange={(e) => setManualText(e.target.value)}
-                  placeholder="Paste context of your policy document here (e.g. 'We keep data forever')..."
-                  className="w-full h-48 p-4 text-sm border border-gray-300 rounded-xl focus:ring-accent focus:border-accent resize-none placeholder:text-slate-400"
+                  placeholder="Paste context of your policy document here (e.g. 'We keep customer data forever')..."
+                  className="w-full h-48 p-4 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none placeholder:text-slate-400 font-medium"
                 />
-                <p className="mt-2 text-[10px] text-slate-400 italic">
-                  Tip: Direct text input is useful for quick spot-checks.
+                <p className="text-[10px] text-slate-400 italic">
+                  Best suited for quick compliance spot-checks or single sections.
                 </p>
               </div>
             )}
@@ -344,12 +366,13 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
         </div>
 
         {error && (
-          <div className={`mt-4 text-sm ${error.includes("limit") ? "bg-red-50 p-3 rounded border border-red-200" : ""}`}>
-            <p className="text-red-600">{error}</p>
+          <div className={`mt-4 text-xs font-semibold ${error.includes("limit") ? "bg-red-50 p-4 rounded-xl border border-red-200 text-red-700" : "text-red-600"}`}>
+            <p>{error}</p>
             {error.includes("limit") && onUpgrade && (
               <button
+                type="button"
                 onClick={onUpgrade}
-                className="mt-2 text-accent font-medium hover:underline flex items-center"
+                className="mt-2 text-blue-600 font-bold hover:underline flex items-center"
               >
                 View Upgrade Options &rarr;
               </button>
@@ -357,27 +380,27 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
           </div>
         )}
 
-        <div className="mt-8 flex justify-end gap-4">
+        <div className="mt-8 flex justify-end gap-3.5">
           <button
             onClick={onClose}
             type="button"
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all"
           >
             Cancel
           </button>
-            <button
+          <button
             onClick={handleStartScan}
             type="button"
             disabled={(inputType === 'file' ? files.length === 0 : !manualText.trim()) || !frameworkId || isProcessing}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center min-w-[120px] justify-center"
+            className="px-6 py-2.5 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-98 transition-all flex items-center min-w-[120px] justify-center gap-2"
           >
             {isProcessing ? (
               <>
                 <Spinner />
-                <span>Starting...</span>
+                <span>Processing...</span>
               </>
             ) : (
-              'Start Scan'
+              'Start Audit'
             )}
           </button>
         </div>
