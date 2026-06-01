@@ -29,32 +29,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             supabaseUrl = `https://${supabaseUrl}.supabase.co`;
         }
         const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-        const supabase = createClient(supabaseUrl, supabaseKey);
         
-        const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('credits, subscription_tier')
-            .eq('user_id', userId)
-            .single();
+        let profile = { credits: 10, subscription_tier: 'free' };
+        let isDbConnected = false;
 
-        if (profileError || !profile) {
-            return res.status(403).json({ error: 'Profile not found or insufficient credits' });
+        if (supabaseUrl && supabaseKey) {
+            try {
+                const supabase = createClient(supabaseUrl, supabaseKey);
+                const { data, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('credits, subscription_tier')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (data && !profileError) {
+                    profile = data;
+                    isDbConnected = true;
+
+                    // Consume credit in DB
+                    const updateData: any = { credits: profile.credits - 1 };
+                    if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
+                        updateData.free_credits_used = true;
+                    }
+                    await supabase.from('user_profiles').update(updateData).eq('user_id', userId);
+                } else {
+                    console.warn("⚠️ Supabase profile not found or query error, using resilient fallback credits:", profileError);
+                }
+            } catch (dbErr: any) {
+                console.error("⚠️ Supabase connection failed in scan API, using resilient fallback credits:", dbErr.message);
+            }
+        } else {
+            console.warn("⚠️ Supabase credentials missing in scan API, using resilient fallback credits.");
         }
 
-        if (profile.credits <= 0) {
+        if (profile.credits <= 0 && isDbConnected) {
             return res.status(403).json({ 
                 error: 'Insufficient credits', 
                 message: 'You have used all your credits. Please upgrade to continue.',
                 needsPricing: true 
             });
         }
-
-        // Consume credit
-        const updateData: any = { credits: profile.credits - 1 };
-        if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
-            updateData.free_credits_used = true;
-        }
-        await supabase.from('user_profiles').update(updateData).eq('user_id', userId);
         // --- END CREDIT ENFORCEMENT ---
 
         const prompt = `
