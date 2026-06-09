@@ -21,6 +21,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       VITE_RAZORPAY_KEY_ID: !!process.env.VITE_RAZORPAY_KEY_ID,
       VITE_PAYPAL_CLIENT_ID: !!process.env.VITE_PAYPAL_CLIENT_ID,
       VITE_SUPABASE_URL: (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').substring(0, 15) + '...',
+      VITE_SUPABASE_ANON_KEY: (process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '').substring(0, 15) + '...',
     }
   })
 }
