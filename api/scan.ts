@@ -32,14 +32,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         let profile = { credits: 10, subscription_tier: 'free' };
         let isDbConnected = false;
-        let dbDiagnostics: any = {
-            urlChecked: supabaseUrl,
-            keyLength: supabaseKey ? supabaseKey.length : 0,
-            profileFetched: false,
-            profileError: null,
-            updateStatus: null,
-            insertStatus: null
-        };
 
         if (supabaseUrl && supabaseKey) {
             try {
@@ -53,25 +45,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (data && !profileError) {
                     profile = data;
                     isDbConnected = true;
-                    dbDiagnostics.profileFetched = true;
 
                     // Consume credit in DB
                     const updateData: any = { credits: profile.credits - 1 };
                     if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
                         updateData.free_credits_used = true;
                     }
-                    const { error: updateError } = await supabase.from('user_profiles').update(updateData).eq('user_id', userId);
-                    dbDiagnostics.updateStatus = updateError ? { message: updateError.message, details: updateError.details, code: updateError.code } : 'success';
+                    await supabase.from('user_profiles').update(updateData).eq('user_id', userId);
                 } else {
-                    dbDiagnostics.profileError = profileError ? { message: profileError.message, details: profileError.details, code: profileError.code } : 'no profile data found';
                     console.warn("⚠️ Supabase profile not found or query error, using resilient fallback credits:", profileError);
                 }
             } catch (dbErr: any) {
-                dbDiagnostics.profileError = { exception: dbErr.message };
                 console.error("⚠️ Supabase connection failed in scan API, using resilient fallback credits:", dbErr.message);
             }
         } else {
-            dbDiagnostics.profileError = 'missing credentials';
             console.warn("⚠️ Supabase credentials missing in scan API, using resilient fallback credits.");
         }
 
@@ -103,8 +90,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             parts.push({ inlineData: { data: base64File, mimeType } });
         }
 
-        
-        
         const response = await callGeminiWithRotation(parts);
         const jsonResult = JSON.parse(response.text());
         const findings = jsonResult.findings || [];
@@ -115,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (supabaseUrl && supabaseKey) {
             try {
                 const supabase = createClient(supabaseUrl, supabaseKey);
-                const { error: insertErr } = await supabase.from('scan_jobs').insert([{
+                await supabase.from('scan_jobs').insert([{
                     user_id: userId,
                     framework,
                     status: 'completed',
@@ -124,9 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     file_url: fileName || null,
                     user_email: email || null
                 }]);
-                dbDiagnostics.insertStatus = insertErr ? { message: insertErr.message, details: insertErr.details, code: insertErr.code } : 'success';
             } catch (dbErr: any) {
-                dbDiagnostics.insertStatus = { exception: dbErr.message };
                 console.error('[DB Error] Non-fatal:', dbErr.message);
             }
         }
@@ -138,8 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: 'completed',
             result: findings,
             score,
-            created_at: new Date().toISOString(),
-            dbDiagnostics
+            created_at: new Date().toISOString()
         });
 
     } catch (error: any) {
@@ -151,8 +133,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
     }
 }
-
-
-
-
-
