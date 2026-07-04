@@ -1,3 +1,4 @@
+// Secure health check endpoint - strictly boolean and numeric returns only
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
