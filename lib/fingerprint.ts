@@ -19,7 +19,7 @@ export class FingerprintService {
       window.screen.width + 'x' + window.screen.height,
       window.screen.colorDepth,
       navigator.hardwareConcurrency,
-      navigator.deviceMemory,
+      (navigator as any).deviceMemory,
     ];
     
     const str = parts.join('|');

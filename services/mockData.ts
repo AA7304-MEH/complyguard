@@ -10,6 +10,8 @@ export const mockAppUser: User = {
   subscription_status: SubscriptionStatus.Active,
   documents_scanned_this_month: 3,
   scan_limit_this_month: 5,
+  credits: 5,
+  free_credits_used: false,
   subscription_start_date: new Date('2024-01-01'),
   subscription_end_date: new Date('2024-12-31'),
 };

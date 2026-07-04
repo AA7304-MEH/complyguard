@@ -5,6 +5,10 @@ import ComplianceGauge from './ComplianceGauge';
 import { ClockIcon } from './icons/ClockIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
+import RemediationProgress from './RemediationProgress';
+import ComplianceTrendChart from './ComplianceTrendChart';
+import ComplianceHeatmap from './ComplianceHeatmap';
+import WhiteLabelSettings from './WhiteLabelSettings';
 
 interface DashboardProps {
   user: User;
@@ -181,6 +185,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
             </div>
         </div>
+
+        {/* Enterprise Platform Features */}
+        <RemediationProgress scans={scans} onRescan={(scan) => { setIsModalOpen(true); }} />
+        <ComplianceTrendChart scans={scans} />
+        <ComplianceHeatmap scans={scans} />
+        <WhiteLabelSettings userId={user.id} initialCompanyName={user.company_name} initialLogoUrl={user.company_logo_url} />
 
         {/* Scan History */}
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">

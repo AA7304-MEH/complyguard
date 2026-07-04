@@ -52,6 +52,7 @@ export interface User {
   id: string;
   email: string;
   company_name: string;
+  company_logo_url?: string;
   subscription_tier: SubscriptionTier;
   subscription_status: SubscriptionStatus;
   documents_scanned_this_month: number;
@@ -92,6 +93,13 @@ export interface AuditFinding {
   suggestion?: string;
   clause?: string;
   status?: any;
+  evidence?: Evidence[];
+  remediation_status?: EvidenceStatus;
+  justification?: string;
+  assigned_to?: string;
+  comments?: Comment[];
+  severity_override?: SeverityOverride;
+  audit_trail?: AuditTrailEntry[];
 }
 
 export interface AuditScan {
@@ -277,3 +285,57 @@ export interface APIKey {
   created_at: Date;
   expires_at?: Date;
 }
+
+// Enterprise Compliance Platform Types
+export type EvidenceType = 'certificate' | 'screenshot' | 'policy_doc' | 'audit_log' | 'penetration_test' | 'third_party_assessment';
+export type EvidenceStatus = 'pending_review' | 'accepted' | 'rejected' | 'accepted_risk';
+
+export interface Evidence {
+  id: string;
+  scan_id: string;
+  finding_id: string;
+  user_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  evidence_type: EvidenceType;
+  description: string;
+  uploaded_at: string | Date;
+  expiry_date?: string | Date;
+  status: EvidenceStatus;
+  reviewer_notes?: string;
+  justification?: string;
+}
+
+export interface Comment {
+  id: string;
+  finding_id: string;
+  scan_id: string;
+  user_id: string;
+  user_email?: string;
+  comment_text: string;
+  created_at: string | Date;
+}
+
+export interface SeverityOverride {
+  id: string;
+  finding_id: string;
+  scan_id: string;
+  user_id: string;
+  user_email?: string;
+  old_severity: string;
+  new_severity: string;
+  justification: string;
+  created_at: string | Date;
+}
+
+export interface AuditTrailEntry {
+  id: string;
+  scan_id: string;
+  finding_id?: string;
+  user_id: string;
+  user_email?: string;
+  action: string;
+  details?: string;
+  created_at: string | Date;
+}
