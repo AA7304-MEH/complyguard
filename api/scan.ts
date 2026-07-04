@@ -74,7 +74,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const prompt = `
             You are a compliance auditor. Analyze the document against ${framework}.
             Checklist: ${checklist}
+            For every finding, you MUST cite the specific regulatory article or control number. 
+            For GDPR: cite "GDPR Article X" 
+            For SOC2: cite "SOC2 Trust Service Criteria CC X.X"
+            For HIPAA: cite "HIPAA § 164.XXX"
+            For ISO27001: cite "ISO 27001 Annex A X.X"
+            Include the citation in the finding title like: "Data Breach Notification (GDPR Article 33)".
+            Scoring rules:
+            - Start at 100
+            - Deduct 20 points per CRITICAL finding
+            - Deduct 10 points per HIGH finding  
+            - Deduct 5 points per MEDIUM finding
+            - Add back 5 points for each control that IS documented and present
+            - Minimum score is 0, maximum is 100
+            - A document with strong encryption, MFA, and access controls should score at least 40+ even with other gaps
             Return JSON with a 'findings' array. Each finding must have 'requirement', 'description', 'severity', and 'remediation'.
+            Also return a 'score' field in the JSON with the final computed score.
         `;
 
         const parts: any[] = [{ text: prompt }];
@@ -94,8 +109,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const jsonResult = JSON.parse(response.text());
         const findings = jsonResult.findings || [];
 
-        const deductions: Record<string, number> = { Critical: 25, High: 15, Medium: 7, Low: 2 };
-        const score = Math.max(0, 100 - findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 5), 0));
+        let score = jsonResult.score;
+        if (typeof score !== 'number') {
+            const deductions: Record<string, number> = { Critical: 20, High: 10, Medium: 5, Low: 0 };
+            score = Math.max(0, 100 - findings.reduce((acc: number, f: any) => acc + (deductions[f.severity] || 0), 0));
+        }
 
         if (supabaseUrl && supabaseKey) {
             try {

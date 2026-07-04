@@ -32,7 +32,13 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 
 const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
     // findings from scan.result
-    const findings = Array.isArray(scan.result) ? scan.result : (scan.result as any)?.findings || [];
+    const rawFindings = Array.isArray(scan.result) ? scan.result : (scan.result as any)?.findings || [];
+    const findings = rawFindings.filter((f: any) => 
+        f.severity !== 'NONE' && 
+        f.remediation !== 'N/A' &&
+        f.observation?.toLowerCase() !== 'n/a' &&
+        f.description?.toLowerCase() !== 'n/a'
+    );
     
     const criticalCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'critical').length;
     const highCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'high').length;
@@ -41,6 +47,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
     const lowCount = findings.filter((f: any) => f.severity?.toLowerCase() === 'low').length;
 
     const [isDownloading, setIsDownloading] = React.useState(false);
+    const [isGenerated, setIsGenerated] = React.useState(false);
 
     const handleDownload = async () => {
         const element = document.getElementById('report-container');
@@ -78,6 +85,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                 .from(element)
                 .save();
 
+            setIsGenerated(true);
             console.log("PDF download triggered for:", fileName);
         } catch (err) {
             console.error("PDF Download Error:", err);
@@ -153,13 +161,18 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={handleDownload}
-                        disabled={isDownloading}
-                        className={`px-6 py-2 bg-accent text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-accent/20 ${isDownloading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-accent/90'}`}
+                        disabled={isDownloading || isGenerated}
+                        className={`px-6 py-2 bg-accent text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-accent/20 ${(isDownloading || isGenerated) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-accent/90'}`}
                     >
                         {isDownloading ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 Generating...
+                            </>
+                        ) : isGenerated ? (
+                            <>
+                                <ShieldCheckIcon className="w-4 h-4" />
+                                Generated ✓
                             </>
                         ) : (
                             <>
