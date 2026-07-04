@@ -12,6 +12,7 @@ import FunctionalPaymentFlow from '../components/FunctionalPaymentFlow';
 import ScrollToTop from '../components/ScrollToTop';
 import Header from '../components/Header';
 import SuccessNotification from '../components/common/SuccessNotification';
+import NewScanModal from '../components/NewScanModal';
 
 console.log("📍 App.tsx: Module Evaluation Started");
 
@@ -246,6 +247,15 @@ const MainApp: React.FC = () => {
           title={successMessage.title}
           message={successMessage.message}
           onClose={() => setShowSuccessNotification(false)}
+        />
+      )}
+
+      {/* Render modal globally for other views so Header 'New Scan' works */}
+      {view !== 'dashboard' && isModalOpen && (
+        <NewScanModal 
+            onClose={() => setIsModalOpen(false)} 
+            onScanStart={onScanStarted} 
+            onUpgrade={() => { setIsModalOpen(false); setView('pricing'); }} 
         />
       )}
     </div>
