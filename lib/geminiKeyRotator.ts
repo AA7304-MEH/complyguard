@@ -23,13 +23,11 @@ export function rotateKey(): string {
 export async function callGeminiWithRotation(parts: string | any[], customConfig?: any): Promise<any> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   
-  // Try models in order of capability. If a model fails on ALL keys, move to next model.
+  // Only use currently-supported models (gemini-1.5 is deprecated/removed from v1beta)
   const MODELS_TO_TRY = [
-    "models/gemini-2.5-flash",
-    "models/gemini-2.0-flash",
-    "models/gemini-2.0-flash-lite",
-    "models/gemini-1.5-flash",
-    "models/gemini-1.5-pro"
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash-lite",
   ];
 
   let lastError;
@@ -53,28 +51,36 @@ export async function callGeminiWithRotation(parts: string | any[], customConfig
         const promptParts = typeof parts === 'string' ? [{ text: parts }] : parts;
         const result = await model.generateContent(promptParts);
         const response = await result.response;
+        console.log(`✅ Gemini success: model=${modelName}, key=${currentKeyIndex + 1}`);
         return response;
       } catch (error: any) {
         lastError = error;
         const status = error?.status || error?.code;
         const msg = error?.message?.toLowerCase() || '';
 
-        // If it's a 404 (model not found), don't waste time on other keys for this model
-        if (status === 404 || msg.includes('not found') || msg.includes('unsupported')) {
-            console.warn(`Model ${modelName} not supported for key ${currentKeyIndex + 1}. Trying next model...`);
-            break; // Skip to next model
+        // If it's a 404 or model not found, move to next model immediately
+        if (status === 404 || msg.includes('not found') || msg.includes('unsupported') || msg.includes('deprecated')) {
+            console.warn(`⚠️ Model ${modelName} not available (${status}). Trying next model...`);
+            break;
         }
 
-        // If rate limited or service unavailable, try the NEXT KEY for the SAME model
-        if (status === 429 || status === 503 || msg.includes('quota') || msg.includes('demand') || msg.includes('limit')) {
-          console.warn(`Key ${currentKeyIndex + 1} failed for ${modelName} (${status}). Rotating key...`);
-          if (status === 503) await new Promise(r => setTimeout(r, 1000)); // Small pause for 503
+        // If API key is invalid, rotate to next key
+        if (status === 400 || msg.includes('api_key_invalid') || msg.includes('api key not valid')) {
+          console.warn(`⚠️ Key ${currentKeyIndex + 1} is invalid. Rotating...`);
           rotateKey();
-          continue; // Try next key for this model
+          continue;
+        }
+
+        // If rate limited or service unavailable, rotate key and retry same model
+        if (status === 429 || status === 503 || msg.includes('quota') || msg.includes('limit')) {
+          console.warn(`⚠️ Key ${currentKeyIndex + 1} rate-limited for ${modelName}. Rotating key...`);
+          if (status === 503) await new Promise(r => setTimeout(r, 1000));
+          rotateKey();
+          continue;
         }
 
         // For other errors, log and try next key
-        console.warn(`Error with key ${currentKeyIndex + 1} and model ${modelName}: ${error.message}`);
+        console.warn(`⚠️ Error with key ${currentKeyIndex + 1} and model ${modelName}: ${error.message}`);
         rotateKey();
       }
     }
