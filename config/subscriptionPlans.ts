@@ -37,8 +37,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Email notifications'
     ],
     scan_limit: 50,
-    price_monthly_usd: 29,
-    price_yearly_usd: 290, // 2 months free
+    price_monthly_usd: 9,
+    price_yearly_usd: 84, // 2 months free ($7/month)
     price_monthly_inr: 2400,
     price_yearly_inr: 24000,
     razorpay_plan_id_monthly: 'plan_NkYGNJhqJvGvNu', // Replace with your actual Razorpay plan ID
@@ -67,8 +67,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Export automation'
     ],
     scan_limit: 200,
-    price_monthly_usd: 99,
-    price_yearly_usd: 990, // 2 months free
+    price_monthly_usd: 29,
+    price_yearly_usd: 276, // 2 months free ($23/month)
     price_monthly_inr: 8200,
     price_yearly_inr: 82000,
     razorpay_plan_id_monthly: 'plan_NkYGNJhqJvGvNw', // Replace with your actual Razorpay plan ID
@@ -100,8 +100,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       '24/7 phone support'
     ],
     scan_limit: -1, // Unlimited
-    price_monthly_usd: 499,
-    price_yearly_usd: 4990, // 2 months free
+    price_monthly_usd: 99,
+    price_yearly_usd: 948, // 2 months free ($79/month)
     price_monthly_inr: 41500,
     price_yearly_inr: 415000,
     is_enterprise: true,

@@ -1,6 +1,6 @@
 const https = require('https');
 
-const clientId = 'AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R';
+const clientId = 'ARp7Y4KJgzLuGxIqW-4QO2tbATQv7i_C6Lsm5yP_zemnIdsMTvpDNGhXjixspuAQZE7fCw3KLhztIzhf';
 const url = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
 
 console.log('Checking PayPal SDK availability for Client ID...');

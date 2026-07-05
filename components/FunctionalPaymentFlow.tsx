@@ -47,7 +47,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const [isDetecting, setIsDetecting] = React.useState(true);
   const [paypalButtonsRendered, setPaypalButtonsRendered] = React.useState(false);
 
-  // Always use Razorpay for instant loading - detect location for display only
+  // Geo-detection to select correct payment provider strictly (Razorpay for India, PayPal for International)
   React.useEffect(() => {
     const detectProvider = async () => {
       setIsDetecting(true);
@@ -55,18 +55,26 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
         const location = await PaymentService.getUserLocation();
         setDetectedLocation(location);
         
-        // IMPORTANT: Hide PayPal for Indian users due to RBI restrictions on domestic USD payments
-        if (location === 'IN') {
+        const isIndian = location === 'IN' || (location !== 'US' && PaymentService.detectPaymentProvider(location) === PaymentProvider.Razorpay);
+        if (isIndian) {
           setShowPayPalOption(false);
           setPaymentProvider(PaymentProvider.Razorpay);
-          console.log('🇮🇳 Indian user detected: Hiding PayPal to prevent regional cancellation errors');
+          console.log('🇮🇳 Indian user detected: Only showing Razorpay');
         } else {
-          // International users can use both, but still default to Razorpay for instant loading
-          setPaymentProvider(PaymentProvider.Razorpay);
+          setShowPayPalOption(false); // Hide switch toggle
+          setPaymentProvider(PaymentProvider.PayPal);
+          console.log('🌍 International user detected: Only showing PayPal');
         }
       } catch (error) {
         setDetectedLocation('Unknown');
-        setPaymentProvider(PaymentProvider.Razorpay);
+        const isIndian = PaymentService.detectPaymentProvider() === PaymentProvider.Razorpay;
+        if (isIndian) {
+          setShowPayPalOption(false);
+          setPaymentProvider(PaymentProvider.Razorpay);
+        } else {
+          setShowPayPalOption(false);
+          setPaymentProvider(PaymentProvider.PayPal);
+        }
       } finally {
         setIsDetecting(false);
       }
@@ -519,87 +527,52 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
             </div>
           )}
 
-          {/* Payment Method Selection - Razorpay Prominent */}
+          {/* Payment Method Selection */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Payment Method</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Method</h3>
 
-            {/* Razorpay - Primary Option (Instant) */}
-            <button
-              onClick={() => setPaymentProvider(PaymentProvider.Razorpay)}
-              disabled={isProcessing}
-              className={`w-full p-5 rounded-xl border-3 transition-all duration-200 mb-4 relative ${paymentProvider === PaymentProvider.Razorpay
-                  ? 'border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg scale-105'
-                  : 'border-green-300 bg-green-50 hover:shadow-md hover:scale-102'
-                } disabled:opacity-50`}
-            >
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
-                  ⚡ INSTANT - RECOMMENDED
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">🇮🇳</div>
-                  <div className="text-left">
-                    <div className="font-bold text-gray-900 text-lg">Razorpay</div>
-                    <div className="text-sm text-gray-700 mt-1">
-                      💳 All Cards • 📱 UPI • 💰 Wallets • 🏦 Net Banking
-                    </div>
-                    <div className="text-xs text-green-700 font-semibold mt-1">
-                      ✅ Loads instantly • No waiting
-                    </div>
-                  </div>
+            {paymentProvider === PaymentProvider.Razorpay ? (
+              <div
+                className="w-full p-5 rounded-xl border-3 border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md relative"
+              >
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-green-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
+                    ⚡ SECURE PAYMENT
+                  </span>
                 </div>
-                {paymentProvider === PaymentProvider.Razorpay && (
-                  <div className="text-green-600">
-                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            </button>
-
-            {/* PayPal - Secondary Option (Show More) */}
-            {!showPayPalOption ? (
-              <button
-                onClick={() => setShowPayPalOption(true)}
-                className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all text-sm"
-              >
-                <span className="font-medium">+ Show PayPal Option</span>
-                <span className="text-xs ml-2">(May take 1-2 seconds to load)</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setPaymentProvider(PaymentProvider.PayPal)}
-                disabled={isProcessing}
-                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${paymentProvider === PaymentProvider.PayPal
-                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                    : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50'
-                  } disabled:opacity-50`}
-              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-3xl">💳</div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-4xl">🇮🇳</div>
                     <div className="text-left">
-                      <div className="font-semibold text-gray-900">Cards & PayPal</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        No account needed • All cards accepted
-                      </div>
-                      <div className="text-xs text-yellow-700 mt-1">
-                        ⚠️ May take 1-2 seconds to load
+                      <div className="font-bold text-gray-900 text-lg">Razorpay</div>
+                      <div className="text-sm text-gray-700 mt-1">
+                        💳 All Cards • 📱 UPI • 💰 Wallets • 🏦 Net Banking
                       </div>
                     </div>
                   </div>
-                  {paymentProvider === PaymentProvider.PayPal && (
-                    <div className="text-blue-600">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
                 </div>
-              </button>
+              </div>
+            ) : (
+              <div
+                className="w-full p-5 rounded-xl border-3 border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md relative"
+              >
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
+                    🌍 SECURE PAYPAL SDK
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-4xl">💳</div>
+                    <div className="text-left">
+                      <div className="font-bold text-gray-900 text-lg">PayPal & Cards</div>
+                      <div className="text-sm text-gray-700 mt-1">
+                        No account needed • All credit & debit cards accepted
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
