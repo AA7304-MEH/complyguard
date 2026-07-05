@@ -171,17 +171,12 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="border-t border-slate-100 pt-6">
                     <div className="flex items-baseline">
                       <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                        {formatPrice(plan)}
+                        {plan.tier === 'free' ? 'Free' : `${formatPrice(plan)}/month`}
                       </span>
-                      {plan.tier !== 'free' && (
-                        <span className="text-slate-400 text-sm ml-1">
-                          /month
-                        </span>
-                      )}
                     </div>
                     {plan.tier !== 'free' && (
                       <p className="text-[11px] text-slate-500 font-bold mt-1.5">
-                        (~${isYearly ? (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { annual: 0 }).annual : (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0 }).monthly} USD/mo &bull; Rate: 1 USD = ₹{exchangeRate.toFixed(2)})
+                        (~$${isYearly ? (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { annual: 0 }).annual : (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0 }).monthly} USD • Live rate: 1 USD = ₹{exchangeRate.toFixed(1)})
                       </p>
                     )}
                     {savings && (
