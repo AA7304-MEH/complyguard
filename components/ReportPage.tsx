@@ -437,14 +437,20 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                                 <div className="grid md:grid-cols-2 gap-8 mt-6">
                                     <div className="space-y-3">
                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Observations</h4>
-                                        <p className="text-slate-600 leading-relaxed text-sm bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <p 
+                                            className="text-slate-600 leading-relaxed text-sm bg-slate-50 p-4 rounded-xl border border-slate-100"
+                                            style={{ wordSpacing: 'normal', wordBreak: 'normal', whiteSpace: 'normal', letterSpacing: 'normal' }}
+                                        >
                                             {finding.description}
                                         </p>
                                     </div>
                                     <div className="space-y-3">
                                         <h4 className="text-xs font-bold text-accent uppercase tracking-widest">Remediation Guide</h4>
                                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-inner">
-                                            <p className="text-slate-700 text-sm mb-4 leading-relaxed font-medium">
+                                            <p 
+                                                className="text-slate-700 text-sm mb-4 leading-relaxed font-medium"
+                                                style={{ wordSpacing: 'normal', wordBreak: 'normal', whiteSpace: 'normal', letterSpacing: 'normal' }}
+                                            >
                                                 {finding.remediation}
                                             </p>
                                             <div className="flex flex-wrap items-center gap-2 no-print">

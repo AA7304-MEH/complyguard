@@ -149,6 +149,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(200).json({ success: true, evidence: evidenceItem, mode: 'fallback_db_error' });
                 }
 
+                // Insert into audit trail
+                const { error: atError } = await supabase.from('audit_trail').insert([{
+                    scan_id: scanId,
+                    finding_id: findingId,
+                    user_id: userId,
+                    action: 'EVIDENCE_UPLOADED',
+                    details: `Uploaded evidence: ${fileName} (${evidenceType}) - Expires: ${expiryDate || 'No expiry'}`
+                }]);
+                if (atError) console.warn("Audit trail insert failed:", atError.message);
+
                 return res.status(200).json({ success: true, evidence: data || evidenceItem, mode: 'supabase' });
             } catch (err: any) {
                 console.warn("⚠️ Evidence upload exception:", err.message);

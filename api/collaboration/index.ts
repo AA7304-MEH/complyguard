@@ -83,6 +83,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json({ success: true, comment: commentItem, mode: 'fallback_db_error' });
             }
 
+            // Insert into audit trail
+            const { error: atError } = await supabase.from('audit_trail').insert([{
+                scan_id: scanId,
+                finding_id: findingId,
+                user_id: userId || 'system',
+                action: 'COMMENT_ADDED',
+                details: `Added comment: "${commentText.substring(0, 100)}${commentText.length > 100 ? '...' : ''}"`
+            }]);
+            if (atError) console.warn("Audit trail comment log failed:", atError.message);
+
             return res.status(200).json({ success: true, comment: data || commentItem, mode: 'supabase' });
         } catch (err: any) {
             console.warn("⚠️ Comment upload exception:", err.message);
