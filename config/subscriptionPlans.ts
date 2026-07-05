@@ -36,7 +36,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'API access (5,000 requests/month)',
       'Email notifications'
     ],
-    scan_limit: 50,
+    scan_limit: 10,
     price_monthly_usd: 29,
     price_yearly_usd: 290, // 2 months free
     price_monthly_inr: 2400,
