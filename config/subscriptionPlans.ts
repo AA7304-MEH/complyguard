@@ -26,7 +26,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     tier: SubscriptionTier.Basic,
     description: 'Great for small teams and startups',
     features: [
-      '10 scan credits',
+      '50 scan credits',
       'All compliance frameworks',
       'Priority email support',
       'Advanced reporting & analytics',
@@ -36,7 +36,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'API access (5,000 requests/month)',
       'Email notifications'
     ],
-    scan_limit: 10,
+    scan_limit: 50,
     price_monthly_usd: 29,
     price_yearly_usd: 290, // 2 months free
     price_monthly_inr: 2400,
@@ -52,7 +52,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     tier: SubscriptionTier.Professional,
     description: 'Perfect for growing businesses',
     features: [
-      '50 scan credits',
+      '200 scan credits',
       'All compliance frameworks',
       'Priority support + phone',
       'Advanced analytics dashboard',
@@ -66,7 +66,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Real-time notifications',
       'Export automation'
     ],
-    scan_limit: 50,
+    scan_limit: 200,
     price_monthly_usd: 99,
     price_yearly_usd: 990, // 2 months free
     price_monthly_inr: 8200,
