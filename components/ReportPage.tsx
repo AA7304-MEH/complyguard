@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { AuditScan, AuditStatus, Evidence, Comment, SeverityOverride, AuditTrailEntry } from '../types';
+import { getScans } from '../services/apiClient';
 import ComplianceGauge from './ComplianceGauge';
 import RemediationBtn from './RemediationBtn';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
@@ -65,6 +66,35 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
     }>({ evidence: [], comments: [], overrides: [], audit_trail: [] });
 
     const [whiteLabel, setWhiteLabel] = React.useState<{ companyName: string; companyLogoUrl: string }>({ companyName: '', companyLogoUrl: '' });
+    const [previousScan, setPreviousScan] = React.useState<AuditScan | null>(null);
+
+    React.useEffect(() => {
+        const fetchPreviousScan = async () => {
+            if (user?.id && scan.id) {
+                try {
+                    const allScans = await getScans(user.id);
+                    const completedSameFramework = allScans.filter((s: AuditScan) => 
+                        s.framework === scan.framework &&
+                        s.status === AuditStatus.Completed &&
+                        s.id !== scan.id &&
+                        new Date(s.created_at).getTime() < new Date(scan.created_at).getTime()
+                    );
+                    
+                    if (completedSameFramework.length > 0) {
+                        completedSameFramework.sort((a: AuditScan, b: AuditScan) => 
+                            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                        );
+                        setPreviousScan(completedSameFramework[0]);
+                    } else {
+                        setPreviousScan(null);
+                    }
+                } catch (err) {
+                    console.warn("Failed to fetch previous scans for score improvement:", err);
+                }
+            }
+        };
+        fetchPreviousScan();
+    }, [scan.id, scan.framework, scan.created_at, user?.id]);
 
     const [activeUploadFindingId, setActiveUploadFindingId] = React.useState<string | null>(null);
     const [activeRiskFindingId, setActiveRiskFindingId] = React.useState<string | null>(null);
@@ -164,9 +194,39 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
         }
     };
 
+    const currentScore = scan.score;
+    const previousScore = previousScan ? previousScan.score : null;
+    
+    let improvementDisplay = 'First Scan';
+    let improvementColorClass = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    let improvementLabel = 'Improvement';
+    
+    if (previousScore !== null) {
+        const improvementValue = currentScore - previousScore;
+        if (improvementValue > 0) {
+            improvementDisplay = `+${improvementValue}%`;
+            improvementColorClass = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+        } else if (improvementValue < 0) {
+            improvementDisplay = `${improvementValue}%`;
+            improvementColorClass = 'text-red-700 bg-red-50 border-red-200';
+            improvementLabel = 'Decline';
+        } else {
+            improvementDisplay = 'No change';
+            improvementColorClass = 'text-slate-600 bg-slate-50 border-slate-200';
+        }
+    }
+
     return (
         <div id="report-container" className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 print:m-0 print:p-0">
             <style dangerouslySetInnerHTML={{ __html: `
+                .remediation-text, .observation-text {
+                    word-break: keep-all !important;
+                    word-spacing: 0.1em !important;
+                    white-space: normal !important;
+                    overflow-wrap: break-word !important;
+                    hyphens: none !important;
+                }
+
                 @media print {
                     @page { margin: 15mm; size: auto; }
                     body { 
@@ -306,11 +366,13 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                     </div>
                     <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-center">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Previous Score</p>
-                        <p className="text-4xl font-extrabold text-slate-500 mt-2">{Math.max(10, scan.score - 46)}%</p>
+                        <p className="text-4xl font-extrabold text-slate-500 mt-2">
+                            {previousScore !== null ? `${previousScore}%` : 'N/A'}
+                        </p>
                     </div>
-                    <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-200 text-center">
-                        <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Improvement</p>
-                        <p className="text-4xl font-extrabold text-emerald-700 mt-2">+46%</p>
+                    <div className={`p-5 rounded-2xl border text-center ${improvementColorClass}`}>
+                        <p className="text-xs font-bold uppercase tracking-wider">{improvementLabel}</p>
+                        <p className="text-4xl font-extrabold mt-2">{improvementDisplay}</p>
                     </div>
                     <div className="p-5 bg-blue-50 rounded-2xl border border-blue-200 text-center">
                         <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Remediated Findings</p>
@@ -469,20 +531,14 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                                 <div className="grid md:grid-cols-2 gap-8 mt-6">
                                     <div className="space-y-3">
                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Observations</h4>
-                                        <p 
-                                            className="text-slate-600 leading-relaxed text-sm bg-slate-50 p-4 rounded-xl border border-slate-100"
-                                            style={{ wordSpacing: 'normal', wordBreak: 'normal', whiteSpace: 'normal', letterSpacing: 'normal' }}
-                                        >
+                                        <p className="observation-text text-slate-600 leading-relaxed text-sm bg-slate-50 p-4 rounded-xl border border-slate-100">
                                             {finding.description}
                                         </p>
                                     </div>
                                     <div className="space-y-3">
                                         <h4 className="text-xs font-bold text-accent uppercase tracking-widest">Remediation Guide</h4>
                                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-inner">
-                                            <p 
-                                                className="text-slate-700 text-sm mb-4 leading-relaxed font-medium"
-                                                style={{ wordSpacing: 'normal', wordBreak: 'normal', whiteSpace: 'normal', letterSpacing: 'normal' }}
-                                            >
+                                            <p className="remediation-text text-slate-700 text-sm mb-4 leading-relaxed font-medium">
                                                 {finding.remediation}
                                             </p>
                                             <div className="flex flex-wrap items-center gap-2 no-print">
