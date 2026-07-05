@@ -120,15 +120,22 @@ const Dashboard: React.FC<DashboardProps> = ({
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Compliance Dashboard</h1>
             <p className="text-sm text-slate-500 mt-1">Welcome back, <span className="font-semibold text-slate-800">{user.company_name}</span>. Here is your overview.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <span className={`text-xs font-bold px-3 py-2.5 rounded-xl border ${
+              user.credits <= 0 
+                ? 'bg-red-50 border-red-200 text-red-700 font-extrabold animate-pulse' 
+                : 'bg-slate-100 border-slate-200 text-slate-600'
+            }`}>
+              {user.documents_scanned_this_month} / {user.scan_limit_this_month === 999999 ? 'Unlimited' : user.scan_limit_this_month} Scans Used
+            </span>
             <button
               onClick={() => setIsModalOpen(true)}
-              disabled={scansRemaining <= 0}
+              disabled={user.credits <= 0}
               className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-md text-white bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] active:scale-98 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200"
             >
               New Compliance Scan
             </button>
-            {user.subscription_tier === 'free' && (
+            {(user.subscription_tier === 'free' || user.credits <= 0) && (
               <button
                 onClick={onUpgrade}
                 className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-md text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 hover:scale-[1.02] active:scale-98 transition-all duration-200"
@@ -154,21 +161,30 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Tier</p>
                             <h3 className="text-xl font-bold text-slate-900">{user.subscription_tier.toUpperCase()} Plan</h3>
                         </div>
-                        <span className="px-3 py-1 bg-green-50 border border-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wider">Active</span>
+                        {user.credits <= 0 ? (
+                            <span className="px-3 py-1 bg-red-100 border border-red-200 text-red-700 text-xs font-bold rounded-full uppercase tracking-wider animate-pulse">Limit Reached</span>
+                        ) : (
+                            <span className="px-3 py-1 bg-green-50 border border-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wider">Active</span>
+                        )}
                     </div>
                     
                     <div className="space-y-4">
                         <div>
                             <div className="flex justify-between text-sm mb-2">
-                                <span className="text-slate-500 font-medium">Available Credits</span>
-                                <span className="font-bold text-blue-600">{user.credits} scans remaining</span>
+                                <span className="text-slate-500 font-medium">Scans Used</span>
+                                <span className="font-bold text-blue-600">
+                                    {user.documents_scanned_this_month} / {user.scan_limit_this_month === 999999 ? 'Unlimited' : user.scan_limit_this_month} scans
+                                </span>
                             </div>
                             <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                                  <div 
-                                    className={`h-2.5 rounded-full transition-all duration-500 bg-gradient-to-r ${usagePercentage > 90 ? 'from-red-500 to-orange-500' : 'from-blue-600 to-indigo-600'}`}
-                                    style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                                    className={`h-2.5 rounded-full transition-all duration-500 bg-gradient-to-r ${user.credits <= 0 ? 'from-red-500 to-orange-500' : 'from-blue-600 to-indigo-600'}`}
+                                    style={{ width: `${Math.min((user.documents_scanned_this_month / user.scan_limit_this_month) * 100, 100)}%` }}
                                  ></div>
                             </div>
+                            {user.credits <= 0 && (
+                                <p className="text-xs font-bold text-red-500 mt-2">⚠️ Scan limit reached. Please upgrade your plan to run more scans.</p>
+                            )}
                         </div>
                     </div>
                 </div>

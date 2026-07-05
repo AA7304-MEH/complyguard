@@ -194,26 +194,27 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
         }
     };
 
-    const currentScore = scan.score;
-    const previousScore = previousScan ? previousScan.score : null;
-    
-    let improvementDisplay = 'First Scan';
+    const currentScore = scan.score ?? 0;
+    const previousScore = previousScan?.score ?? null;
+
+    let improvementDisplay: string;
+    let showImprovement = false;
     let improvementColorClass = 'text-emerald-700 bg-emerald-50 border-emerald-200';
     let improvementLabel = 'Improvement';
-    
-    if (previousScore !== null) {
-        const improvementValue = currentScore - previousScore;
-        if (improvementValue > 0) {
-            improvementDisplay = `+${improvementValue}%`;
-            improvementColorClass = 'text-emerald-700 bg-emerald-50 border-emerald-200';
-        } else if (improvementValue < 0) {
-            improvementDisplay = `${improvementValue}%`;
-            improvementColorClass = 'text-red-700 bg-red-50 border-red-200';
-            improvementLabel = 'Decline';
-        } else {
-            improvementDisplay = 'No change';
-            improvementColorClass = 'text-slate-600 bg-slate-50 border-slate-200';
-        }
+
+    if (previousScore === null) {
+        improvementDisplay = "First Scan";
+        showImprovement = false;
+    } else if (previousScore === currentScore) {
+        improvementDisplay = "No Change";
+        showImprovement = true;
+        improvementColorClass = 'text-slate-600 bg-slate-50 border-slate-200';
+    } else {
+        const diff = currentScore - previousScore;
+        improvementDisplay = diff > 0 ? `+${diff}%` : `${diff}%`;
+        showImprovement = true;
+        improvementColorClass = diff > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-700 bg-red-50 border-red-200';
+        if (diff < 0) improvementLabel = 'Decline';
     }
 
     return (
@@ -364,16 +365,25 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Overall Health Score</p>
                         <p className="text-4xl font-extrabold text-slate-900 mt-2">{scan.score}%</p>
                     </div>
-                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Previous Score</p>
-                        <p className="text-4xl font-extrabold text-slate-500 mt-2">
-                            {previousScore !== null ? `${previousScore}%` : 'N/A'}
-                        </p>
-                    </div>
-                    <div className={`p-5 rounded-2xl border text-center ${improvementColorClass}`}>
-                        <p className="text-xs font-bold uppercase tracking-wider">{improvementLabel}</p>
-                        <p className="text-4xl font-extrabold mt-2">{improvementDisplay}</p>
-                    </div>
+                    {!showImprovement ? (
+                        <div className="md:col-span-2 p-5 bg-blue-50/50 rounded-2xl border border-blue-200 text-center flex flex-col justify-center items-center">
+                            <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Audit Status</p>
+                            <p className="text-xl font-extrabold text-blue-700 mt-2">First Audit — Baseline Established</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Previous Score</p>
+                                <p className="text-4xl font-extrabold text-slate-500 mt-2">
+                                    {previousScore !== null ? `${previousScore}%` : 'N/A'}
+                                </p>
+                            </div>
+                            <div className={`p-5 rounded-2xl border text-center ${improvementColorClass}`}>
+                                <p className="text-xs font-bold uppercase tracking-wider">{improvementLabel}</p>
+                                <p className="text-4xl font-extrabold mt-2">{improvementDisplay}</p>
+                            </div>
+                        </>
+                    )}
                     <div className="p-5 bg-blue-50 rounded-2xl border border-blue-200 text-center">
                         <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Remediated Findings</p>
                         <p className="text-4xl font-extrabold text-blue-700 mt-2">

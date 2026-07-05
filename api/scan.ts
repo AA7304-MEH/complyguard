@@ -30,30 +30,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
         
-        let profile = { credits: 10, subscription_tier: 'free' };
+        let userRecord = { scans_used: 0, scan_limit: 2, plan: 'free' };
         let isDbConnected = false;
 
         if (supabaseUrl && supabaseKey) {
             try {
                 const supabase = createClient(supabaseUrl, supabaseKey);
-                const { data, error: profileError } = await supabase
-                    .from('user_profiles')
-                    .select('credits, subscription_tier')
-                    .eq('user_id', userId)
+                const { data, error: userError } = await supabase
+                    .from('users')
+                    .select('scans_used, scan_limit, plan')
+                    .eq('id', userId)
                     .single();
 
-                if (data && !profileError) {
-                    profile = data;
+                if (data && !userError) {
+                    userRecord = data;
                     isDbConnected = true;
-
-                    // Consume credit in DB
-                    const updateData: any = { credits: profile.credits - 1 };
-                    if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
-                        updateData.free_credits_used = true;
-                    }
-                    await supabase.from('user_profiles').update(updateData).eq('user_id', userId);
                 } else {
-                    console.warn("⚠️ Supabase profile not found or query error, using resilient fallback credits:", profileError);
+                    console.warn("⚠️ Supabase user profile not found or query error, using resilient fallback credits:", userError);
                 }
             } catch (dbErr: any) {
                 console.error("⚠️ Supabase connection failed in scan API, using resilient fallback credits:", dbErr.message);
@@ -62,11 +55,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.warn("⚠️ Supabase credentials missing in scan API, using resilient fallback credits.");
         }
 
-        if (profile.credits <= 0 && isDbConnected) {
+        if (isDbConnected && userRecord.scans_used >= userRecord.scan_limit) {
             return res.status(403).json({ 
-                error: 'Insufficient credits', 
-                message: 'You have used all your credits. Please upgrade to continue.',
-                needsPricing: true 
+                error: 'Scan limit reached. Please upgrade your plan.',
+                scans_used: userRecord.scans_used,
+                scan_limit: userRecord.scan_limit
             });
         }
         // --- END CREDIT ENFORCEMENT ---
@@ -118,6 +111,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (supabaseUrl && supabaseKey) {
             try {
                 const supabase = createClient(supabaseUrl, supabaseKey);
+                
+                if (isDbConnected) {
+                    await supabase
+                        .from('users')
+                        .update({ scans_used: userRecord.scans_used + 1 })
+                        .eq('id', userId);
+                }
+
                 await supabase.from('scan_jobs').insert([{
                     user_id: userId,
                     framework,

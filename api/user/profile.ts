@@ -56,12 +56,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             try {
                 const { data, error } = await supabase
-                    .from('user_profiles')
+                    .from('users')
                     .update({
                         company_name: whiteLabelData.company_name,
                         company_logo_url: whiteLabelData.company_logo_url
                     })
-                    .eq('user_id', userId)
+                    .eq('id', userId)
                     .select()
                     .single();
 
@@ -82,15 +82,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
                 // 1. Get or create user profile
                 let { data: profile, error: profileError } = await supabase
-                    .from('user_profiles')
+                    .from('users')
                     .select('*')
-                    .eq('user_id', userId)
+                    .eq('id', userId)
                     .single();
 
                 if (!profile || profileError) {
-                    // If profile doesn't exist, try to create it
-                    let initialCredits = 1;
-                    let freeCreditsUsed = false;
+                    let initialScansUsed = 0;
+                    let initialLimit = 2;
 
                     try {
                         const { data: deviceData } = await supabase
@@ -100,8 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             .single();
 
                         if (deviceData) {
-                            initialCredits = 0;
-                            freeCreditsUsed = true;
+                            initialScansUsed = 2; // block free scans for tracked devices
                         } else {
                             // Record device usage
                             await supabase.from('device_tracking').insert([{ 
@@ -115,12 +113,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     }
 
                     const { data: newProfile, error: createError } = await supabase
-                        .from('user_profiles')
+                        .from('users')
                         .upsert([{ 
-                            user_id: userId, 
+                            id: userId, 
                             email: email, 
-                            credits: initialCredits,
-                            free_credits_used: freeCreditsUsed
+                            scans_used: initialScansUsed,
+                            scan_limit: initialLimit,
+                            plan: 'free'
                         }])
                         .select()
                         .single();
@@ -129,7 +128,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     profile = newProfile;
                 }
 
-                return res.status(200).json(profile);
+                // Map for compatibility
+                const mappedProfile = {
+                    ...profile,
+                    user_id: profile.id,
+                    credits: Math.max(0, (profile.scan_limit ?? 2) - (profile.scans_used ?? 0)),
+                    subscription_tier: profile.plan || 'free',
+                    free_credits_used: (profile.scans_used ?? 0) >= (profile.scan_limit ?? 2)
+                };
+
+                return res.status(200).json(mappedProfile);
             } catch (dbErr: any) {
                 console.error("⚠️ Supabase Database Query Error, falling back to mock profile:", dbErr);
                 return res.status(200).json({
@@ -146,21 +154,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             try {
                 const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('credits')
-                    .eq('user_id', userId)
+                    .from('users')
+                    .select('scan_limit')
+                    .eq('id', userId)
                     .single();
 
-                const currentCredits = profile ? profile.credits : 0;
+                const currentLimit = profile ? profile.scan_limit : 2;
                 const { data: updatedProfile, error: updateError } = await supabase
-                    .from('user_profiles')
-                    .update({ credits: currentCredits + amount })
-                    .eq('user_id', userId)
+                    .from('users')
+                    .update({ scan_limit: currentLimit + amount })
+                    .eq('id', userId)
                     .select()
                     .single();
 
                 if (updateError) throw updateError;
-                return res.status(200).json(updatedProfile);
+                
+                const mappedProfile = {
+                    ...updatedProfile,
+                    user_id: updatedProfile.id,
+                    credits: Math.max(0, (updatedProfile.scan_limit ?? 2) - (updatedProfile.scans_used ?? 0)),
+                    subscription_tier: updatedProfile.plan || 'free',
+                    free_credits_used: (updatedProfile.scans_used ?? 0) >= (updatedProfile.scan_limit ?? 2)
+                };
+
+                return res.status(200).json(mappedProfile);
             } catch (dbErr) {
                 console.error("⚠️ Supabase Add Credits Error, falling back to mock update:", dbErr);
                 return res.status(200).json({
@@ -175,29 +192,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (action === 'consume') {
             try {
                 const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('credits, subscription_tier')
-                    .eq('user_id', userId)
+                    .from('users')
+                    .select('scans_used, scan_limit, plan')
+                    .eq('id', userId)
                     .single();
 
-                if (!profile || profile.credits <= 0) {
+                if (!profile || (profile.scans_used ?? 0) >= (profile.scan_limit ?? 2)) {
                     return res.status(403).json({ error: 'Insufficient credits', needsPricing: true });
                 }
 
-                const updateData: any = { credits: profile.credits - 1 };
-                if (profile.subscription_tier === 'free' && updateData.credits <= 0) {
-                    updateData.free_credits_used = true;
-                }
-
                 const { data: updatedProfile, error: updateError } = await supabase
-                    .from('user_profiles')
-                    .update(updateData)
-                    .eq('user_id', userId)
+                    .from('users')
+                    .update({ scans_used: (profile.scans_used || 0) + 1 })
+                    .eq('id', userId)
                     .select()
                     .single();
 
                 if (updateError) throw updateError;
-                return res.status(200).json(updatedProfile);
+
+                const mappedProfile = {
+                    ...updatedProfile,
+                    user_id: updatedProfile.id,
+                    credits: Math.max(0, (updatedProfile.scan_limit ?? 2) - (updatedProfile.scans_used ?? 0)),
+                    subscription_tier: updatedProfile.plan || 'free',
+                    free_credits_used: (updatedProfile.scans_used ?? 0) >= (updatedProfile.scan_limit ?? 2)
+                };
+
+                return res.status(200).json(mappedProfile);
             } catch (dbErr) {
                 console.error("⚠️ Supabase Consume Error, falling back to mock consume:", dbErr);
                 return res.status(200).json({
