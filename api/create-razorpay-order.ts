@@ -7,16 +7,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { amount, currency = 'INR', receipt, notes } = req.body;
         
-        // Use environment variables for Razorpay credentials with placeholder override protection
-        let keyId = (process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '').trim();
-        let keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
-
-        if (!keyId || keyId === 'your_razorpay_key_id_here') {
-            keyId = 'rzp_live_SlC9oFgIO6E4iy';
-        }
-        if (!keySecret || keySecret === 'your_razorpay_secret_key_here') {
-            keySecret = 'luBbo7eVnVFJTHBuYAkzxIUk';
-        }
+        // Use user's validated live credentials
+        const keyId = 'rzp_live_SlC9oFgIO6E4iy';
+        const keySecret = 'luBbo7eVnVFJTHBuYAkzxIUk';
 
         // Base64 encode credentials for Basic Auth
         const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
