@@ -142,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.error("⚠️ Supabase Database Query Error, falling back to mock profile:", dbErr);
                 return res.status(200).json({
                     ...mockProfile,
-                    company_name: 'Acme Corp (Offline Mode)'
+                    company_name: `Acme Corp (Offline Mode: ${dbErr.message || JSON.stringify(dbErr)})`
                 });
             }
         }
@@ -178,12 +178,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 };
 
                 return res.status(200).json(mappedProfile);
-            } catch (dbErr) {
+            } catch (dbErr: any) {
                 console.error("⚠️ Supabase Add Credits Error, falling back to mock update:", dbErr);
                 return res.status(200).json({
                     ...mockProfile,
                     credits: mockProfile.credits + amount,
-                    company_name: 'Acme Corp (Offline Mode)'
+                    company_name: `Acme Corp (Offline Mode: ${dbErr.message || JSON.stringify(dbErr)})`
                 });
             }
         }
@@ -219,12 +219,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 };
 
                 return res.status(200).json(mappedProfile);
-            } catch (dbErr) {
+            } catch (dbErr: any) {
                 console.error("⚠️ Supabase Consume Error, falling back to mock consume:", dbErr);
                 return res.status(200).json({
                     ...mockProfile,
                     credits: Math.max(0, mockProfile.credits - 1),
-                    company_name: 'Acme Corp (Offline Mode)'
+                    company_name: `Acme Corp (Offline Mode: ${dbErr.message || JSON.stringify(dbErr)})`
                 });
             }
         }
@@ -233,6 +233,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } catch (error: any) {
         console.error('❌ Critical handler profile error, falling back to mock profile:', error);
-        return res.status(200).json(mockProfile);
+        return res.status(200).json({
+            ...mockProfile,
+            company_name: `Acme Corp (Critical Error: ${error.message || JSON.stringify(error)})`
+        });
     }
 }
