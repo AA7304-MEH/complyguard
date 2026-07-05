@@ -220,11 +220,6 @@ export class PaymentService {
       theme: {
         color: '#6366f1' // ComplyGuard Indigo
       },
-      retry: {
-        enabled: true,
-        max_count: 3
-      },
-      timeout: 300, // 5 minutes
       handler: (response: any) => {
         console.log('✅ Razorpay payment successful:', response);
         onSuccess({
@@ -236,9 +231,6 @@ export class PaymentService {
         });
       },
       modal: {
-        escape: true,
-        backdropclose: false,
-        handleback: true,
         ondismiss: () => {
           console.log('❌ Razorpay payment cancelled');
           onError({ 
