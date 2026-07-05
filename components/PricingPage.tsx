@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { SubscriptionPlan, BillingCycle, PaymentProvider } from '../types';
 import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
+import { getUSDToINR, formatINR, PLANS_USD } from '../services/currencyService';
 import { PaymentService } from '../services/paymentService';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { ZapIcon } from './icons/ZapIcon';
@@ -20,30 +21,41 @@ const PricingPage: React.FC<PricingPageProps> = ({
   const [paymentConfig, setPaymentConfig] = React.useState(() => 
     PaymentService.getPaymentConfig(userLocation)
   );
+  
+  const [exchangeRate, setExchangeRate] = React.useState<number>(84);
+  const [rateInfo, setRateInfo] = React.useState<string>('');
+  const [rateSource, setRateSource] = React.useState<'cached' | 'live' | 'fallback'>('live');
+
+  React.useEffect(() => {
+    getUSDToINR().then(({ rate, lastUpdated, source }) => {
+      setExchangeRate(rate);
+      setRateSource(source);
+      setRateInfo(`Live rate: 1 USD = ₹${rate.toFixed(2)} • Updated: ${lastUpdated}`);
+    });
+  }, []);
 
   const isYearly = billingCycle === BillingCycle.Yearly;
   const currency = paymentConfig.currency;
 
   const formatPrice = (plan: SubscriptionPlan) => {
-    const price = getPrice(plan, isYearly, currency);
-    if (price === 0) return 'Free';
+    const prices = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+    const usdPrice = isYearly ? prices.annual : prices.monthly;
+    if (usdPrice === 0) return 'Free';
     
-    const symbol = currency === 'USD' ? '$' : '₹';
-    const period = isYearly ? 'year' : 'month';
-    
-    return `${symbol}${price.toLocaleString()}/${period}`;
+    return formatINR(usdPrice, exchangeRate);
   };
 
   const getSavings = (plan: SubscriptionPlan) => {
     if (!isYearly || plan.tier === 'free') return null;
     
-    const monthlyPrice = getPrice(plan, false, currency);
-    const yearlyPrice = getPrice(plan, true, currency);
-    const monthlyCost = monthlyPrice * 12;
-    const savings = monthlyCost - yearlyPrice;
-    const savingsPercent = Math.round((savings / monthlyCost) * 100);
+    const prices = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+    const monthlyCostUsd = prices.monthly * 12;
+    const yearlyCostUsd = prices.annual * 12;
     
-    return { amount: savings, percent: savingsPercent };
+    const savingsUsd = monthlyCostUsd - yearlyCostUsd;
+    const savingsPercent = Math.round((savingsUsd / monthlyCostUsd) * 100);
+    
+    return { amount: savingsUsd, percent: savingsPercent };
   };
 
   return (
@@ -89,9 +101,31 @@ const PricingPage: React.FC<PricingPageProps> = ({
             </div>
           </div>
 
+          {/* Live rate indicator banner */}
+          <div className="max-w-md mx-auto mb-6">
+            <div style={{
+              background: '#f0fdf4',
+              border: '1px solid #86efac',
+              borderRadius: '12px',
+              padding: '10px 16px',
+              fontSize: '13px',
+              color: '#166534',
+              fontWeight: '600',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            }}>
+              <span>🔄 {rateInfo || 'Fetching live exchange rate...'}</span>
+              {rateSource === 'live' && <span style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>● <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Live</span></span>}
+              {rateSource === 'cached' && <span style={{ color: '#2563eb', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>● <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cached</span></span>}
+              {rateSource === 'fallback' && <span style={{ color: '#dc2626', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>● <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Using estimated rate</span></span>}
+            </div>
+          </div>
+
           {/* Currency Info */}
           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-            Prices in {currency} &bull; {paymentConfig.provider === PaymentProvider.Razorpay ? 'Indian Payment System' : 'Stripe & PayPal'}
+            Prices in INR &bull; {paymentConfig.provider === PaymentProvider.Razorpay ? 'Indian Payment System' : 'Stripe & PayPal'}
           </div>
         </div>
 
@@ -137,17 +171,22 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="border-t border-slate-100 pt-6">
                     <div className="flex items-baseline">
                       <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                        {formatPrice(plan).split('/')[0]}
+                        {formatPrice(plan)}
                       </span>
                       {plan.tier !== 'free' && (
                         <span className="text-slate-400 text-sm ml-1">
-                          /{isYearly ? 'yr' : 'mo'}
+                          /month
                         </span>
                       )}
                     </div>
+                    {plan.tier !== 'free' && (
+                      <p className="text-[11px] text-slate-500 font-bold mt-1.5">
+                        (~${isYearly ? (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { annual: 0 }).annual : (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0 }).monthly} USD/mo &bull; Rate: 1 USD = ₹{exchangeRate.toFixed(2)})
+                      </p>
+                    )}
                     {savings && (
-                      <div className="text-xs text-green-600 font-bold mt-1.5 flex items-center gap-1">
-                        <span>✨</span> Save {currency === 'USD' ? '$' : '₹'}{savings.amount.toLocaleString()} yearly
+                      <div className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
+                        <span>✨</span> Save {formatINR(savings.amount, exchangeRate)} yearly
                       </div>
                     )}
                   </div>

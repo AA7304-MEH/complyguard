@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { SubscriptionPlan, BillingCycle, PaymentProvider, User } from '../types';
 import { PaymentService } from '../services/paymentService';
+import { getUSDToINR, formatINR, PLANS_USD } from '../services/currencyService';
 import { getPrice } from '../config/subscriptionPlans';
 
 interface FunctionalPaymentFlowProps {
@@ -26,9 +27,20 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const [loadingMessage, setLoadingMessage] = React.useState('');
   const [currentStep, setCurrentStep] = React.useState(1);
 
+  const [exchangeRate, setExchangeRate] = React.useState<number>(84);
+
+  React.useEffect(() => {
+    getUSDToINR().then(({ rate }) => {
+      setExchangeRate(rate);
+    });
+  }, []);
+
   const isYearly = billingCycle === BillingCycle.Yearly;
   const currency = paymentProvider === PaymentProvider.Razorpay ? 'INR' : 'USD';
-  const price = getPrice(plan, isYearly, currency);
+  
+  const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+  const usdAmount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
+  const price = currency === 'INR' ? Math.round(usdAmount * exchangeRate) : usdAmount;
   const symbol = currency === 'USD' ? '$' : '₹';
 
   const [detectedLocation, setDetectedLocation] = React.useState<string>('');
@@ -389,10 +401,12 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
 
   const getSavings = () => {
     if (!isYearly) return null;
-    const monthlyPrice = getPrice(plan, false, currency);
-    const yearlyPrice = getPrice(plan, true, currency);
-    const monthlyCost = monthlyPrice * 12;
-    const savings = monthlyCost - yearlyPrice;
+    const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+    const monthlyCostUsd = pricesUsd.monthly * 12;
+    const yearlyCostUsd = pricesUsd.annual * 12;
+    
+    const savingsUsd = monthlyCostUsd - yearlyCostUsd;
+    const savings = currency === 'INR' ? Math.round(savingsUsd * exchangeRate) : savingsUsd;
     return savings;
   };
 

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { SubscriptionPlan, BillingCycle, PaymentProvider } from '../types';
+import { getUSDToINR, formatINR, PLANS_USD } from '../services/currencyService';
 import { getPrice } from '../config/subscriptionPlans';
 
 interface PaymentSummaryProps {
@@ -15,19 +16,31 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   paymentProvider,
   userEmail,
 }) => {
+  const [exchangeRate, setExchangeRate] = React.useState<number>(84);
+
+  React.useEffect(() => {
+    getUSDToINR().then(({ rate }) => {
+      setExchangeRate(rate);
+    });
+  }, []);
+
   const isYearly = billingCycle === BillingCycle.Yearly;
   const currency = paymentProvider === PaymentProvider.Razorpay ? 'INR' : 'USD';
   const symbol = currency === 'USD' ? '$' : '₹';
-  const price = getPrice(plan, isYearly, currency);
+  
+  const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+  const usdAmount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
+  const price = currency === 'INR' ? Math.round(usdAmount * exchangeRate) : usdAmount;
   
   const getSavings = () => {
     if (!isYearly) return null;
     
-    const monthlyPrice = getPrice(plan, false, currency);
-    const yearlyPrice = getPrice(plan, true, currency);
-    const monthlyCost = monthlyPrice * 12;
-    const savings = monthlyCost - yearlyPrice;
-    const savingsPercent = Math.round((savings / monthlyCost) * 100);
+    const monthlyCostUsd = pricesUsd.monthly * 12;
+    const yearlyCostUsd = pricesUsd.annual * 12;
+    const savingsUsd = monthlyCostUsd - yearlyCostUsd;
+    
+    const savings = currency === 'INR' ? Math.round(savingsUsd * exchangeRate) : savingsUsd;
+    const savingsPercent = Math.round((savingsUsd / monthlyCostUsd) * 100);
     
     return { amount: savings, percent: savingsPercent };
   };

@@ -1,5 +1,6 @@
 import { PaymentProvider, BillingCycle, PaymentIntent, SubscriptionPlan } from '../types';
 import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
+import { PLANS_USD } from './currencyService';
 
 // Razorpay configuration - LIVE KEYS
 // Hardcoding the validated live key to ensure stability across deployments
@@ -157,7 +158,11 @@ export class PaymentService {
     userId: string
   ): Promise<any> {
     const isYearly = billingCycle === BillingCycle.Yearly;
-    const amount = Math.round(getPrice(plan, isYearly, 'INR') * 100); // Razorpay expects amount in paise (integer)
+    const { getUSDToINR, PLANS_USD } = await import('./currencyService');
+    const { rate } = await getUSDToINR();
+    const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+    const usdAmount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
+    const amount = Math.round(usdAmount * rate * 100); // Converted dynamic amount in paise (integer)
 
     try {
       const response = await fetch('/api/create-razorpay-order', {
@@ -583,7 +588,8 @@ export class PaymentService {
   ) {
     try {
       const isYearly = billingCycle === BillingCycle.Yearly;
-      const amount = getPrice(plan, isYearly, 'USD');
+      const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+      const amount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
       
       console.log('🎯 Rendering PayPal buttons for amount:', amount);
 

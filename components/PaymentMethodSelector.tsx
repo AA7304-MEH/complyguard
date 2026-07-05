@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { PaymentProvider, SubscriptionPlan, BillingCycle } from '../types';
+import { PLANS_USD } from '../services/currencyService';
 import { getPrice } from '../config/subscriptionPlans';
 
 interface PaymentMethodSelectorProps {
@@ -17,6 +18,14 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   billingCycle,
   isProcessing = false,
 }) => {
+  const [exchangeRate, setExchangeRate] = React.useState<number>(84);
+
+  React.useEffect(() => {
+    import('../services/currencyService').then(m => m.getUSDToINR()).then(({ rate }) => {
+      setExchangeRate(rate);
+    });
+  }, []);
+
   const isYearly = billingCycle === BillingCycle.Yearly;
   
   const paymentMethods = [
@@ -65,7 +74,9 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {paymentMethods.map((method) => {
-          const price = getPrice(plan, isYearly, method.currency as 'USD' | 'INR');
+          const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
+          const usdAmount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
+          const price = method.currency === 'INR' ? Math.round(usdAmount * exchangeRate) : usdAmount;
           const isSelected = selectedProvider === method.provider;
           
           return (
