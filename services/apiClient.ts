@@ -34,8 +34,8 @@ export const getAppUser = async (clerkUserId: string, email?: string, deviceId?:
         subscription_status: (profile.subscription_status as SubscriptionStatus) || SubscriptionStatus.Active,
         credits: profile.credits || 0,
         free_credits_used: profile.free_credits_used || false,
-        documents_scanned_this_month: 0, // Tracked separately if needed
-        scan_limit_this_month: profile.credits || 0, // For display
+        documents_scanned_this_month: profile.scans_used || 0,
+        scan_limit_this_month: profile.scan_limit || 10,
     };
 };
 
