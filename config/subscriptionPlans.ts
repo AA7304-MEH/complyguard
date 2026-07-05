@@ -7,14 +7,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     tier: SubscriptionTier.Free,
     description: 'Perfect for trying out ComplyGuard',
     features: [
-      '1 scan credit (One-time)',
+      '10 scan credits (One-time)',
       'Basic compliance frameworks',
       'Email support',
       'Standard reporting',
       'Basic document templates',
       'Compliance calendar'
     ],
-    scan_limit: 1,
+    scan_limit: 10,
     price_monthly_usd: 0,
     price_yearly_usd: 0,
     price_monthly_inr: 0,

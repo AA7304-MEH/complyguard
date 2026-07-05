@@ -89,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 if (!profile || profileError) {
                     let initialScansUsed = 0;
-                    let initialLimit = 2;
+                    let initialLimit = 10;
 
                     try {
                         const { data: deviceData } = await supabase
@@ -99,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             .single();
 
                         if (deviceData) {
-                            initialScansUsed = 2; // block free scans for tracked devices
+                            initialScansUsed = 10; // block free scans for tracked devices
                         } else {
                             // Record device usage
                             await supabase.from('device_tracking').insert([{ 
@@ -132,9 +132,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const mappedProfile = {
                     ...profile,
                     user_id: profile.id,
-                    credits: Math.max(0, (profile.scan_limit ?? 2) - (profile.scans_used ?? 0)),
+                    credits: Math.max(0, (profile.scan_limit ?? 10) - (profile.scans_used ?? 0)),
                     subscription_tier: profile.plan || 'free',
-                    free_credits_used: (profile.scans_used ?? 0) >= (profile.scan_limit ?? 2)
+                    free_credits_used: (profile.scans_used ?? 0) >= (profile.scan_limit ?? 10)
                 };
 
                 return res.status(200).json(mappedProfile);
@@ -159,7 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .eq('id', userId)
                     .single();
 
-                const currentLimit = profile ? profile.scan_limit : 2;
+                const currentLimit = profile ? profile.scan_limit : 10;
                 const { data: updatedProfile, error: updateError } = await supabase
                     .from('users')
                     .update({ scan_limit: currentLimit + amount })
@@ -172,9 +172,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const mappedProfile = {
                     ...updatedProfile,
                     user_id: updatedProfile.id,
-                    credits: Math.max(0, (updatedProfile.scan_limit ?? 2) - (updatedProfile.scans_used ?? 0)),
+                    credits: Math.max(0, (updatedProfile.scan_limit ?? 10) - (updatedProfile.scans_used ?? 0)),
                     subscription_tier: updatedProfile.plan || 'free',
-                    free_credits_used: (updatedProfile.scans_used ?? 0) >= (updatedProfile.scan_limit ?? 2)
+                    free_credits_used: (updatedProfile.scans_used ?? 0) >= (updatedProfile.scan_limit ?? 10)
                 };
 
                 return res.status(200).json(mappedProfile);
@@ -197,7 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .eq('id', userId)
                     .single();
 
-                if (!profile || (profile.scans_used ?? 0) >= (profile.scan_limit ?? 2)) {
+                if (!profile || (profile.scans_used ?? 0) >= (profile.scan_limit ?? 10)) {
                     return res.status(403).json({ error: 'Insufficient credits', needsPricing: true });
                 }
 
@@ -213,9 +213,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const mappedProfile = {
                     ...updatedProfile,
                     user_id: updatedProfile.id,
-                    credits: Math.max(0, (updatedProfile.scan_limit ?? 2) - (updatedProfile.scans_used ?? 0)),
+                    credits: Math.max(0, (updatedProfile.scan_limit ?? 10) - (updatedProfile.scans_used ?? 0)),
                     subscription_tier: updatedProfile.plan || 'free',
-                    free_credits_used: (updatedProfile.scans_used ?? 0) >= (updatedProfile.scan_limit ?? 2)
+                    free_credits_used: (updatedProfile.scans_used ?? 0) >= (updatedProfile.scan_limit ?? 10)
                 };
 
                 return res.status(200).json(mappedProfile);

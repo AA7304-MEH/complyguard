@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
         
-        let userRecord = { scans_used: 0, scan_limit: 2, plan: 'free' };
+        let userRecord = { scans_used: 0, scan_limit: 10, plan: 'free' };
         let isDbConnected = false;
 
         if (supabaseUrl && supabaseKey) {
