@@ -101,31 +101,9 @@ const PricingPage: React.FC<PricingPageProps> = ({
             </div>
           </div>
 
-          {/* Live rate indicator banner */}
-          <div className="max-w-md mx-auto mb-6">
-            <div style={{
-              background: '#f0fdf4',
-              border: '1px solid #86efac',
-              borderRadius: '12px',
-              padding: '10px 16px',
-              fontSize: '13px',
-              color: '#166534',
-              fontWeight: '600',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-            }}>
-              <span>🔄 {rateInfo || 'Fetching live exchange rate...'}</span>
-              {rateSource === 'live' && <span style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>● <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Live</span></span>}
-              {rateSource === 'cached' && <span style={{ color: '#2563eb', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>● <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cached</span></span>}
-              {rateSource === 'fallback' && <span style={{ color: '#dc2626', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>● <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Using estimated rate</span></span>}
-            </div>
-          </div>
-
           {/* Currency Info */}
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-            Prices in INR &bull; {paymentConfig.provider === PaymentProvider.Razorpay ? 'Indian Payment System' : 'Stripe & PayPal'}
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">
+            Prices in INR &bull; Razorpay & PayPal Support
           </div>
         </div>
 

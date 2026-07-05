@@ -3,8 +3,7 @@ import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
 import { PLANS_USD } from './currencyService';
 
 // Razorpay configuration - LIVE KEYS
-// Hardcoding the validated live key to ensure stability across deployments
-const RAZORPAY_KEY_ID = 'rzp_live_SlC9oFgIO6E4iy';
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_SlC9oFgIO6E4iy';
 
 
 // PayPal configuration - SANDBOX KEYS FOR TESTING (Switch to production when ready)
