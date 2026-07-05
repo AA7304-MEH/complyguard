@@ -5,6 +5,7 @@
     }
   },
   "rewrites": [
+    { "source": "/api/scans/upload", "destination": "/api/scan" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

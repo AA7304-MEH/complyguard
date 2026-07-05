@@ -83,10 +83,10 @@ export const uploadEvidence = async (params: {
   };
 
   try {
-    const res = await fetch('/api/evidence/upload', {
+    const res = await fetch('/api/evidence', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
+      body: JSON.stringify({ action: 'upload', ...params })
     });
     if (res.ok) {
       const data = await res.json();
@@ -137,10 +137,10 @@ export const updateEvidenceStatus = async (
   saveLocalData(scanId, local);
 
   try {
-    await fetch('/api/evidence/status', {
-      method: 'PATCH',
+    await fetch('/api/evidence', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ evidenceId, status, reviewerNotes, userId, scanId, findingId })
+      body: JSON.stringify({ action: 'status', evidenceId, status, reviewerNotes, userId, scanId, findingId })
     });
   } catch (e) {
     console.warn("Status update API failed:", e);
@@ -174,10 +174,10 @@ export const acceptRisk = async (params: {
   saveLocalData(params.scanId, local);
 
   try {
-    const res = await fetch('/api/evidence/accept-risk', {
+    const res = await fetch('/api/evidence', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
+      body: JSON.stringify({ action: 'accept-risk', ...params })
     });
     if (res.ok) {
       const data = await res.json();
@@ -220,10 +220,10 @@ export const assignFinding = async (params: {
   saveLocalData(params.scanId, local);
 
   try {
-    await fetch('/api/collaboration/assign', {
+    await fetch('/api/collaboration', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
+      body: JSON.stringify({ action: 'assign', ...params })
     });
   } catch (e) {}
 
@@ -264,10 +264,10 @@ export const addComment = async (params: {
   saveLocalData(params.scanId, local);
 
   try {
-    const res = await fetch('/api/collaboration/comment', {
+    const res = await fetch('/api/collaboration', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
+      body: JSON.stringify({ action: 'comment', ...params })
     });
     if (res.ok) {
       const data = await res.json();
@@ -317,10 +317,10 @@ export const overrideSeverity = async (params: {
   saveLocalData(params.scanId, local);
 
   try {
-    const res = await fetch('/api/collaboration/override-severity', {
+    const res = await fetch('/api/collaboration', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
+      body: JSON.stringify({ action: 'override-severity', ...params })
     });
     if (res.ok) {
       const data = await res.json();
@@ -339,10 +339,10 @@ export const saveWhiteLabelSettings = async (userId: string, companyName: string
   } catch (e) {}
 
   try {
-    await fetch('/api/user/white-label', {
+    await fetch('/api/user/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, companyName, companyLogoUrl })
+      body: JSON.stringify({ userId, action: 'white-label', companyName, companyLogoUrl })
     });
   } catch (e) {}
 };

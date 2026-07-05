@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
@@ -29,8 +28,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         created_at: new Date().toISOString()
     };
 
-    // If Supabase keys are not set, immediately return mock profile with warning
+    // If Supabase keys are not set, immediately return mock profile with warning (except white-label settings)
     if (!supabaseUrl || !supabaseKey) {
+        if (action === 'white-label') {
+            const { companyName, companyLogoUrl } = req.body;
+            return res.status(200).json({
+                success: true,
+                settings: { user_id: userId, company_name: companyName || 'Your Company', company_logo_url: companyLogoUrl || '' },
+                mode: 'fallback'
+            });
+        }
         console.warn("⚠️ Supabase credentials missing. Running in resilient mock mode.");
         return res.status(200).json(mockProfile);
     }
@@ -38,6 +45,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const supabase = createClient(supabaseUrl, supabaseKey);
 
+        // --- ACTION: WHITE-LABEL ---
+        if (action === 'white-label') {
+            const { companyName, companyLogoUrl } = req.body;
+            const whiteLabelData = {
+                user_id: userId,
+                company_name: companyName || 'Your Company',
+                company_logo_url: companyLogoUrl || ''
+            };
+
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .update({
+                        company_name: whiteLabelData.company_name,
+                        company_logo_url: whiteLabelData.company_logo_url
+                    })
+                    .eq('user_id', userId)
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.warn("⚠️ Update white-label settings failed in DB, returning fallback:", error.message);
+                    return res.status(200).json({ success: true, settings: whiteLabelData, mode: 'fallback_db_error' });
+                }
+
+                return res.status(200).json({ success: true, settings: data || whiteLabelData, mode: 'supabase' });
+            } catch (err: any) {
+                console.warn("⚠️ White label update exception:", err.message);
+                return res.status(200).json({ success: true, settings: whiteLabelData, mode: 'fallback_exception' });
+            }
+        }
+
+        // --- ACTION: GET_OR_INIT ---
         if (action === 'get_or_init') {
             try {
                 // 1. Get or create user profile
@@ -49,7 +89,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 if (!profile || profileError) {
                     // If profile doesn't exist, try to create it
-                    // New user - check device tracking
                     let initialCredits = 1;
                     let freeCreditsUsed = false;
 
@@ -93,7 +132,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json(profile);
             } catch (dbErr: any) {
                 console.error("⚠️ Supabase Database Query Error, falling back to mock profile:", dbErr);
-                // Return mock profile to keep the app working for the user!
                 return res.status(200).json({
                     ...mockProfile,
                     company_name: 'Acme Corp (Offline Mode)'
@@ -101,6 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
+        // --- ACTION: ADD_CREDITS ---
         if (action === 'add_credits') {
             const { amount } = req.body;
             if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
@@ -132,6 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
+        // --- ACTION: CONSUME ---
         if (action === 'consume') {
             try {
                 const { data: profile } = await supabase
