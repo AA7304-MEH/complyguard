@@ -176,7 +176,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
                     </div>
                     {plan.tier !== 'free' && (
                       <p className="text-[11px] text-slate-500 font-bold mt-1.5">
-                        (~$${isYearly ? (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { annual: 0 }).annual : (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0 }).monthly} USD • Live rate: 1 USD = ₹{exchangeRate.toFixed(1)})
+                        (~${isYearly ? (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { annual: 0 }).annual : (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0 }).monthly} USD • Live rate: 1 USD = ₹{exchangeRate.toFixed(1)})
                       </p>
                     )}
                     {savings && (
