@@ -140,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json(mappedProfile);
             } catch (dbErr: any) {
                 console.error("⚠️ Supabase Database Query Error, falling back to mock profile:", dbErr);
-                const dbErrInfo = dbErr ? `Name: ${dbErr.name}, Message: ${dbErr.message}, Keys: ${Object.keys(dbErr).join(',')}, Stack: ${dbErr.stack ? dbErr.stack.substring(0, 150) : 'No Stack'}` : 'null';
+                const dbErrInfo = dbErr ? `Msg: ${dbErr.message || 'no-msg'}, Details: ${dbErr.details || 'no-det'}, Hint: ${dbErr.hint || 'no-hint'}, Code: ${dbErr.code || 'no-code'}` : 'null';
                 return res.status(200).json({
                     ...mockProfile,
                     company_name: `Acme Corp (Offline Mode: ${dbErrInfo})`
