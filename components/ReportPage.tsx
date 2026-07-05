@@ -132,6 +132,38 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
         }
     };
 
+    const openEvidence = (e: React.MouseEvent, fileUrl: string, fileName: string) => {
+        if (fileUrl.startsWith('data:')) {
+            e.preventDefault();
+            try {
+                const base64Parts = fileUrl.split(',');
+                const contentType = base64Parts[0].split(':')[1].split(';')[0];
+                const base64Data = base64Parts[1];
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: contentType });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const newTab = window.open();
+                if (newTab) {
+                    newTab.location.href = blobUrl;
+                } else {
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = fileName;
+                    link.click();
+                }
+            } catch (err) {
+                console.error("Failed to open base64 data URI:", err);
+                alert("Could not open this file type directly. Please try downloading it.");
+            }
+        }
+    };
+
     return (
         <div id="report-container" className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 print:m-0 print:p-0">
             <style dangerouslySetInnerHTML={{ __html: `
@@ -487,7 +519,13 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                                                         <div className="flex items-center gap-2.5 truncate">
                                                             <span className="text-lg">📄</span>
                                                             <div className="truncate">
-                                                                <a href={e.file_url} target="_blank" rel="noreferrer" className="font-bold text-blue-600 hover:underline truncate block">
+                                                                <a 
+                                                                    href={e.file_url} 
+                                                                    target="_blank" 
+                                                                    rel="noreferrer" 
+                                                                    onClick={(event) => openEvidence(event, e.file_url, e.file_name)}
+                                                                    className="font-bold text-blue-600 hover:underline truncate block"
+                                                                >
                                                                     {e.file_name}
                                                                 </a>
                                                                 <span className="text-[10px] text-slate-400 capitalize">{e.evidence_type.replace('_', ' ')} • {new Date(e.uploaded_at).toLocaleDateString()}</span>
