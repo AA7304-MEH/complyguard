@@ -12,7 +12,14 @@ const getEnvVar = (key: string) => {
 };
 
 let supabaseUrl = getEnvVar('VITE_SUPABASE_URL') || getEnvVar('SUPABASE_URL');
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY') || getEnvVar('SUPABASE_ANON_KEY');
+let supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY') || getEnvVar('SUPABASE_ANON_KEY');
+
+// Force fallback if Vercel has the old stale database configured
+if (supabaseUrl && (supabaseUrl.includes('mdiziasnsmwyyeuotiea') || supabaseUrl.includes('xyzcompany') || supabaseUrl.includes('mock-project'))) {
+    console.warn("⚠️ Redirecting from stale Supabase URL to verified project");
+    supabaseUrl = 'https://gfiljosefyjydpwooxxl.supabase.co';
+    supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaWxqb3NlZnlqeWRwd29veHhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NTIzMzQsImV4cCI6MjA5NDEyODMzNH0.4Fb3juvdKEyNKyCAYb3h84k_Grwks1GxiC0nERCJ1ro';
+}
 
 // Robust URL fix and sanitization
 if (supabaseUrl) {

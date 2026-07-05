@@ -2,13 +2,20 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+let supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+// Force fallback if Vercel has the old stale database configured
+if (supabaseUrl && (supabaseUrl.includes('mdiziasnsmwyyeuotiea') || supabaseUrl.includes('xyzcompany'))) {
+    supabaseUrl = 'https://gfiljosefyjydpwooxxl.supabase.co';
+    supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaWxqb3NlZnlqeWRwd29veHhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NTIzMzQsImV4cCI6MjA5NDEyODMzNH0.4Fb3juvdKEyNKyCAYb3h84k_Grwks1GxiC0nERCJ1ro';
+}
+
 if (supabaseUrl) {
     supabaseUrl = supabaseUrl.split(/[?#]/)[0].trim();
     if (!supabaseUrl.startsWith('http')) {
         supabaseUrl = `https://${supabaseUrl}.supabase.co`;
     }
 }
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
