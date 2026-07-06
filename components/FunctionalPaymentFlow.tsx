@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { SubscriptionPlan, BillingCycle, PaymentProvider, User } from '../types';
 import { PaymentService } from '../services/paymentService';
-import { getUSDToINR, formatINR, PLANS_USD } from '../services/currencyService';
-import { getPrice } from '../config/subscriptionPlans';
+import { detectUserRegion, GeoInfo } from '../services/geoService';
+import { INDIA_PLANS, INTERNATIONAL_PLANS, getPrice } from '../config/subscriptionPlans';
 
 interface FunctionalPaymentFlowProps {
   user: User;
@@ -27,54 +27,37 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const [loadingMessage, setLoadingMessage] = React.useState('');
   const [currentStep, setCurrentStep] = React.useState(1);
 
-  const [exchangeRate, setExchangeRate] = React.useState<number>(84);
-
-  React.useEffect(() => {
-    getUSDToINR().then(({ rate }) => {
-      setExchangeRate(rate);
-    });
-  }, []);
-
-  const isYearly = billingCycle === BillingCycle.Yearly;
-  const currency = paymentProvider === PaymentProvider.Razorpay ? 'INR' : 'USD';
-  
-  const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
-  const usdAmount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
-  const price = currency === 'INR' ? Math.round(usdAmount * exchangeRate) : usdAmount;
-  const symbol = currency === 'USD' ? '$' : '₹';
-
-  const [detectedLocation, setDetectedLocation] = React.useState<string>('');
+  const [geoInfo, setGeoInfo] = React.useState<GeoInfo | null>(null);
   const [isDetecting, setIsDetecting] = React.useState(true);
   const [paypalButtonsRendered, setPaypalButtonsRendered] = React.useState(false);
 
-  // Geo-detection to select correct payment provider strictly (Razorpay for India, PayPal for International)
   React.useEffect(() => {
     const detectProvider = async () => {
       setIsDetecting(true);
       try {
-        const location = await PaymentService.getUserLocation();
-        setDetectedLocation(location);
+        const geo = await detectUserRegion();
+        setGeoInfo(geo);
         
-        const isIndian = location === 'IN' || (location !== 'US' && PaymentService.detectPaymentProvider(location) === PaymentProvider.Razorpay);
-        if (isIndian) {
+        if (geo.region === 'india') {
           setShowPayPalOption(false);
           setPaymentProvider(PaymentProvider.Razorpay);
           console.log('🇮🇳 Indian user detected: Only showing Razorpay');
         } else {
-          setShowPayPalOption(false); // Hide switch toggle
+          setShowPayPalOption(false);
           setPaymentProvider(PaymentProvider.PayPal);
           console.log('🌍 International user detected: Only showing PayPal');
         }
       } catch (error) {
-        setDetectedLocation('Unknown');
-        const isIndian = PaymentService.detectPaymentProvider() === PaymentProvider.Razorpay;
-        if (isIndian) {
-          setShowPayPalOption(false);
-          setPaymentProvider(PaymentProvider.Razorpay);
-        } else {
-          setShowPayPalOption(false);
-          setPaymentProvider(PaymentProvider.PayPal);
-        }
+        console.error('Geo detection failed in checkout:', error);
+        const geo: GeoInfo = {
+          region: 'international',
+          country: 'Unknown',
+          currency: 'USD',
+          symbol: '$'
+        };
+        setGeoInfo(geo);
+        setShowPayPalOption(false);
+        setPaymentProvider(PaymentProvider.PayPal);
       } finally {
         setIsDetecting(false);
       }
@@ -82,6 +65,17 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
 
     detectProvider();
   }, []);
+
+  const isYearly = billingCycle === BillingCycle.Yearly;
+  
+  const planId = plan.id as 'free' | 'basic' | 'professional' | 'enterprise';
+  const plansData = (geoInfo?.region === 'india') ? INDIA_PLANS : INTERNATIONAL_PLANS;
+  const planDetails = plansData[planId];
+  
+  const rate = isYearly ? planDetails.annual : planDetails.monthly;
+  const price = isYearly ? rate * 12 : rate;
+  const symbol = planDetails.symbol;
+  const currency = planDetails.currency;
 
   // Reset buttons rendered state when provider changes
   React.useEffect(() => {
@@ -409,13 +403,9 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
 
   const getSavings = () => {
     if (!isYearly) return null;
-    const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
-    const monthlyCostUsd = pricesUsd.monthly * 12;
-    const yearlyCostUsd = pricesUsd.annual * 12;
-    
-    const savingsUsd = monthlyCostUsd - yearlyCostUsd;
-    const savings = currency === 'INR' ? Math.round(savingsUsd * exchangeRate) : savingsUsd;
-    return savings;
+    const monthlyCost = planDetails.monthly * 12;
+    const yearlyCost = planDetails.annual * 12;
+    return monthlyCost - yearlyCost;
   };
 
   const savings = getSavings();
@@ -511,7 +501,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           </div>
 
           {/* Auto-Detection Indicator */}
-          {detectedLocation && !isDetecting && (
+          {geoInfo && !isDetecting && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center text-sm text-blue-800">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -519,7 +509,7 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span>
-                  <strong>Auto-detected location:</strong> {detectedLocation === 'IN' ? '🇮🇳 India' : detectedLocation === 'US' ? '🇺🇸 United States' : `🌍 ${detectedLocation}`}
+                  <strong>Auto-detected location:</strong> {geoInfo.region === 'india' ? '🇮🇳 India' : `🌍 ${geoInfo.country}`}
                   {' • '}
                   <strong>Recommended:</strong> {paymentProvider === PaymentProvider.Razorpay ? 'Razorpay' : 'PayPal'}
                 </span>

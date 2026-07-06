@@ -1,5 +1,141 @@
 import { SubscriptionPlan, SubscriptionTier } from '../types';
 
+export const INDIA_PLANS = {
+  free: {
+    monthly: 0,
+    annual: 0,
+    label: 'Free',
+    scans: 2,
+    currency: 'INR',
+    symbol: '₹',
+    features: [
+      '2 compliance scans',
+      'GDPR & SOC2 frameworks',
+      'Basic PDF reports',
+      'Email support'
+    ]
+  },
+  basic: {
+    monthly: 799,
+    annual: 599,
+    label: 'Basic',
+    scans: 20,
+    currency: 'INR',
+    symbol: '₹',
+    features: [
+      '20 scans per month',
+      'All compliance frameworks',
+      'Evidence management',
+      'Priority email support',
+      'Advanced PDF reports'
+    ]
+  },
+  professional: {
+    monthly: 1999,
+    annual: 1599,
+    label: 'Professional',
+    scans: 100,
+    currency: 'INR',
+    symbol: '₹',
+    features: [
+      '100 scans per month',
+      'All frameworks',
+      'Team collaboration',
+      'Executive PDF reports',
+      'Audit trail',
+      'Priority support + phone',
+      'Compliance heatmap'
+    ]
+  },
+  enterprise: {
+    monthly: 4999,
+    annual: 3999,
+    label: 'Enterprise',
+    scans: 999999,
+    currency: 'INR',
+    symbol: '₹',
+    features: [
+      'Unlimited scans',
+      'All frameworks',
+      'White-label reports',
+      'Dedicated account manager',
+      'Team collaboration',
+      'Evidence management',
+      'API access',
+      'Custom integrations',
+      'SLA guarantee'
+    ]
+  }
+}
+
+export const INTERNATIONAL_PLANS = {
+  free: {
+    monthly: 0,
+    annual: 0,
+    label: 'Free',
+    scans: 2,
+    currency: 'USD',
+    symbol: '$',
+    features: [
+      '2 compliance scans',
+      'GDPR & SOC2 frameworks',
+      'Basic PDF reports',
+      'Email support'
+    ]
+  },
+  basic: {
+    monthly: 9,
+    annual: 7,
+    label: 'Basic',
+    scans: 20,
+    currency: 'USD',
+    symbol: '$',
+    features: [
+      '20 scans per month',
+      'All compliance frameworks',
+      'Evidence management',
+      'Priority email support',
+      'Advanced PDF reports'
+    ]
+  },
+  professional: {
+    monthly: 29,
+    annual: 23,
+    label: 'Professional',
+    scans: 100,
+    currency: 'USD',
+    symbol: '$',
+    features: [
+      '100 scans per month',
+      'All frameworks',
+      'Team collaboration',
+      'Executive PDF reports',
+      'Audit trail',
+      'Priority support + phone',
+      'Compliance heatmap'
+    ]
+  },
+  enterprise: {
+    monthly: 99,
+    annual: 79,
+    label: 'Enterprise',
+    scans: 999999,
+    currency: 'USD',
+    symbol: '$',
+    features: [
+      'Unlimited scans',
+      'All frameworks',
+      'White-label reports',
+      'Dedicated account manager',
+      'Team collaboration',
+      'Evidence management',
+      'API access',
+      'Custom integrations',
+      'SLA guarantee'
+    ]
+  }
+}
+
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'free',
@@ -117,8 +253,14 @@ export const getPlanByTier = (tier: SubscriptionTier): SubscriptionPlan | undefi
 };
 
 export const getPrice = (plan: SubscriptionPlan, isYearly: boolean, currency: 'USD' | 'INR'): number => {
-  if (currency === 'USD') {
-    return isYearly ? plan.price_yearly_usd : plan.price_monthly_usd;
+  const planId = plan.id as 'free' | 'basic' | 'professional' | 'enterprise';
+  if (currency === 'INR') {
+    const plansInfo = INDIA_PLANS[planId];
+    const rate = isYearly ? plansInfo.annual : plansInfo.monthly;
+    return isYearly ? rate * 12 : rate;
+  } else {
+    const plansInfo = INTERNATIONAL_PLANS[planId];
+    const rate = isYearly ? plansInfo.annual : plansInfo.monthly;
+    return isYearly ? rate * 12 : rate;
   }
-  return isYearly ? plan.price_yearly_inr : plan.price_monthly_inr;
 };

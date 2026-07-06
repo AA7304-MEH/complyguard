@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { SubscriptionPlan, BillingCycle, PaymentProvider } from '../types';
-import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
-import { getUSDToINR, formatINR, PLANS_USD } from '../services/currencyService';
-import { PaymentService } from '../services/paymentService';
+import { SubscriptionPlan, BillingCycle } from '../types';
+import { SUBSCRIPTION_PLANS, INDIA_PLANS, INTERNATIONAL_PLANS } from '../config/subscriptionPlans';
+import { detectUserRegion, GeoInfo } from '../services/geoService';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { ZapIcon } from './icons/ZapIcon';
 
@@ -15,52 +14,74 @@ interface PricingPageProps {
 const PricingPage: React.FC<PricingPageProps> = ({ 
   currentPlan, 
   onPlanSelect, 
-  userLocation 
 }) => {
   const [billingCycle, setBillingCycle] = React.useState<BillingCycle>(BillingCycle.Monthly);
-  const [paymentConfig, setPaymentConfig] = React.useState(() => 
-    PaymentService.getPaymentConfig(userLocation)
-  );
   
-  const [exchangeRate, setExchangeRate] = React.useState<number>(84);
-  const [rateInfo, setRateInfo] = React.useState<string>('');
-  const [rateSource, setRateSource] = React.useState<'cached' | 'live' | 'fallback'>('live');
+  const [geoInfo, setGeoInfo] = React.useState<GeoInfo | null>(null);
+  const [plans, setPlans] = React.useState(INTERNATIONAL_PLANS);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    getUSDToINR().then(({ rate, lastUpdated, source }) => {
-      setExchangeRate(rate);
-      setRateSource(source);
-      setRateInfo(`Live rate: 1 USD = ₹${rate.toFixed(2)} • Updated: ${lastUpdated}`);
-    });
+    async function init() {
+      const geo = await detectUserRegion();
+      setGeoInfo(geo);
+      setPlans(geo.region === 'india' ? INDIA_PLANS : INTERNATIONAL_PLANS);
+      setLoading(false);
+    }
+    init();
   }, []);
 
   const isYearly = billingCycle === BillingCycle.Yearly;
-  const currency = paymentConfig.currency;
 
-  const formatPrice = (plan: SubscriptionPlan) => {
-    const prices = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
-    const usdPrice = isYearly ? prices.annual : prices.monthly;
-    if (usdPrice === 0) return 'Free';
-    
-    return formatINR(usdPrice, exchangeRate);
+  const formatPriceVal = (planId: string) => {
+    const details = plans[planId as keyof typeof plans];
+    const priceVal = isYearly ? details.annual : details.monthly;
+    if (priceVal === 0) return 'Free';
+    return `${details.symbol}${priceVal.toLocaleString()}`;
   };
 
-  const getSavings = (plan: SubscriptionPlan) => {
-    if (!isYearly || plan.tier === 'free') return null;
+  const getSavingsVal = (planId: string) => {
+    const details = plans[planId as keyof typeof plans];
+    if (planId === 'free') return null;
     
-    const prices = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
-    const monthlyCostUsd = prices.monthly * 12;
-    const yearlyCostUsd = prices.annual * 12;
+    const monthlyCost = details.monthly * 12;
+    const yearlyCost = details.annual * 12;
+    const savings = monthlyCost - yearlyCost;
     
-    const savingsUsd = monthlyCostUsd - yearlyCostUsd;
-    const savingsPercent = Math.round((savingsUsd / monthlyCostUsd) * 100);
-    
-    return { amount: savingsUsd, percent: savingsPercent };
+    return savings > 0 ? `${details.symbol}${savings.toLocaleString()}` : null;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/30 py-16 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto">
+        
+        {/* Location Banner */}
+        {geoInfo && (
+          <div style={{
+            background: plans === INDIA_PLANS ? '#fef3c7' : '#eff6ff',
+            border: `1px solid ${plans === INDIA_PLANS ? '#fcd34d' : '#bfdbfe'}`,
+            borderRadius: '8px',
+            padding: '10px 20px',
+            marginBottom: '24px',
+            textAlign: 'center',
+            fontSize: '14px'
+          }}>
+            {plans === INDIA_PLANS ? (
+              <>🇮🇳 <strong>India Pricing</strong> — Special rates in ₹ INR • Pay via Razorpay UPI, Cards, NetBanking</>
+            ) : (
+              <>🌍 <strong>International Pricing</strong> — Prices in USD • Pay via PayPal or Card ({geoInfo.country} detected)</>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
@@ -101,16 +122,27 @@ const PricingPage: React.FC<PricingPageProps> = ({
             </div>
           </div>
 
-          {/* Currency Info */}
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">
-            Prices in INR &bull; Razorpay & PayPal Support
+          {/* Currency Info & Switch button */}
+          <div className="space-y-2">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-4">
+              {plans === INDIA_PLANS ? '🇮🇳 India pricing • Razorpay UPI accepted' : '🌍 International pricing • PayPal accepted'}
+            </div>
+            <div>
+              <button 
+                onClick={() => setPlans(plans === INDIA_PLANS ? INTERNATIONAL_PLANS : INDIA_PLANS)}
+                style={{ fontSize: '12px', color: '#6b7280', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                {plans === INDIA_PLANS ? 'Switch to USD pricing' : 'Switch to INR pricing'}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
           {SUBSCRIPTION_PLANS.map((plan) => {
-            const savings = getSavings(plan);
+            const activePlanDetails = plans[plan.id as keyof typeof plans];
+            const savingsVal = getSavingsVal(plan.id);
             const isCurrentPlan = currentPlan?.id === plan.id;
             const isPopular = plan.is_popular;
             
@@ -149,17 +181,21 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="border-t border-slate-100 pt-6">
                     <div className="flex items-baseline">
                       <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
-                        {plan.tier === 'free' ? 'Free' : `${formatPrice(plan)}/month`}
+                        {plan.id === 'free' ? 'Free' : `${formatPriceVal(plan.id)}/month`}
                       </span>
                     </div>
-                    {plan.tier !== 'free' && (
+                    {plan.id !== 'free' && (
                       <p className="text-[11px] text-slate-500 font-bold mt-1.5">
-                        (~${isYearly ? (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { annual: 0 }).annual : (PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0 }).monthly} USD • Live rate: 1 USD = ₹{exchangeRate.toFixed(1)})
+                        {plans === INDIA_PLANS ? (
+                          <>🇮🇳 India pricing • Razorpay UPI accepted</>
+                        ) : (
+                          <>🌍 International pricing • PayPal accepted</>
+                        )}
                       </p>
                     )}
-                    {savings && (
+                    {savingsVal && (
                       <div className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
-                        <span>✨</span> Save {formatINR(savings.amount, exchangeRate)} yearly
+                        <span>✨</span> Save {savingsVal}/year on annual plan
                       </div>
                     )}
                   </div>
@@ -183,7 +219,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="border-t border-slate-100 pt-6 space-y-4">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Included Features</p>
                     <ul className="space-y-3.5">
-                      {plan.features.map((feature, index) => (
+                      {activePlanDetails.features.map((feature, index) => (
                         <li key={index} className="flex items-start">
                           <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2.5 mt-0.5 flex-shrink-0" />
                           <span className="text-xs text-slate-600 leading-relaxed font-medium">{feature}</span>

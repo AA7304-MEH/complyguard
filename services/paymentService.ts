@@ -157,11 +157,11 @@ export class PaymentService {
     userId: string
   ): Promise<any> {
     const isYearly = billingCycle === BillingCycle.Yearly;
-    const { getUSDToINR, PLANS_USD } = await import('./currencyService');
-    const { rate } = await getUSDToINR();
-    const pricesUsd = PLANS_USD[plan.id as keyof typeof PLANS_USD] || { monthly: 0, annual: 0 };
-    const usdAmount = isYearly ? (pricesUsd.annual * 12) : pricesUsd.monthly;
-    const amount = Math.round(usdAmount * rate * 100); // Converted dynamic amount in paise (integer)
+    const { INDIA_PLANS } = await import('../config/subscriptionPlans');
+    const planId = plan.id as 'free' | 'basic' | 'professional' | 'enterprise';
+    const plansInfo = INDIA_PLANS[planId];
+    const rate = isYearly ? plansInfo.annual : plansInfo.monthly;
+    const amount = (isYearly ? rate * 12 : rate) * 100; // in paise
 
     try {
       const response = await fetch('/api/create-razorpay-order', {
