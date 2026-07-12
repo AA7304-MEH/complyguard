@@ -268,6 +268,7 @@ const App: React.FC = () => {
   console.log("📍 App: Initializing");
   
   const [pathname, setPathname] = React.useState(window.location.pathname);
+  const [clerkTimeout, setClerkTimeout] = React.useState(false);
 
   React.useEffect(() => {
     const handleLocationChange = () => {
@@ -294,16 +295,6 @@ const App: React.FC = () => {
     };
   }, []);
 
-  if (pathname === '/security') {
-    return <SecurityOverview onBack={() => window.history.pushState({}, '', '/')} />;
-  }
-  if (pathname === '/enterprise') {
-    return <EnterprisePage onBack={() => window.history.pushState({}, '', '/')} />;
-  }
-
-  // Custom timeout to bypass Clerk if it hangs
-  const [clerkTimeout, setClerkTimeout] = React.useState(false);
-  
   React.useEffect(() => {
     const timer = setTimeout(() => {
       console.warn("📍 App: Clerk initialization timed out. Falling back to mock view.");
@@ -312,6 +303,13 @@ const App: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  if (pathname === '/security') {
+    return <SecurityOverview onBack={() => window.history.pushState({}, '', '/')} />;
+  }
+  if (pathname === '/enterprise') {
+    return <EnterprisePage onBack={() => window.history.pushState({}, '', '/')} />;
+  }
 
   return (
     <>
