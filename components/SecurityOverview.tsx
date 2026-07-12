@@ -8,9 +8,41 @@ interface SecurityOverviewProps {
 const SecurityOverview: React.FC<SecurityOverviewProps> = ({ onBack }) => {
   const { user } = useUser();
   const { openSignIn } = useClerk();
+  const [isDownloading, setIsDownloading] = React.useState(false);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    setIsDownloading(true);
+    try {
+      const html2pdf = await new Promise<any>((resolve, reject) => {
+        if ((window as any).html2pdf) {
+          resolve((window as any).html2pdf);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => resolve((window as any).html2pdf);
+        script.onerror = (e) => reject(e);
+        document.head.appendChild(script);
+      });
+
+      const element = document.getElementById('security-report-content');
+      if (!element) return;
+
+      const opt = {
+        margin:       [15, 15, 15, 15],
+        filename:     'ComplyGuard_Security_Overview.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF generation failed, falling back to window.print():", err);
+      window.print();
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleBack = () => {
@@ -82,7 +114,7 @@ const SecurityOverview: React.FC<SecurityOverviewProps> = ({ onBack }) => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 max-w-4xl pt-12">
+      <main id="security-report-content" className="container mx-auto px-4 max-w-4xl pt-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-slate-950 mb-4 tracking-tight">
@@ -94,12 +126,22 @@ const SecurityOverview: React.FC<SecurityOverviewProps> = ({ onBack }) => {
           <div className="mt-8 flex justify-center gap-4">
             <button 
               onClick={handlePrint}
+              disabled={isDownloading}
               className="bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 shadow-sm active:scale-95 transition-all flex items-center gap-2"
             >
-              <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Download Security Overview PDF
+              {isDownloading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
+                  Downloading PDF...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download Security Overview PDF
+                </>
+              )}
             </button>
           </div>
         </div>
