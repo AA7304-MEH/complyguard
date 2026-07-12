@@ -226,9 +226,37 @@ const NewScanModal: React.FC<NewScanModalProps> = ({ onClose, onScanStart, onUpg
                 {frameworks.length === 0 ? (
                   <option>Loading frameworks...</option>
                 ) : (
-                  frameworks.map(fw => (
-                    <option key={fw.id} value={fw.id}>🛡️ {fw.name}</option>
-                  ))
+                  (() => {
+                    const groups: Record<string, typeof frameworks> = {};
+                    frameworks.forEach(fw => {
+                      const category = (fw as any).category || 'International';
+                      if (!groups[category]) groups[category] = [];
+                      groups[category].push(fw);
+                    });
+                    
+                    const categoriesOrder = [
+                      'International', 
+                      'India - RBI', 
+                      'India - Regulatory', 
+                      'India - Data Protection', 
+                      'India - Insurance', 
+                      'India - Capital Markets'
+                    ];
+
+                    return categoriesOrder.map(category => {
+                      const fws = groups[category];
+                      if (!fws || fws.length === 0) return null;
+                      return (
+                        <optgroup key={category} label={`── ${category} ──`}>
+                          {fws.map(fw => (
+                            <option key={fw.id} value={fw.id}>
+                              {(fw as any).label || fw.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    });
+                  })()
                 )}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">

@@ -188,10 +188,25 @@ export const updateUser = async (user: User): Promise<User> => {
 
 export const getFrameworks = async (): Promise<any[]> => {
     return [
-        { id: 'SOC2', name: 'SOC 2 Type II', version: '2017', description: 'Service Organization Control 2' },
-        { id: 'ISO27001', name: 'ISO 27001', version: '2022', description: 'Information Security Management' },
-        { id: 'GDPR', name: 'GDPR', version: '2018', description: 'General Data Protection Regulation' },
-        { id: 'HIPAA', name: 'HIPAA', version: '1996', description: 'Health Insurance Portability and Accountability Act' }
+      // International
+      { id: 'GDPR', name: 'GDPR', label: '🇪🇺 GDPR', category: 'International' },
+      { id: 'SOC2', name: 'SOC 2 Type II', label: '🔐 SOC 2 Type II', category: 'International' },
+      { id: 'HIPAA', name: 'HIPAA', label: '🏥 HIPAA', category: 'International' },
+      { id: 'ISO27001', name: 'ISO 27001', label: '📋 ISO 27001', category: 'International' },
+      { id: 'PCI-DSS', name: 'PCI-DSS', label: '💳 PCI-DSS', category: 'International' },
+      
+      // Indian Regulatory — NEW
+      { id: 'RBI_KYC', name: 'RBI KYC Master Directions', label: '🏦 RBI KYC Master Directions', category: 'India - RBI' },
+      { id: 'RBI_AML', name: 'RBI AML/CFT Guidelines', label: '🔍 RBI AML/CFT Guidelines', category: 'India - RBI' },
+      { id: 'RBI_CYBER', name: 'RBI Cybersecurity Framework', label: '🛡️ RBI Cybersecurity Framework', category: 'India - RBI' },
+      { id: 'RBI_PA', name: 'RBI Payment Aggregator Guidelines', label: '💸 RBI Payment Aggregator Guidelines', category: 'India - RBI' },
+      { id: 'RBI_PPI', name: 'RBI PPI Guidelines', label: '📱 RBI PPI Guidelines', category: 'India - RBI' },
+      { id: 'PMLA', name: 'PMLA 2002', label: '⚖️ PMLA 2002', category: 'India - Regulatory' },
+      { id: 'FEMA', name: 'FEMA', label: '💱 FEMA', category: 'India - Regulatory' },
+      { id: 'DPDP', name: 'DPDP Act 2023', label: '🔒 DPDP Act 2023', category: 'India - Data Protection' },
+      { id: 'IRDAI_DATA', name: 'IRDAI Data Localization', label: '🏛️ IRDAI Data Localization', category: 'India - Insurance' },
+      { id: 'IRDAI_CYBER', name: 'IRDAI Cybersecurity Guidelines', label: '🔐 IRDAI Cybersecurity Guidelines', category: 'India - Insurance' },
+      { id: 'SEBI_CYBER', name: 'SEBI Cyber Resilience Framework', label: '📈 SEBI Cyber Resilience Framework', category: 'India - Capital Markets' },
     ];
 };
 

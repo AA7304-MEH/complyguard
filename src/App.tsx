@@ -13,6 +13,8 @@ import ScrollToTop from '../components/ScrollToTop';
 import Header from '../components/Header';
 import SuccessNotification from '../components/common/SuccessNotification';
 import NewScanModal from '../components/NewScanModal';
+import SecurityOverview from '../components/SecurityOverview';
+import EnterprisePage from '../components/EnterprisePage';
 
 console.log("📍 App.tsx: Module Evaluation Started");
 
@@ -265,6 +267,40 @@ const MainApp: React.FC = () => {
 const App: React.FC = () => {
   console.log("📍 App: Initializing");
   
+  const [pathname, setPathname] = React.useState(window.location.pathname);
+
+  React.useEffect(() => {
+    const handleLocationChange = () => {
+      setPathname(window.location.pathname);
+    };
+    window.addEventListener('popstate', handleLocationChange);
+    
+    const originalPushState = window.history.pushState;
+    window.history.pushState = function(...args) {
+      originalPushState.apply(this, args);
+      handleLocationChange();
+    };
+    
+    const originalReplaceState = window.history.replaceState;
+    window.history.replaceState = function(...args) {
+      originalReplaceState.apply(this, args);
+      handleLocationChange();
+    };
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, []);
+
+  if (pathname === '/security') {
+    return <SecurityOverview onBack={() => window.history.pushState({}, '', '/')} />;
+  }
+  if (pathname === '/enterprise') {
+    return <EnterprisePage onBack={() => window.history.pushState({}, '', '/')} />;
+  }
+
   // Custom timeout to bypass Clerk if it hangs
   const [clerkTimeout, setClerkTimeout] = React.useState(false);
   

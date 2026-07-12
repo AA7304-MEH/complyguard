@@ -258,9 +258,11 @@ const LandingPage: React.FC = () => {
                 
                 <div>
                     <h3 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">Platform</h3>
-                    <ul className="space-y-4 text-sm">
+                    <ul className="space-y-4 text-sm text-left">
                         <li><button onClick={() => setPublicView('demo')} className="hover:text-white transition-colors">Interactive Demo</button></li>
                         <li><button onClick={() => setPublicView('pricing')} className="hover:text-white transition-colors">Pricing Plans</button></li>
+                        <li><button onClick={() => window.history.pushState({}, '', '/security')} className="hover:text-white transition-colors">🛡️ Security Trust Center</button></li>
+                        <li><button onClick={() => window.history.pushState({}, '', '/enterprise')} className="hover:text-white transition-colors">💼 Enterprise Solutions</button></li>
                         <li><button onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="hover:text-white transition-colors">Features</button></li>
                     </ul>
                 </div>
