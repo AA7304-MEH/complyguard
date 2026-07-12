@@ -31,6 +31,32 @@ const SecurityOverview: React.FC<SecurityOverviewProps> = ({ onBack }) => {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-20">
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          header, button, nav, .no-print {
+            display: none !important;
+          }
+          body, html, #root {
+            background: white !important;
+            color: black !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+          }
+          section {
+            page-break-inside: avoid;
+            margin-bottom: 2rem !important;
+            border: 1px solid #e2e8f0 !important;
+            background: white !important;
+            box-shadow: none !important;
+          }
+        }
+      `}} />
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/80">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
