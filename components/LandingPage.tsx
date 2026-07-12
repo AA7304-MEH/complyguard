@@ -162,11 +162,25 @@ const LandingPage: React.FC = () => {
                 ComplyGuard <span className="text-blue-500 font-extrabold">AI</span>
               </span>
             </div>
-            <SignInButton mode="modal">
-              <button className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full border border-white/10 hover:border-white/20 shadow-sm active:scale-95 transition-all duration-300 text-sm">
-                Sign In &rarr;
+            <div className="flex items-center space-x-6">
+              <button 
+                onClick={() => window.history.pushState({}, '', '/security')} 
+                className="text-slate-400 hover:text-white transition-colors text-sm font-semibold hidden md:block"
+              >
+                🛡️ Security Trust Center
               </button>
-            </SignInButton>
+              <button 
+                onClick={() => window.history.pushState({}, '', '/enterprise')} 
+                className="text-slate-400 hover:text-white transition-colors text-sm font-semibold hidden md:block"
+              >
+                💼 Enterprise Solutions
+              </button>
+              <SignInButton mode="modal">
+                <button className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-full border border-white/10 hover:border-white/20 shadow-sm active:scale-95 transition-all duration-300 text-sm">
+                  Sign In &rarr;
+                </button>
+              </SignInButton>
+            </div>
           </div>
         </div>
       </header>

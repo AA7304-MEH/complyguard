@@ -66,6 +66,18 @@ const Header: React.FC<HeaderProps> = ({
               >
                 Monitoring
               </button>
+              <button
+                onClick={() => window.history.pushState({}, '', '/security')}
+                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 px-3.5 py-2 text-sm font-semibold transition-all rounded-lg"
+              >
+                🛡️ Security
+              </button>
+              <button
+                onClick={() => window.history.pushState({}, '', '/enterprise')}
+                className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 px-3.5 py-2 text-sm font-semibold transition-all rounded-lg"
+              >
+                💼 Enterprise
+              </button>
               <div className="h-4 w-px bg-slate-200 mx-2"></div>
               <button
                 onClick={() => {
