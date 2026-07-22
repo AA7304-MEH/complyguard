@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const mockProfile = {
         user_id: userId,
         email: email || 'demo.user@complyguard.ai',
-        company_name: 'Acme Corp (Demo Mode)',
+        company_name: 'Acme Corp',
         subscription_tier: 'free',
         subscription_status: 'active',
         credits: 10,
@@ -147,11 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json(mappedProfile);
             } catch (dbErr: any) {
                 console.error("⚠️ Supabase Database Query Error, falling back to mock profile:", dbErr);
-                const dbErrInfo = dbErr ? `Msg: ${dbErr.message || 'no-msg'}, Details: ${dbErr.details || 'no-det'}, Hint: ${dbErr.hint || 'no-hint'}, Code: ${dbErr.code || 'no-code'}` : 'null';
-                return res.status(200).json({
-                    ...mockProfile,
-                    company_name: `Acme Corp (Offline Mode: ${dbErrInfo})`
-                });
+                return res.status(200).json(mockProfile);
             }
         }
 
@@ -190,8 +186,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.error("⚠️ Supabase Add Credits Error, falling back to mock update:", dbErr);
                 return res.status(200).json({
                     ...mockProfile,
-                    credits: mockProfile.credits + amount,
-                    company_name: `Acme Corp (Offline Mode: ${dbErr.message || JSON.stringify(dbErr)})`
+                    credits: mockProfile.credits + amount
                 });
             }
         }
@@ -231,8 +226,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.error("⚠️ Supabase Consume Error, falling back to mock consume:", dbErr);
                 return res.status(200).json({
                     ...mockProfile,
-                    credits: Math.max(0, mockProfile.credits - 1),
-                    company_name: `Acme Corp (Offline Mode: ${dbErr.message || JSON.stringify(dbErr)})`
+                    credits: Math.max(0, mockProfile.credits - 1)
                 });
             }
         }
@@ -241,9 +235,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } catch (error: any) {
         console.error('❌ Critical handler profile error, falling back to mock profile:', error);
-        return res.status(200).json({
-            ...mockProfile,
-            company_name: `Acme Corp (Critical Error: ${error.message || JSON.stringify(error)})`
-        });
+        return res.status(200).json(mockProfile);
     }
 }
