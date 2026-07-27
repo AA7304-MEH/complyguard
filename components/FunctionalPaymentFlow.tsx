@@ -293,49 +293,63 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
   const handleRazorpayPayment = async () => {
     setIsProcessing(true);
     setError(null);
-    updateProgress(2, 'Connecting to secure Razorpay gateway...');
-
-    setTimeout(async () => {
-      updateProgress(3, 'Processing payment authorization & updating plan...');
-      try {
-        const paymentId = `pay_rzp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-        const orderId = `order_rzp_${Date.now()}`;
-
-        const subscription = await PaymentService.createSubscription(
-          user.id,
-          plan.id,
-          billingCycle,
-          PaymentProvider.Razorpay,
-          paymentId
-        );
-
-        // Top up user credits in database
+    PaymentService.processPaymentWithRetry(
+      PaymentProvider.Razorpay,
+      plan,
+      billingCycle,
+      user.id,
+      user.email,
+      (message) => updateProgress(2, message),
+      async (result) => {
+        updateProgress(3, 'Payment successful! Creating subscription...');
         try {
-          const { topUpCredits } = await import('../services/apiClient');
-          const scanQuota = plan.scan_limit > 0 ? plan.scan_limit : 100;
-          await topUpCredits(user.id, scanQuota);
-        } catch (topUpErr) {
-          console.warn("Credit topUp warning:", topUpErr);
-        }
+          const subscription = await PaymentService.createSubscription(
+            user.id,
+            plan.id,
+            billingCycle,
+            PaymentProvider.Razorpay,
+            result.razorpay_payment_id || result.paymentID
+          );
 
-        updateProgress(4, 'Payment Verified! Redirecting to dashboard...');
-        setTimeout(() => {
-          onSuccess({
-            provider: PaymentProvider.Razorpay,
-            paymentId: paymentId,
-            orderId: orderId,
-            amount: price,
-            currency: currency,
-            subscription
-          });
-        }, 1200);
-      } catch (e: any) {
-        console.error("Payment error:", e);
-        setError(e.message || 'Subscription failed');
+          try {
+            const { topUpCredits } = await import('../services/apiClient');
+            const scanQuota = plan.scan_limit > 0 ? plan.scan_limit : 100;
+            await topUpCredits(user.id, scanQuota);
+          } catch (topUpErr) {
+            console.warn("Credit topUp warning:", topUpErr);
+          }
+
+          updateProgress(4, 'Success! Redirecting to dashboard...');
+          setTimeout(() => {
+            onSuccess({
+              provider: PaymentProvider.Razorpay,
+              paymentId: result.razorpay_payment_id || result.paymentID,
+              orderId: result.razorpay_order_id || result.orderID,
+              amount: price,
+              currency: currency,
+              subscription
+            });
+          }, 1200);
+        } catch (e: any) {
+          setError(e.message || 'Subscription failed');
+          setIsProcessing(false);
+          setCurrentStep(1);
+        }
+      },
+      (error) => {
+        console.error('❌ Razorpay payment error:', error);
         setIsProcessing(false);
         setCurrentStep(1);
+        if (error.code === 'PAYMENT_CANCELLED') {
+          setError('Payment cancelled by user.');
+        } else {
+          setError(
+            error.reason || 
+            'Razorpay Authentication Failed: The API Key ID or Secret configured in Vercel environment variables is invalid or not activated on dashboard.razorpay.com.'
+          );
+        }
       }
-    }, 1000);
+    );
   };
 
   const handlePayPalPayment = async () => {
