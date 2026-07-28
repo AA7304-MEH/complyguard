@@ -163,39 +163,34 @@ export class PaymentService {
     const rate = isYearly ? plansInfo.annual : plansInfo.monthly;
     const amount = (isYearly ? rate * 12 : rate) * 100; // in paise
 
-    try {
-      const response = await fetch('/api/create-razorpay-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: amount,
-          currency: 'INR',
-          receipt: `cg_${Date.now()}_${userId.substring(0, 10)}`,
-          notes: {
-            plan_id: plan.id,
-            plan_name: plan.name,
-            user_id: userId,
-            billing_cycle: billingCycle,
-            service: 'ComplyGuard AI'
-          }
-        })
-      });
+    const response = await fetch('/api/create-razorpay-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: amount,
+        currency: 'INR',
+        receipt: `cg_${Date.now()}_${userId.substring(0, 10)}`,
+        notes: {
+          plan_id: plan.id,
+          plan_name: plan.name,
+          user_id: userId,
+          billing_cycle: billingCycle,
+          service: 'ComplyGuard AI'
+        }
+      })
+    });
 
-      const data = await response.json();
-      
-      if (response.ok && data) {
-         console.log('✅ Razorpay order created securely:', data);
-         return data;
-      }
-      
-      console.warn('⚠️ Server order API returned error, using resilient client order structure:', data);
-      return { id: null, fallback: true, amount, currency: 'INR' };
-    } catch (error) {
-       console.warn('⚠️ Exception during Razorpay order creation, using resilient client order structure:', error);
-       return { id: null, fallback: true, amount, currency: 'INR' };
+    const data = await response.json();
+    
+    if (!response.ok || data.success === false) {
+       console.error('❌ Server order creation failed:', data);
+       throw new Error(data.error || 'Failed to create Razorpay order on server.');
     }
+    
+    console.log('✅ Razorpay order created securely:', data);
+    return data;
   }
 
   static initializeRazorpayCheckout(
@@ -205,12 +200,13 @@ export class PaymentService {
     onSuccess: (response: any) => void,
     onError: (error: any) => void
   ) {
-    const activeKey = (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag';
+    const activeKey = order.key_id || (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || RAZORPAY_KEY_ID;
 
     const options: any = {
       key: activeKey,
       amount: order.amount,
       currency: order.currency || 'INR',
+      order_id: order.id,
       name: 'ComplyGuard AI',
       description: `${plan.name} Plan - AI Compliance`,
       prefill: {
@@ -223,9 +219,9 @@ export class PaymentService {
       handler: (response: any) => {
         console.log('✅ Razorpay payment successful:', response);
         onSuccess({
-          razorpay_payment_id: response.razorpay_payment_id || `pay_${Date.now()}`,
-          razorpay_order_id: response.razorpay_order_id || order.id || `order_${Date.now()}`,
-          razorpay_signature: response.razorpay_signature || 'sig_verified',
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_order_id: response.razorpay_order_id || order.id,
+          razorpay_signature: response.razorpay_signature,
           payment_method: 'razorpay',
           order_id: order.id,
         });
@@ -241,15 +237,11 @@ export class PaymentService {
       }
     };
 
-    if (order.id && !order.fallback) {
-      options.order_id = order.id;
-    }
-
     console.log('📝 Preparing Razorpay Modal with Options:', {
-      order_id: options.order_id || 'Client-Direct',
+      order_id: options.order_id,
       amount: options.amount,
       currency: options.currency,
-      key_prefix: options.key.substring(0, 10)
+      key_prefix: options.key ? options.key.substring(0, 10) : 'none'
     });
 
     // Check if Razorpay is already loaded
