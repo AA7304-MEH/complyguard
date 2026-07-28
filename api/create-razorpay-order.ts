@@ -72,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             amount: amount || 79900,
             currency: currency || 'INR',
             receipt: receipt || `receipt_${Date.now()}`,
-            key_id: keyId || 'rzp_live_SlC9oFgIO6E4iy'
+            key_id: keyId || ''
         });
 
     } catch (error: any) {
