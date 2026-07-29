@@ -8,10 +8,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { amount, currency = 'INR', receipt, notes } = req.body;
         
         const rawKeyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID;
-        const keyId = (rawKeyId || 'rzp_live_TGapFevpWRxIzW').trim();
+        let keyId = (rawKeyId || '').trim();
+        if (!keyId || keyId === 'rzp_live_SlC9oFgIO6E4iy') {
+            keyId = 'rzp_live_TGapFevpWRxIzW';
+        }
 
         const rawSecret = process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET;
-        const keySecret = (rawSecret || 'dCfaOk0c29AYNu8SUWam9vHp').trim();
+        let keySecret = (rawSecret || '').trim();
+        if (!keySecret || keySecret === 'luBbo7eVnVFJTHBuYAkzxIUk') {
+            keySecret = 'dCfaOk0c29AYNu8SUWam9vHp';
+        }
 
         const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
         const orderPayload = {
