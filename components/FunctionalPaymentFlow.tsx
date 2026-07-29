@@ -336,49 +336,17 @@ const FunctionalPaymentFlow: React.FC<FunctionalPaymentFlowProps> = ({
           setCurrentStep(1);
         }
       },
-      async (error) => {
+      (error) => {
+        console.error('❌ Razorpay payment process error:', error);
+        setIsProcessing(false);
+        setCurrentStep(1);
         if (error.code === 'PAYMENT_CANCELLED') {
-          setError('Payment cancelled by user.');
-          setIsProcessing(false);
-          setCurrentStep(1);
-          return;
-        }
-
-        console.warn('⚠️ Razorpay payment fallback completion triggered:', error);
-        updateProgress(3, 'Verifying payment authorization...');
-        try {
-          const paymentId = `pay_ver_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          const subscription = await PaymentService.createSubscription(
-            user.id,
-            plan.id,
-            billingCycle,
-            PaymentProvider.Razorpay,
-            paymentId
+          setError('Payment cancelled by user. Plan was not upgraded.');
+        } else {
+          setError(
+            error.reason || 
+            'Payment could not be completed. Please ensure your payment details are correct or try a different payment method.'
           );
-
-          try {
-            const { topUpCredits } = await import('../services/apiClient');
-            const scanQuota = plan.scan_limit > 0 ? plan.scan_limit : 100;
-            await topUpCredits(user.id, scanQuota);
-          } catch (topUpErr) {
-            console.warn("Credit topUp warning:", topUpErr);
-          }
-
-          updateProgress(4, 'Payment Verified! Redirecting to dashboard...');
-          setTimeout(() => {
-            onSuccess({
-              provider: PaymentProvider.Razorpay,
-              paymentId: paymentId,
-              orderId: `order_ver_${Date.now()}`,
-              amount: price,
-              currency: currency,
-              subscription
-            });
-          }, 1200);
-        } catch (e: any) {
-          setError('Failed to process payment. Please try again.');
-          setIsProcessing(false);
-          setCurrentStep(1);
         }
       }
     );

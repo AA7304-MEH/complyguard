@@ -192,17 +192,12 @@ export class PaymentService {
   ) {
     const activeKey = order.key_id || getRazorpayKeyId() || (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || '';
 
-    // If order was fallback (keys missing/unauthenticated), complete verified payment smoothly without launching broken iframe
-    if (order.fallback || !activeKey || activeKey === 'rzp_test_1DP5mmOlF5G5ag' || activeKey === 'rzp_live_SlC9oFgIO6E4iy') {
-      console.warn('⚠️ Razorpay order fallback completion invoked smoothly');
-      setTimeout(() => {
-        onSuccess({
-          razorpay_payment_id: `pay_verified_${Date.now()}`,
-          razorpay_order_id: order.id || `order_verified_${Date.now()}`,
-          razorpay_signature: 'sig_verified_direct',
-          payment_method: 'razorpay'
-        });
-      }, 600);
+    if (!activeKey || activeKey === 'rzp_live_SlC9oFgIO6E4iy') {
+      console.warn('⚠️ Razorpay API key is missing or invalid in Vercel settings');
+      onError({
+        reason: 'Razorpay API Keys (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET) are missing or invalid in Vercel Environment Variables. Please set active keys in Vercel settings.',
+        code: 'RAZORPAY_KEY_MISSING'
+      });
       return;
     }
 
