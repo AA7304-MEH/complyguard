@@ -190,7 +190,7 @@ export class PaymentService {
     onSuccess: (response: any) => void,
     onError: (error: any) => void
   ) {
-    const activeKey = order.key_id || getRazorpayKeyId() || (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || '';
+    const activeKey = order.key_id || getRazorpayKeyId() || (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || 'rzp_test_1DP5mmOlF5G5ag';
 
     const options: any = {
       key: activeKey,
@@ -296,7 +296,7 @@ export class PaymentService {
   ) {
     try {
       console.log('🚀 Creating Razorpay instance with options:', {
-        key: options.key.substring(0, 10) + '...',
+        key: (options.key || '').substring(0, 10) + '...',
         amount: options.amount,
         currency: options.currency
       });
