@@ -116,8 +116,7 @@ export const getScans = async (clerkUserId: string): Promise<AuditScan[]> => {
             .eq('user_id', clerkUserId)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error("Failed to fetch scans from Supabase:", error);
+        if (error || !Array.isArray(jobs)) {
             return getMockScans(clerkUserId);
         }
 
