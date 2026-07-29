@@ -7,32 +7,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { amount, currency = 'INR', receipt, notes } = req.body;
         
-        const rawKeyId = process.env.RAZORPAY_KEY_ID;
-        const rawViteKeyId = process.env.VITE_RAZORPAY_KEY_ID;
-        const keyId = (rawKeyId || rawViteKeyId || '').trim();
+        const rawKeyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID;
+        const keyId = (rawKeyId || 'rzp_live_TGapFevpWRxIzW').trim();
 
-        const rawSecret = process.env.RAZORPAY_KEY_SECRET;
-        const rawViteSecret = process.env.VITE_RAZORPAY_KEY_SECRET;
-        const keySecret = (rawSecret || rawViteSecret || '').trim();
-
-        const maskedKeyId = keyId ? `${keyId.substring(0, 10)}...${keyId.substring(keyId.length - 4)}` : 'none';
-        const keySource = rawKeyId ? 'RAZORPAY_KEY_ID' : (rawViteKeyId ? 'VITE_RAZORPAY_KEY_ID' : 'none');
-        const secretSource = rawSecret ? 'RAZORPAY_KEY_SECRET' : (rawViteSecret ? 'VITE_RAZORPAY_KEY_SECRET' : 'none');
-
-        if (!keyId || !keySecret) {
-            console.warn('⚠️ Razorpay credentials missing in environment variables');
-            return res.status(400).json({
-                success: false,
-                error: 'Razorpay API credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are missing or incomplete in Vercel environment variables.',
-                code: 'KEYS_MISSING',
-                env_debug: {
-                    key_source: keySource,
-                    secret_source: secretSource,
-                    key_id_preview: maskedKeyId,
-                    secret_length: keySecret.length
-                }
-            });
-        }
+        const rawSecret = process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET;
+        const keySecret = (rawSecret || 'dCfaOk0c29AYNu8SUWam9vHp').trim();
 
         const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
         const orderPayload = {
@@ -57,32 +36,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log('✅ Razorpay order created successfully:', data.id);
             return res.status(200).json({
                 ...data,
-                key_id: keyId,
-                env_debug: {
-                    key_source: keySource,
-                    key_id_preview: maskedKeyId
-                }
+                key_id: keyId
             });
         }
 
-        console.error('❌ Razorpay Order API returned non-OK response:', data);
+        console.error('❌ Razorpay Order API Error:', data);
         return res.status(200).json({
             id: `order_cg_${Date.now()}`,
             fallback: true,
             amount: amount || 79900,
             currency: currency || 'INR',
             receipt: receipt || `receipt_${Date.now()}`,
-            key_id: keyId || ''
+            key_id: keyId
         });
 
     } catch (error: any) {
-        console.error('Create Order Exception, using fallback order:', error);
+        console.error('Create Order Exception:', error);
         return res.status(200).json({
             id: `order_cg_${Date.now()}`,
             fallback: true,
             amount: req.body?.amount || 79900,
             currency: req.body?.currency || 'INR',
-            receipt: `receipt_${Date.now()}`
+            receipt: `receipt_${Date.now()}`,
+            key_id: 'rzp_live_TGapFevpWRxIzW'
         });
     }
 }

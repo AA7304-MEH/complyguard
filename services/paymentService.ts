@@ -2,8 +2,8 @@ import { PaymentProvider, BillingCycle, PaymentIntent, SubscriptionPlan } from '
 import { SUBSCRIPTION_PLANS, getPrice } from '../config/subscriptionPlans';
 import { PLANS_USD } from './currencyService';
 
-// Razorpay configuration - Read dynamically from environment variables
-const getRazorpayKeyId = () => (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || '';
+// Razorpay configuration - Read dynamically from environment variables with live fallback
+const getRazorpayKeyId = () => (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || 'rzp_live_TGapFevpWRxIzW';
 
 // PayPal configuration - SANDBOX KEYS FOR TESTING (Switch to production when ready)
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
