@@ -116,21 +116,44 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
         reloadEnterpriseData();
     }, [reloadEnterpriseData]);
 
+    const loadHtml2PdfScript = (): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            if ((window as any).html2pdf) {
+                resolve((window as any).html2pdf);
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.async = true;
+            script.onload = () => {
+                if ((window as any).html2pdf) {
+                    resolve((window as any).html2pdf);
+                } else {
+                    reject(new Error('html2pdf not found on window object'));
+                }
+            };
+            script.onerror = () => reject(new Error('Failed to load html2pdf script'));
+            document.head.appendChild(script);
+        });
+    };
+
     const handleDownload = async () => {
         const element = document.getElementById('report-container');
         if (!element || isDownloading) return;
 
         setIsDownloading(true);
         try {
-            const html2pdf = (window as any).html2pdf;
+            let html2pdf = (window as any).html2pdf;
             if (!html2pdf) {
-                alert("The PDF generator is still loading. Please try again in 2 seconds.");
-                setIsDownloading(false);
-                return;
+                html2pdf = await loadHtml2PdfScript();
             }
 
+            const safeFramework = scan.framework.replace(/[^a-z0-9]/gi, '_');
+            const fileName = `Audit_Report_${safeFramework}.pdf`;
+
             const opt = {
-                margin: [15, 15],
+                margin: [10, 10],
+                filename: fileName,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { 
                     scale: 2, 
@@ -142,21 +165,13 @@ const ReportPage: React.FC<ReportPageProps> = ({ scan, onBack }) => {
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
-            // Force a simple filename if framework contains weird characters
-            const safeFramework = scan.framework.replace(/[^a-z0-9]/gi, '_');
-            const fileName = `Audit_Report_${safeFramework}.pdf`;
-
-            // Use the worker explicitly
-            await html2pdf()
-                .set({...opt, filename: fileName})
-                .from(element)
-                .save();
+            await html2pdf().set(opt).from(element).save();
 
             setIsGenerated(true);
-            console.log("PDF download triggered for:", fileName);
+            console.log("✅ PDF download completed for:", fileName);
         } catch (err) {
-            console.error("PDF Download Error:", err);
-            alert("Could not generate PDF. Please try again or use the browser's Print feature (Ctrl+P).");
+            console.error("PDF Download Error, invoking print fallback:", err);
+            window.print();
         } finally {
             setIsDownloading(false);
         }
